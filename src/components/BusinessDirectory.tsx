@@ -94,7 +94,7 @@ export const BusinessDirectory: React.FC = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <Building className="w-8 h-8 text-orange-500" />
+                <Building className="w-8 h-8 text-[#E95C41]" />
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Entreprises</h1>
                   <p className="text-sm text-gray-600">Répertoire des entreprises françaises</p>
@@ -105,7 +105,7 @@ export const BusinessDirectory: React.FC = () => {
                   <div className="text-2xl font-bold text-gray-900">31 838 477</div>
                   <div className="text-sm text-gray-600">entreprises référencées</div>
                 </div>
-                <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
+                <button className="bg-[#E95C41] hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2">
                   <Download className="w-4 h-4" />
                   Exporter la liste
                 </button>

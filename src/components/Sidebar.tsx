@@ -76,19 +76,19 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
         <div className="flex-1 relative" ref={sliderRef}>
           <div className="h-2 bg-gray-200 rounded-full relative">
             <div 
-              className="h-2 bg-orange-500 rounded-full absolute"
+              className="h-2 bg-[#E95C41] rounded-full absolute"
               style={{
                 left: `${minPercentage}%`,
                 width: `${maxPercentage - minPercentage}%`
               }}
             />
             <div 
-              className="absolute w-3 h-3 bg-orange-500 rounded-full transform -translate-x-1/2 -translate-y-0.5 cursor-pointer hover:bg-orange-600 transition-colors"
+              className="absolute w-3 h-3 bg-[#E95C41] rounded-full transform -translate-x-1/2 -translate-y-0.5 cursor-pointer hover:bg-orange-600 transition-colors"
               style={{ left: `${minPercentage}%`, top: '50%' }}
               onMouseDown={handleMouseDown('min')}
             />
             <div 
-              className="absolute w-3 h-3 bg-orange-500 rounded-full transform -translate-x-1/2 -translate-y-0.5 cursor-pointer hover:bg-orange-600 transition-colors"
+              className="absolute w-3 h-3 bg-[#E95C41] rounded-full transform -translate-x-1/2 -translate-y-0.5 cursor-pointer hover:bg-orange-600 transition-colors"
               style={{ left: `${maxPercentage}%`, top: '50%' }}
               onMouseDown={handleMouseDown('max')}
             />
