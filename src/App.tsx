@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
+import { RightPanel } from './components/RightPanel';
 import { mockBusinesses } from './data/mockBusinesses';
 import { FilterState } from './types/Business';
 import { 
@@ -76,6 +77,7 @@ function App() {
           searchTerm={filters.searchTerm}
           onSearchChange={handleSearchChange}
         />
+        <RightPanel businesses={filteredBusinesses} />
       </div>
     </div>
   );
