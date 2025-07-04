@@ -1,36 +1,29 @@
-// src/components/Header.tsx
 import React, { useState } from "react";
 import { Search, Sun, BookOpen, MessageCircle, User, Menu, X } from "lucide-react";
+import { ScrollableNav } from "./ScrollableNav";
 
 export const Header: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
     <header className="bg-white border-b border-gray-200">
-      <div className="px-6 py-3">
+      <div className="p-0">
         {/* First Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between main-topbar p-2">
           {/* Logo + Main links (desktop only) */}
           <div className="flex flex-row items-center gap-10">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-blue-600 rounded flex items-center justify-center">
-                <span className="text-white font-bold text-sm">CA</span>
-              </div>
-              <span className="text-xl font-bold text-gray-900">
-                COMP<span className="text-orange-500">ANYX</span>
+            <div className="flex items-center space-x-2 ps-2">
+              <span className="text-xl font-bold text-white">
+                PROSPER<span className="text-[#E95C41]">IAN</span>
               </span>
             </div>
-            <div className="hidden lg:flex items-center space-x-8">
+            <div className="hidden lg:flex items-center space-x-8 text-white">
               <MenuNavLinks />
             </div>
           </div>
 
           {/* Hamburger (mobile only) */}
-          <button
-            className="lg:hidden p-2 text-gray-600 hover:text-gray-900"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Open menu"
-          >
+          <button className="lg:hidden p-2 text-white" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
             <Menu className="w-6 h-6" />
           </button>
 
@@ -41,17 +34,20 @@ export const Header: React.FC = () => {
         </div>
 
         {/* Secondary Navigation */}
-        <div className="mt-4 flex flex-col lg:flex-row items-center justify-between space-y-4 lg:space-y-0">
-          <div className="flex space-x-8">
-            <NavLink href="#" active>
-              Entreprises
-            </NavLink>
-            <NavLink href="#">Contacts</NavLink>
-            <NavLink href="#">Listes</NavLink>
-            <NavLink href="#">Exports</NavLink>
-            <NavLink href="#">Mes Recherches</NavLink>
+        <div className="flex flex-col lg:flex-row items-center justify-between space-y-3 lg:space-y-0 p-3 lg:p-1">
+          <div className="mx-auto lg:mx-0 max-w-full">
+            <ScrollableNav
+              links={[
+                { label: "Entreprises", href: "/entreprises" },
+                { label: "Contacts", href: "/contacts" },
+                { label: "Listes", href: "/listes" },
+                { label: "Exports", href: "/exports" },
+                { label: "Mes Recherches", href: "/recherches" },
+              ]}
+              activeHref={window.location.pathname}
+            />
           </div>
-          <div className="w-full lg:w-auto max-w-md">
+          <div className="w-full lg:max-w-lg">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
@@ -70,18 +66,17 @@ export const Header: React.FC = () => {
       {/* Drawer panel */}
       <aside
         className={`
-          fixed top-0 right-0 h-full w-64 bg-white shadow-lg z-50
+          fixed top-0 right-0 h-full w-64 main-topbar shadow-lg z-50
           transform transition-transform duration-300
           ${drawerOpen ? "translate-x-0" : "translate-x-full"}
         `}
       >
-        <div className="p-6 flex justify-between items-center">
+        <div className="p-6 flex justify-end items-center">
           <button onClick={() => setDrawerOpen(false)} aria-label="Close menu">
-            <X className="w-6 h-6 text-gray-600" />
+            <X className="w-6 h-6 text-white" />
           </button>
         </div>
         <nav className="flex flex-col items-center space-y-6 mt-8">
-          {/* duplicate  MenuNavLinks + Icons + Button */}
           <MenuNavLinks vertical />
           <IconButtons vertical />
         </nav>
@@ -90,7 +85,6 @@ export const Header: React.FC = () => {
   );
 };
 
-// you can pull these into their own files if you like:
 const MenuNavLinks: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
   <div className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-8"}>
     <nav className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-6"}>
@@ -99,7 +93,7 @@ const MenuNavLinks: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
           key={label}
           href="#"
           className={`${
-            label === "Recherche" ? "text-orange-500" : "text-gray-600 hover:text-gray-900"
+            label === "Recherche" ? "text-[#E95C41]" : "text-white hover:text-[#E95C41] active:text-[#E95C41]"
           } transition-colors`}
         >
           {label}
@@ -111,16 +105,16 @@ const MenuNavLinks: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
 
 const IconButtons: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
   <div className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-4"}>
-    <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+    <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
       <Sun className="w-5 h-5" />
     </button>
-    <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+    <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
       <BookOpen className="w-5 h-5" />
     </button>
-    <button className="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+    <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
       <MessageCircle className="w-5 h-5" />
     </button>
-    <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
+    <button className="bg-[#E95C41] hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
       <User className="w-4 h-4" />
       <span>Se connecter</span>
     </button>
@@ -132,12 +126,7 @@ const NavLink: React.FC<{ href: string; active?: boolean; children: React.ReactN
   active,
   children,
 }) => (
-  <a
-    href={href}
-    className={`${
-      active ? "text-orange-500 border-b-2 border-orange-500 pb-2" : "text-gray-600 hover:text-gray-900 pb-2"
-    } transition-colors`}
-  >
+  <a href={href} className={`${active ? "text-[#E95C41]" : "text-common-blue"} transition-colors`}>
     {children}
   </a>
 );
