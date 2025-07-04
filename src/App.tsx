@@ -1,30 +1,30 @@
-import React, { useState, useMemo } from 'react';
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { MainContent } from './components/MainContent';
-import { RightPanel } from './components/RightPanel';
-import { mockBusinesses } from './data/mockBusinesses';
-import { FilterState } from './types/Business';
-import { 
-  filterBusinesses, 
-  getUniqueActivities, 
-  getUniqueCities, 
+import React, { useState, useMemo } from "react";
+import { Header } from "./components/Header";
+import { ResponsiveSidebar } from "./components/ResponsiveSidebar";
+import { MainContent } from "./components/MainContent";
+import { RightPanel } from "./components/RightPanel";
+import { mockBusinesses } from "./data/mockBusinesses";
+import { FilterState } from "./types/Business";
+import {
+  filterBusinesses,
+  getUniqueActivities,
+  getUniqueCities,
   getUniqueLegalForms,
   getEmployeeRanges,
   getRevenueRanges,
-  getAgeRanges
-} from './utils/filterUtils';
+  getAgeRanges,
+} from "./utils/filterUtils";
 
 function App() {
   const [filters, setFilters] = useState<FilterState>({
-    searchTerm: '',
+    searchTerm: "",
     activities: [],
     employeeRange: [0, 5000],
     revenueRange: [0, 1000000],
     ageRange: [0, 50],
     cities: [],
     legalForms: [],
-    ratingRange: [0, 5]
+    ratingRange: [0, 5],
   });
 
   // Calculate available options and ranges from data
@@ -37,11 +37,11 @@ function App() {
 
   // Initialize filter ranges based on actual data
   React.useEffect(() => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       employeeRange: employeeRange,
       revenueRange: revenueRange,
-      ageRange: ageRange
+      ageRange: ageRange,
     }));
   }, [employeeRange, revenueRange, ageRange]);
 
@@ -51,7 +51,7 @@ function App() {
   }, [filters]);
 
   const handleSearchChange = (searchTerm: string) => {
-    setFilters(prev => ({ ...prev, searchTerm }));
+    setFilters((prev) => ({ ...prev, searchTerm }));
   };
 
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -61,8 +61,8 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      <div className="flex">
-        <Sidebar 
+      <div className="flex flex-col md:flex-row">
+        <ResponsiveSidebar
           filters={filters}
           onFiltersChange={handleFiltersChange}
           availableActivities={availableActivities}
@@ -71,13 +71,20 @@ function App() {
           employeeRange={employeeRange}
           revenueRange={revenueRange}
           ageRange={ageRange}
-        />
-        <MainContent 
-          businesses={filteredBusinesses}
           searchTerm={filters.searchTerm}
-          onSearchChange={handleSearchChange}
+          activities={filters.activities}
+          cities={filters.cities}
+          legalForms={filters.legalForms}
+          ratingRange={filters.ratingRange}
         />
-        <RightPanel businesses={filteredBusinesses} />
+        <div className="flex flex-col md:flex-row">
+          <MainContent
+            businesses={filteredBusinesses}
+            searchTerm={filters.searchTerm}
+            onSearchChange={handleSearchChange}
+          />
+          <RightPanel businesses={filteredBusinesses} />
+        </div>
       </div>
     </div>
   );

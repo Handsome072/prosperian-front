@@ -57,7 +57,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ businesses }) => {
   ];
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 h-screen overflow-y-auto">
+    <div className="w-100 md:w-80 bg-white border-l border-gray-200 h-screen overflow-y-auto">
       {/* Geographic Distribution */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-4">
