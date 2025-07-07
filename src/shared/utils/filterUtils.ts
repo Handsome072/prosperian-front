@@ -1,4 +1,4 @@
-import { Business, FilterState } from '../types/Business';
+import { Business, FilterState } from 'src/types/Business';
 
 export const filterBusinesses = (businesses: Business[], filters: FilterState): Business[] => {
   return businesses.filter(business => {
@@ -82,7 +82,7 @@ export const getUniqueCities = (businesses: Business[]): string[] => {
 };
 
 export const getUniqueLegalForms = (businesses: Business[]): string[] => {
-  return [...new Set(businesses.map(b => b.legalForm).filter(Boolean))].sort();
+  return [...new Set(businesses.map(b => b.legalForm).filter((legalForm): legalForm is string => legalForm !== undefined))].sort();
 };
 
 export const getEmployeeRanges = (businesses: Business[]): [number, number] => {

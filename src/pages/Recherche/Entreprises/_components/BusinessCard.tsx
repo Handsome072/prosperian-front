@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, Users, Star, ExternalLink, Building } from 'lucide-react';
-import { Business } from '../types/Business';
+import { Business } from '../../../../types/Business';
 
 interface BusinessCardProps {
   company: Business;

@@ -1,19 +1,53 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
+import { useFilterContext } from "@entities/contexts/FilterContext";
+import { SecondaryNav } from "@shared/components/Header/SecondaryNav";
+import { ResponsiveSidebar } from "@shared/components/Sidebar/ResponsiveSidebar";
+import { FilterState } from "src/types/Business";
 
-export const SearchLayout: React.FC = () => (
-  <>
-    {/* SubTopbar */}
-    <div></div>
+export const SearchLayout: React.FC = () => {
+  const {
+    filters,
+    setFilters,
+    availableActivities,
+    availableCities,
+    availableLegalForms,
+    employeeRange,
+    revenueRange,
+    ageRange,
+  } = useFilterContext();
 
-    {/*Content */}
-    <div>
-      {/* Filter Sidebar */}
-      <div></div>
-      {/* Main Content */}
-      <div>
-        <Outlet />
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
+  };
+
+  return (
+    <>
+      {/* SubTopbar */}
+      <SecondaryNav />
+      {/*Content */}
+      <div className="flex flex-col md:flex-row">
+        {/* Filter Sidebar */}
+        <ResponsiveSidebar
+          filters={filters}
+          onFiltersChange={handleFiltersChange}
+          availableActivities={availableActivities}
+          availableCities={availableCities}
+          availableLegalForms={availableLegalForms}
+          employeeRange={employeeRange}
+          revenueRange={revenueRange}
+          ageRange={ageRange}
+          searchTerm={filters.searchTerm}
+          activities={filters.activities}
+          cities={filters.cities}
+          legalForms={filters.legalForms}
+          ratingRange={filters.ratingRange}
+        />
+        {/* Main Content */}
+        <div className="flex flex-col md:flex-row">
+          <Outlet />
+        </div>
       </div>
-    </div>
-  </>
-);
+    </>
+  );
+};

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Filter, MapPin } from "lucide-react";
-import { FilterState } from "../types/Business";
+import { FilterState } from "../../../types/Business";
 
 interface RangeSliderProps {
   min: number;
