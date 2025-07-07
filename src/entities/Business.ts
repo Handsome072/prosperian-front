@@ -26,4 +26,17 @@ export interface Business {
     cities: string[];
     legalForms: string[];
     ratingRange: [number, number];
+    roles: string[];
+  }
+
+  export interface FiltersPanelProps extends FilterState {
+    filters: FilterState;
+    onFiltersChange: (filters: FilterState) => void;
+    availableActivities: string[];
+    availableCities: string[];
+    availableLegalForms: string[];
+    availableRoles: string[];
+    employeeRange: [number, number];
+    revenueRange: [number, number];
+    ageRange: [number, number];
   }

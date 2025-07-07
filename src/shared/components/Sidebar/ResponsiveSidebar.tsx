@@ -1,3 +1,4 @@
+// In ResponsiveSidebar.tsx
 import React, { useState } from "react";
 import { Filter } from "lucide-react";
 import { Sidebar as DesktopSidebar } from "./Sidebar";
@@ -19,8 +20,8 @@ export const ResponsiveSidebar: React.FC<FiltersPanelProps> = (props) => {
           onClick={() => setShowMobile(show => !show)}
           className="relative w-full rounded-3xl bg-white px-4 py-3 shadow text-center"
         >
-          <span className="font-medium text-[#E95C41]">Filters</span>
-          <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5  text-[#E95C41]" />
+          <span className="font-medium text-[#E95C41]">Filtres</span>
+          <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#E95C41]" />
         </button>
       </div>
 
@@ -35,7 +36,7 @@ export const ResponsiveSidebar: React.FC<FiltersPanelProps> = (props) => {
               onClick={() => setShowMobile(false)}
               className="w-full rounded-3xl bg-[#E95C41] py-3 text-white font-medium shadow"
             >
-              Voir les entreprises
+              Voir les résultats
             </button>
           </div>
         </div>
