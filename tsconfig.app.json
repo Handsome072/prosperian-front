@@ -11,7 +11,9 @@
       "@widgets/*": ["src/widgets/*"],
       "@layouts/*": ["src/layouts/*"],
       "@styles/*": ["src/styles/*"],
-      "@assets/*": ["src/assets/*"]
+      "@assets/*": ["src/assets/*"],
+      "@data/*": ["src/data/*"],
+      "@contexts/*": ["src/contexts/*"],
     },
     "types": ["vite/client", "node"],
 

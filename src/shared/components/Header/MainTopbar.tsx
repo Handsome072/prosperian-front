@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Search, Sun, BookOpen, MessageCircle, User, Menu, X } from "lucide-react";
-import { ScrollableNav } from "./ScrollableNav";
+import { Sun, BookOpen, MessageCircle, User, Menu, X } from "lucide-react";
 
-export const Header: React.FC = () => {
+
+export const MainTopbar: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -30,32 +30,6 @@ export const Header: React.FC = () => {
           {/* Right‑side icons + button (desktop only) */}
           <div className="hidden lg:flex items-center space-x-4">
             <IconButtons />
-          </div>
-        </div>
-
-        {/* Secondary Navigation */}
-        <div className="flex flex-col lg:flex-row items-center justify-between space-y-3 lg:space-y-0 p-3 lg:p-1">
-          <div className="mx-auto lg:mx-0 max-w-full">
-            <ScrollableNav
-              links={[
-                { label: "Entreprises", href: "/entreprises" },
-                { label: "Contacts", href: "/contacts" },
-                { label: "Listes", href: "/listes" },
-                { label: "Exports", href: "/exports" },
-                { label: "Mes Recherches", href: "/recherches" },
-              ]}
-              activeHref={window.location.pathname}
-            />
-          </div>
-          <div className="w-full lg:max-w-lg">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Je recherche une entreprise, un dirigeant..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -119,14 +93,4 @@ const IconButtons: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
       <span>Se connecter</span>
     </button>
   </div>
-);
-
-const NavLink: React.FC<{ href: string; active?: boolean; children: React.ReactNode }> = ({
-  href,
-  active,
-  children,
-}) => (
-  <a href={href} className={`${active ? "text-[#E95C41]" : "text-common-blue"} transition-colors`}>
-    {children}
-  </a>
 );
