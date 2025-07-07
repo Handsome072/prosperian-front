@@ -1,4 +1,4 @@
-import { Business } from '../types/Business';
+import { Business } from '../entities/Business';
 
 export const mockBusinesses: Business[] = [
   {

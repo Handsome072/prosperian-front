@@ -1,9 +1,9 @@
 import React from "react";
 import { Outlet } from "react-router-dom";
-import { useFilterContext } from "@entities/contexts/FilterContext";
+import { useFilterContext } from "@contexts/FilterContext";
 import { SecondaryNav } from "@shared/components/Header/SecondaryNav";
 import { ResponsiveSidebar } from "@shared/components/Sidebar/ResponsiveSidebar";
-import { FilterState } from "src/types/Business";
+import { FilterState } from "@entities/Business";
 
 export const SearchLayout: React.FC = () => {
   const {

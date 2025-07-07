@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, Filter, Download, MapPin, Building } from 'lucide-react';
 import { BusinessCard } from './BusinessCard';
-import { Business } from '../../../../types/Business';
+import { Business } from '@entities/Business';
 
 interface MainContentProps {
   businesses: Business[];

@@ -1,7 +1,7 @@
 import React from "react";
 import { MainContent } from "./_components/MainContent";
 import { RightPanel } from "./_components/RightPanel";
-import { useFilterContext } from "@entities/contexts/FilterContext";
+import { useFilterContext } from "@contexts/FilterContext";
 
 export const Entreprises = () => {
   const { filters, filteredBusinesses, handleSearchChange } = useFilterContext();

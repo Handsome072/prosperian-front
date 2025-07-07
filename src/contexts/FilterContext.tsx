@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from 'react';
 import { mockBusinesses } from '@data/mockBusinesses';
-import type { FilterState } from 'src/types/Business';
+import type { FilterState } from '@entities/Business';
 import {
   filterBusinesses,
   getUniqueActivities,

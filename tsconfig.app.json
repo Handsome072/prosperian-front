@@ -13,6 +13,7 @@
       "@styles/*": ["src/styles/*"],
       "@assets/*": ["src/assets/*"],
       "@data/*": ["src/data/*"],
+      "@contexts/*": ["src/contexts/*"],
     },
     "types": ["vite/client", "node"],
 

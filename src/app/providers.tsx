@@ -1,6 +1,6 @@
 import React, { ReactNode } from "react";
 import { BrowserRouter } from "react-router-dom";
-import { FilterProvider } from "@entities/contexts/FilterContext";
+import { FilterProvider } from "@contexts/FilterContext";
 
 type Props = { children: ReactNode };
 

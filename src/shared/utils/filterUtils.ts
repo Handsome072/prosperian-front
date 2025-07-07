@@ -1,4 +1,4 @@
-import { Business, FilterState } from 'src/types/Business';
+import { Business, FilterState } from '@entities/Business';
 
 export const filterBusinesses = (businesses: Business[], filters: FilterState): Business[] => {
   return businesses.filter(business => {
