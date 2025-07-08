@@ -24,12 +24,14 @@ interface FilterContextType {
   revenueRange: [number, number];
   ageRange: [number, number];
   filteredBusinesses: typeof mockBusinesses;
-  filteredContacts: typeof mockContacts.contacts;
+  filteredContacts: any[];
   headerStats: typeof mockContacts.headerStats;
   postes: typeof mockContacts.postes;
   niveaux: typeof mockContacts.niveaux;
   setFilters: (f: FilterState) => void;
   handleSearchChange: (term: string) => void;
+  setSort: (sortBy: string) => void;
+  setFilteredContacts: (contacts: any[]) => void; // New function to update filteredContacts
 }
 
 const defaultFilters: FilterState = {
@@ -42,12 +44,14 @@ const defaultFilters: FilterState = {
   legalForms: [],
   ratingRange: [0, 5],
   roles: [],
+  sortBy: 'Pertinence',
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
 
 export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
+  const [filteredContacts, setFilteredContacts] = useState<any[]>([]); // Manage state separately
 
   const availableActivities = useMemo(() => getUniqueActivities(mockBusinesses), []);
   const availableCities = useMemo(() => getUniqueCities(mockBusinesses), []);
@@ -74,9 +78,25 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     return filterBusinesses(businessesWithContacts, filters);
   }, [filters]);
 
-  const filteredContacts = useMemo(() => {
-    return filterContacts(mockContacts.contacts, filters, mockBusinesses);
+  // Initial filteredContacts based on filters
+  useEffect(() => {
+    const contacts = filterContacts(mockContacts.contacts, filters, mockBusinesses);
+    setFilteredContacts([...contacts].sort((a, b) => {
+      switch (filters.sortBy) {
+        case 'Role':
+          return a.role.localeCompare(b.role);
+        case 'Entreprise':
+          return a.entreprise.localeCompare(b.entreprise);
+        case 'Pertinence':
+        default:
+          return b.role.length - a.role.length;
+      }
+    }));
   }, [filters]);
+
+  const setSort = (sortBy: string) => {
+    setFilters(prev => ({ ...prev, sortBy }));
+  };
 
   const handleSearchChange = (searchTerm: string) => {
     setFilters(prev => ({ ...prev, searchTerm }));
@@ -100,6 +120,8 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
         niveaux: mockContacts.niveaux,
         setFilters,
         handleSearchChange,
+        setSort,
+        setFilteredContacts, // Expose the new setter
       }}
     >
       {children}
@@ -111,4 +133,4 @@ export function useFilterContext() {
   const ctx = useContext(FilterContext);
   if (!ctx) throw new Error('useFilterContext must be used within a FilterProvider');
   return ctx;
-};
+}

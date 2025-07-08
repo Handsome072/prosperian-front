@@ -1,7 +1,8 @@
-// In FiltersPanel.tsx (or a separate RangeSlider.tsx file if modularized)
+// In FiltersPanel.tsx
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Filter, MapPin } from "lucide-react";
+import { ChevronDown, Filter, MapPin, X } from "lucide-react";
 import { FilterState } from "@entities/Business";
+import { useFilterContext } from "@contexts/FilterContext";
 
 interface RangeSliderProps {
   min: number;
@@ -128,9 +129,25 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   revenueRange,
   ageRange,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures", "roles"]);
+  const { setFilteredContacts } = useFilterContext();
+  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures", "roles", "export-lists"]);
   const [activitySearch, setActivitySearch] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
+
+  // Safely get saved export lists from localStorage with prefix
+  const exportLists = Object.keys(localStorage)
+    .filter((key) => key.startsWith("export_"))
+    .map((key) => {
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "{}");
+        if (data.filters) return key.replace("export_", ""); // Remove prefix for display
+        return null;
+      } catch (e) {
+        console.warn(`Invalid JSON for key ${key}:`, e);
+        return null;
+      }
+    })
+    .filter((key): key is string => key !== null); // Filter out null values
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]));
@@ -190,7 +207,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     <div className="border-b border-gray-200 last:border-b-0">
       <button
         onClick={() => toggleSection(id)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors"
+        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors rounded-t-lg bg-gray-100"
       >
         <div className="flex items-center space-x-3">
           {hasCheckbox && <div className="w-4 h-4 border border-gray-300 rounded"></div>}
@@ -203,6 +220,42 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       {expandedSections.includes(id) && children && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
+
+  // Handle applying an export list and loading CSV contacts
+  const handleApplyExportList = (listName: string) => {
+    const exportKey = `export_${listName}`;
+    const exportData = JSON.parse(localStorage.getItem(exportKey) || "{}");
+    if (exportData.csv) {
+      // Decode Base64 and parse CSV
+      const csvContent = atob(exportData.csv);
+      const lines = csvContent.split("\n").filter((line) => line.trim());
+      const headers = lines[0].split(",").map(header => header.trim().toLowerCase());
+      console.log("Headers:", headers);
+      const contacts = lines.slice(1).map((line) => {
+        const values = line.split(",").map(value => value.trim());
+        console.log("Raw values:", values);
+        const contact = {};
+        headers.forEach((header, index) => {
+          if (header === "role" || header === "role") contact["role"] = values[index] || "";
+          if (header === "subrole" || header === "subrole") contact["subrole"] = values[index] || "";
+          if (header === "entreprise" || header === "entreprise") contact["entreprise"] = values[index] || "";
+        });
+        console.log("Parsed contact:", contact);
+        return contact;
+      });
+      setFilteredContacts(contacts);
+    } else if (exportData.filters) {
+      onFiltersChange(exportData.filters);
+    }
+  };
+
+  // Handle removing an export list
+  const handleRemoveExportList = (listName: string) => {
+    const exportKey = `export_${listName}`;
+    localStorage.removeItem(exportKey);
+    // Recompute exportLists to refresh the UI
+    setExpandedSections((prev) => [...prev]); // Trigger re-render
+  };
 
   return (
     <>
@@ -351,6 +404,30 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   {city}
                 </span>
               </label>
+            ))}
+          </div>
+        </FilterSection>
+
+        <FilterSection title="Listes exportées" id="export-lists">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {exportLists.map((listName) => (
+              <div
+                key={listName}
+                className="flex items-center min-w-0 flex-shrink-0 bg-blue-800 text-white rounded-full"
+              >
+                <button
+                  onClick={() => handleApplyExportList(listName)}
+                  className="flex-1 text-center px-3 py-1 focus:outline-none"
+                >
+                  {listName}
+                </button>
+                <button
+                  onClick={() => handleRemoveExportList(listName)}
+                  className="ml-2 text-white hover:text-gray-300 px-2 focus:outline-none"
+                >
+                  <X size={10} />
+                </button>
+              </div>
             ))}
           </div>
         </FilterSection>
