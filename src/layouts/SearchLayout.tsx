@@ -1,3 +1,4 @@
+// In SearchLayout.tsx
 import React from "react";
 import { Outlet } from "react-router-dom";
 import { useFilterContext } from "@contexts/FilterContext";
@@ -12,9 +13,11 @@ export const SearchLayout: React.FC = () => {
     availableActivities,
     availableCities,
     availableLegalForms,
+    availableRoles,
     employeeRange,
     revenueRange,
     ageRange,
+    handleSearchChange,
   } = useFilterContext();
 
   const handleFiltersChange = (newFilters: FilterState) => {
@@ -25,7 +28,7 @@ export const SearchLayout: React.FC = () => {
     <>
       {/* SubTopbar */}
       <SecondaryNav />
-      {/*Content */}
+      {/* Content */}
       <div className="flex flex-col md:flex-row">
         {/* Filter Sidebar */}
         <ResponsiveSidebar
@@ -34,6 +37,7 @@ export const SearchLayout: React.FC = () => {
           availableActivities={availableActivities}
           availableCities={availableCities}
           availableLegalForms={availableLegalForms}
+          availableRoles={availableRoles}
           employeeRange={employeeRange}
           revenueRange={revenueRange}
           ageRange={ageRange}
@@ -42,6 +46,7 @@ export const SearchLayout: React.FC = () => {
           cities={filters.cities}
           legalForms={filters.legalForms}
           ratingRange={filters.ratingRange}
+          roles={filters.roles}
         />
         {/* Main Content */}
         <div className="flex flex-col spec-xl:flex-row flex-1">

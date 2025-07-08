@@ -1,3 +1,4 @@
+// In FiltersPanel.tsx (or a separate RangeSlider.tsx file if modularized)
 import React, { useState, useRef, useEffect } from "react";
 import { ChevronDown, Filter, MapPin } from "lucide-react";
 import { FilterState } from "@entities/Business";
@@ -12,95 +13,93 @@ interface RangeSliderProps {
   unit?: string;
 }
 
-export const RangeSlider: React.FC<RangeSliderProps> = ({
+const RangeSlider: React.FC<RangeSliderProps> = ({
   min,
   max,
   value,
   onChange,
   formatValue,
   label,
-  unit = ''
+  unit,
 }) => {
-  const [isDragging, setIsDragging] = useState<'min' | 'max' | null>(null);
-  const sliderRef = useRef<HTMLDivElement>(null);
-
-  const getPercentage = (val: number) => ((val - min) / (max - min)) * 100;
-
-  const handleMouseDown = (type: 'min' | 'max') => (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(type);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging || !sliderRef.current) return;
-
-    const rect = sliderRef.current.getBoundingClientRect();
-    const percentage = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
-    const newValue = Math.round(min + (percentage / 100) * (max - min));
-
-    if (isDragging === 'min') {
-      onChange([Math.min(newValue, value[1]), value[1]]);
-    } else {
-      onChange([value[0], Math.max(newValue, value[0])]);
-    }
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(null);
-  };
+  const [localValue, setLocalValue] = useState<[number, number]>(value);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-    // eslint-disable-next-line
-  }, [isDragging, value]);
+    setLocalValue(value);
+  }, [value]);
 
-  const minPercentage = getPercentage(value[0]);
-  const maxPercentage = getPercentage(value[1]);
+  const handleChange = (newValue: [number, number]) => {
+    setLocalValue(newValue);
+    onChange(newValue);
+  };
+
+  const handleMouseDown = (index: 0 | 1) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    const track = trackRef.current;
+    if (!track) return;
+
+    const rect = track.getBoundingClientRect();
+    const updateValue = (clientX: number) => {
+      const percentage = (clientX - rect.left) / rect.width;
+      let newVal = Math.round(min + percentage * (max - min));
+      newVal = Math.max(min, Math.min(max, newVal));
+
+      const newValues: [number, number] = [...localValue];
+      newValues[index] = newVal;
+
+      if (index === 0 && newVal > localValue[1]) {
+        newValues[1] = newVal;
+      } else if (index === 1 && newVal < localValue[0]) {
+        newValues[0] = newVal;
+      }
+
+      handleChange([Math.min(newValues[0], newValues[1]), Math.max(newValues[0], newValues[1])]);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => updateValue(e.clientX);
+    const handleMouseUp = () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    updateValue(e.clientX);
+  };
+
+  const percentageLeft = ((localValue[0] - min) / (max - min)) * 100;
+  const percentageRight = ((localValue[1] - min) / (max - min)) * 100;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-gray-600 font-medium">{label}</span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <span className="text-xs text-gray-500 w-8 text-right">
-          {formatValue ? formatValue(min) : min}
-        </span>
-        <div className="flex-1 relative" ref={sliderRef}>
-          <div className="h-2 bg-gray-200 rounded-full relative">
-            <div 
-              className="h-2 bg-[#E95C41] rounded-full absolute"
-              style={{
-                left: `${minPercentage}%`,
-                width: `${maxPercentage - minPercentage}%`
-              }}
-            />
-            <div 
-              className="absolute w-3 h-3 bg-[#E95C41] rounded-full transform -translate-x-1/2 -translate-y-0.5 cursor-pointer hover:bg-orange-600 transition-colors"
-              style={{ left: `${minPercentage}%`, top: '50%' }}
-              onMouseDown={handleMouseDown('min')}
-            />
-            <div 
-              className="absolute w-3 h-3 bg-[#E95C41] rounded-full transform -translate-x-1/2 -translate-y-0.5 cursor-pointer hover:bg-orange-600 transition-colors"
-              style={{ left: `${maxPercentage}%`, top: '50%' }}
-              onMouseDown={handleMouseDown('max')}
-            />
-          </div>
-        </div>
-        <span className="text-xs text-gray-500 w-12">
-          {formatValue ? formatValue(max) : max}
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm text-gray-600">
+        <span>{label}</span>
+        <span>
+          {formatValue ? formatValue(localValue[0]) : localValue[0]}
+          {unit && ` ${unit}`} -{" "}
+          {formatValue ? formatValue(localValue[1]) : localValue[1]}
+          {unit && ` ${unit}`}
         </span>
       </div>
-      <div className="flex items-center justify-between mt-1 text-xs text-gray-600">
-        <span>{formatValue ? formatValue(value[0]) : value[0]}{unit}</span>
-        <span>{formatValue ? formatValue(value[1]) : value[1]}{unit}</span>
+      <div className="relative h-2 bg-gray-200 rounded" ref={trackRef}>
+        <div
+          className="absolute h-2 bg-orange-500 rounded"
+          style={{
+            left: `${percentageLeft}%`,
+            width: `${percentageRight - percentageLeft}%`,
+          }}
+        ></div>
+        <div
+          className="absolute w-4 h-4 bg-orange-500 rounded-full -translate-x-1/2 -translate-y-1 cursor-pointer"
+          style={{ left: `${percentageLeft}%`, top: "50%" }}
+          onMouseDown={handleMouseDown(0)}
+        ></div>
+        <div
+          className="absolute w-4 h-4 bg-orange-500 rounded-full -translate-x-1/2 -translate-y-1 cursor-pointer"
+          style={{ left: `${percentageRight}%`, top: "50%" }}
+          onMouseDown={handleMouseDown(1)}
+        ></div>
       </div>
     </div>
   );
@@ -112,6 +111,7 @@ export interface FiltersPanelProps extends FilterState {
   availableActivities: string[];
   availableCities: string[];
   availableLegalForms: string[];
+  availableRoles: string[];
   employeeRange: [number, number];
   revenueRange: [number, number];
   ageRange: [number, number];
@@ -123,12 +123,14 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   availableActivities,
   availableCities,
   availableLegalForms,
+  availableRoles,
   employeeRange,
   revenueRange,
   ageRange,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures", "roles"]);
   const [activitySearch, setActivitySearch] = useState("");
+  const [roleSearch, setRoleSearch] = useState("");
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]));
@@ -159,8 +161,19 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     updateFilters({ legalForms: newForms });
   };
 
+  const toggleRole = (role: string) => {
+    const newRoles = filters.roles.includes(role)
+      ? filters.roles.filter((r) => r !== role)
+      : [...filters.roles, role];
+    updateFilters({ roles: newRoles });
+  };
+
   const filteredActivities = availableActivities.filter((activity) =>
     activity.toLowerCase().includes(activitySearch.toLowerCase())
+  );
+
+  const filteredRoles = availableRoles.filter((role) =>
+    role.toLowerCase().includes(roleSearch.toLowerCase())
   );
 
   const FilterSection = ({
@@ -190,13 +203,13 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       {expandedSections.includes(id) && children && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
+
   return (
     <>
-      {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-600" />
-          <span className="font-semibold text-gray-900">Filtres Entreprises</span>
+          <span className="font-semibold text-gray-900">Filtres</span>
           <button
             onClick={() =>
               onFiltersChange({
@@ -208,6 +221,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 cities: [],
                 legalForms: [],
                 ratingRange: [0, 5],
+                roles: [],
               })
             }
             className="ml-auto text-xs text-orange-600 hover:text-orange-700 transition-colors"
@@ -217,7 +231,6 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         </div>
       </div>
 
-      {/* Filter Sections */}
       <div>
         <FilterSection title="Activités" id="activities">
           <div className="space-y-4">
@@ -244,6 +257,31 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           </div>
         </FilterSection>
 
+        <FilterSection title="Rôles" id="roles">
+          <div className="space-y-4">
+            <input
+              type="text"
+              placeholder="Rechercher un rôle..."
+              value={roleSearch}
+              onChange={(e) => setRoleSearch(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded text-sm"
+            />
+            <div className="max-h-48 overflow-y-auto space-y-2">
+              {filteredRoles.map((role) => (
+                <label key={role} className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={filters.roles.includes(role)}
+                    onChange={() => toggleRole(role)}
+                    className="w-4 h-4 text-orange-600 rounded"
+                  />
+                  <span className="text-gray-700">{role}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        </FilterSection>
+
         <FilterSection title="Chiffres clés" id="key-figures">
           <div className="space-y-6">
             <RangeSlider
@@ -254,7 +292,6 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               label="Âge de l'entreprise"
               unit=" ans"
             />
-
             <RangeSlider
               min={employeeRange[0]}
               max={employeeRange[1]}
@@ -262,7 +299,6 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               onChange={(value) => updateFilters({ employeeRange: value })}
               label="Nombre d'employés"
             />
-
             <RangeSlider
               min={revenueRange[0]}
               max={revenueRange[1]}
@@ -272,7 +308,6 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               formatValue={(v) => `${Math.round(v / 1000)}k`}
               unit="€"
             />
-
             <RangeSlider
               min={0}
               max={5}
@@ -321,14 +356,14 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         </FilterSection>
       </div>
 
-      {/* Active Filters Summary */}
-      {(filters.activities.length > 0 || filters.cities.length > 0 || filters.legalForms.length > 0) && (
+      {(filters.activities.length > 0 || filters.cities.length > 0 || filters.legalForms.length > 0 || filters.roles.length > 0) && (
         <div className="p-4 bg-orange-50 border-t border-orange-200">
           <div className="text-sm font-medium text-orange-800 mb-2">Filtres actifs:</div>
           <div className="space-y-1 text-xs text-orange-700">
             {filters.activities.length > 0 && <div>• {filters.activities.length} activité(s)</div>}
             {filters.cities.length > 0 && <div>• {filters.cities.length} ville(s)</div>}
             {filters.legalForms.length > 0 && <div>• {filters.legalForms.length} forme(s) juridique(s)</div>}
+            {filters.roles.length > 0 && <div>• {filters.roles.length} rôle(s)</div>}
           </div>
         </div>
       )}
