@@ -1,18 +1,21 @@
-import React from "react";
-import { Search } from "lucide-react";
-import { ScrollableNav } from "@shared/components/Header/ScrollableNav";
+import React from 'react';
+import { Search } from 'lucide-react';
+import { ScrollableNav } from '@shared/components/Header/ScrollableNav';
+import { useFilterContext } from '@contexts/FilterContext';
 
 export const SecondaryNav: React.FC = () => {
+  const { filters, handleSearchChange } = useFilterContext();
+
   return (
     <div className="flex flex-col lg:flex-row items-center justify-between space-y-3 lg:space-y-0 p-3 lg:p-1 bg-white border-b border-gray-200">
       <div className="mx-auto lg:mx-0 max-w-full">
         <ScrollableNav
           links={[
-            { label: "Entreprises", href: "/recherche/entreprises" },
-            { label: "Contacts", href: "/recherche/contact" },
-            { label: "Listes", href: "/recherche/listes" },
-            { label: "Exports", href: "/recherche/export" },
-            { label: "Mes Recherches", href: "/recherche/mes-recherches" },
+            { label: 'Entreprises', href: '/recherche/entreprises' },
+            { label: 'Contacts', href: '/recherche/contact' },
+            { label: 'Listes', href: '/recherche/listes' },
+            { label: 'Exports', href: '/recherche/export' },
+            { label: 'Mes Recherches', href: '/recherche/mes-recherches' },
           ]}
           activeHref={window.location.pathname}
         />
@@ -23,6 +26,8 @@ export const SecondaryNav: React.FC = () => {
           <input
             type="text"
             placeholder="Je recherche une entreprise, un dirigeant..."
+            value={filters.searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
           />
         </div>

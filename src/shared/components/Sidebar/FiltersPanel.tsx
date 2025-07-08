@@ -130,17 +130,32 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   ageRange,
 }) => {
   const { setFilteredContacts } = useFilterContext();
-  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures", "roles", "export-lists"]);
+  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures", "roles", "export-lists", "exported-filters-2"]);
   const [activitySearch, setActivitySearch] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
 
-  // Safely get saved export lists from localStorage with prefix
+  // Existing export lists (for old filter logic)
   const exportLists = Object.keys(localStorage)
     .filter((key) => key.startsWith("export_"))
     .map((key) => {
       try {
         const data = JSON.parse(localStorage.getItem(key) || "{}");
         if (data.filters) return key.replace("export_", ""); // Remove prefix for display
+        return null;
+      } catch (e) {
+        console.warn(`Invalid JSON for key ${key}:`, e);
+        return null;
+      }
+    })
+    .filter((key): key is string => key !== null); // Filter out null values
+
+  // New export lists for CSV exports
+  const exportedFilters2 = Object.keys(localStorage)
+    .filter((key) => key.startsWith("export_"))
+    .map((key) => {
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "{}");
+        if (data.originalName) return data.originalName; // Use the original name from the export
         return null;
       } catch (e) {
         console.warn(`Invalid JSON for key ${key}:`, e);
@@ -221,8 +236,25 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     </div>
   );
 
-  // Handle applying an export list and loading CSV contacts
+  // Handle applying an export list (old logic)
   const handleApplyExportList = (listName: string) => {
+    const exportKey = `export_${listName}`;
+    const exportData = JSON.parse(localStorage.getItem(exportKey) || "{}");
+    if (exportData.filters) {
+      onFiltersChange(exportData.filters);
+    }
+  };
+
+  // Handle removing an export list (old logic)
+  const handleRemoveExportList = (listName: string) => {
+    const exportKey = `export_${listName}`;
+    localStorage.removeItem(exportKey);
+    // Recompute exportLists to refresh the UI
+    setExpandedSections((prev) => [...prev]); // Trigger re-render
+  };
+
+  // Handle applying an exported filter 2 (new CSV logic)
+  const handleApplyExportedFilter2 = (listName: string) => {
     const exportKey = `export_${listName}`;
     const exportData = JSON.parse(localStorage.getItem(exportKey) || "{}");
     if (exportData.csv) {
@@ -244,16 +276,14 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         return contact;
       });
       setFilteredContacts(contacts);
-    } else if (exportData.filters) {
-      onFiltersChange(exportData.filters);
     }
   };
 
-  // Handle removing an export list
-  const handleRemoveExportList = (listName: string) => {
+  // Handle removing an exported filter 2
+  const handleRemoveExportedFilter2 = (listName: string) => {
     const exportKey = `export_${listName}`;
     localStorage.removeItem(exportKey);
-    // Recompute exportLists to refresh the UI
+    // Recompute exportedFilters2 to refresh the UI
     setExpandedSections((prev) => [...prev]); // Trigger re-render
   };
 
@@ -423,6 +453,30 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 </button>
                 <button
                   onClick={() => handleRemoveExportList(listName)}
+                  className="ml-2 text-white hover:text-gray-300 px-2 focus:outline-none"
+                >
+                  <X size={10} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </FilterSection>
+
+        <FilterSection title="Filtres exportés 2" id="exported-filters-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {exportedFilters2.map((listName) => (
+              <div
+                key={listName}
+                className="flex items-center min-w-0 flex-shrink-0 bg-green-800 text-white rounded-full"
+              >
+                <button
+                  onClick={() => handleApplyExportedFilter2(listName)}
+                  className="flex-1 text-center px-3 py-1 focus:outline-none"
+                >
+                  {listName}
+                </button>
+                <button
+                  onClick={() => handleRemoveExportedFilter2(listName)}
                   className="ml-2 text-white hover:text-gray-300 px-2 focus:outline-none"
                 >
                   <X size={10} />

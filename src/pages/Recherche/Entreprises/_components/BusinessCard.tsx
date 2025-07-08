@@ -4,11 +4,52 @@ import { Business } from '@entities/Business';
 
 interface BusinessCardProps {
   company: Business;
+  isListView?: boolean; // Prop optionnelle pour basculer entre vue carte et liste
+  onSelectionChange?: (businessId: string, isChecked: boolean) => void;
 }
 
-export const BusinessCard: React.FC<BusinessCardProps> = ({ company }) => {
+export const BusinessCard: React.FC<BusinessCardProps> = ({ company, isListView = false, onSelectionChange }) => {
   const currentYear = new Date().getFullYear();
   const companyAge = company.foundedYear ? currentYear - company.foundedYear : null;
+
+  if (isListView) {
+    return (
+      <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200 flex items-center gap-3">
+        <input
+          type="checkbox"
+          className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+          onChange={(e) => onSelectionChange && onSelectionChange(company.id, e.target.checked)}
+        />
+        <div className="flex-shrink-0">
+          {company.logo ? (
+            <img 
+              src={company.logo} 
+              alt={`${company.name} logo`}
+              className="w-12 h-12 rounded-lg object-cover border border-gray-200"
+            />
+          ) : (
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <Building className="w-6 h-6 text-white" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <h3 className="text-lg font-bold text-gray-900 leading-tight truncate">
+              {company.name}
+            </h3>
+            {company.rating && (
+              <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                <span className="text-sm text-gray-600">{company.rating}</span>
+              </div>
+            )}
+          </div>
+          <p className="text-sm text-blue-600 mt-1">{company.activity}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
