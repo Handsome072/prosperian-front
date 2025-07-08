@@ -44,7 +44,7 @@ export const SearchLayout: React.FC = () => {
           ratingRange={filters.ratingRange}
         />
         {/* Main Content */}
-        <div className="flex flex-col md:flex-row">
+        <div className="flex flex-col spec-xl:flex-row flex-1">
           <Outlet />
         </div>
       </div>
