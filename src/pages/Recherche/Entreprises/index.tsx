@@ -14,7 +14,14 @@ export const Entreprises = () => {
       setShowCheckboxOverride(true);
     };
     window.addEventListener('updateBusinessList', handler);
-    return () => window.removeEventListener('updateBusinessList', handler);
+    const handlerShowCheckbox = (e) => {
+      setShowCheckboxOverride(!!e.detail);
+    };
+    window.addEventListener('updateBusinessListShowCheckbox', handlerShowCheckbox);
+    return () => {
+      window.removeEventListener('updateBusinessList', handler);
+      window.removeEventListener('updateBusinessListShowCheckbox', handlerShowCheckbox);
+    };
   }, []);
 
   const businessesToShow = businessesOverride || filteredBusinesses;
