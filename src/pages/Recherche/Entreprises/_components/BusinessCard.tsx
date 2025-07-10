@@ -15,7 +15,7 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ company, id, showChe
   const companyAge = company.foundedYear ? currentYear - company.foundedYear : null;
 
   if (showCheckbox) {
-    // Mode liste avec checkbox (ligne)
+    // Mode liste avec checkbox (t lignes)
     return (
       <div className="p-3 hover:bg-gray-50 flex items-start justify-between">
         <div className="flex items-center gap-2">
