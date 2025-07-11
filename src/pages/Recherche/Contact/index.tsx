@@ -34,14 +34,17 @@ const Contact: React.FC = () => {
 
   // Charger le compteur depuis localStorage au montage
   useEffect(() => {
-    setStoredContactsCount(getSelectedContactsCount());
-    setStoredEnterprisesCount(getSelectedEnterprisesCount());
+    const contactsCount = getSelectedContactsCount();
+    const enterprisesCount = getSelectedEnterprisesCount();
+    setStoredContactsCount(isNaN(contactsCount) ? 0 : contactsCount);
+    setStoredEnterprisesCount(isNaN(enterprisesCount) ? 0 : enterprisesCount);
   }, []);
 
   // Mettre à jour le localStorage quand selectedContacts change
   useEffect(() => {
-    setSelectedContactsCount(selectedContacts.size);
-    setStoredContactsCount(selectedContacts.size);
+    const count = selectedContacts.size;
+    setSelectedContactsCount(count);
+    setStoredContactsCount(count);
   }, [selectedContacts.size]);
 
   // Handle checkbox change for individual contacts

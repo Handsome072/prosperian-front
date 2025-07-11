@@ -38,14 +38,17 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
 
   // Charger les compteurs depuis localStorage au montage
   React.useEffect(() => {
-    setStoredEnterprisesCount(getSelectedEnterprisesCount());
-    setStoredContactsCount(getSelectedContactsCount());
+    const enterprisesCount = getSelectedEnterprisesCount();
+    const contactsCount = getSelectedContactsCount();
+    setStoredEnterprisesCount(isNaN(enterprisesCount) ? 0 : enterprisesCount);
+    setStoredContactsCount(isNaN(contactsCount) ? 0 : contactsCount);
   }, []);
 
   // Mettre à jour le localStorage quand selectedBusinesses change
   React.useEffect(() => {
-    setSelectedEnterprisesCount(selectedBusinesses.size);
-    setStoredEnterprisesCount(selectedBusinesses.size);
+    const count = selectedBusinesses.size;
+    setSelectedEnterprisesCount(count);
+    setStoredEnterprisesCount(count);
   }, [selectedBusinesses.size]);
 
   const handleCheckboxChange = (id: number) => {
