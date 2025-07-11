@@ -36,14 +36,24 @@ const Lists: React.FC = () => {
         onButtonClick={() => console.log("Créer une liste")}
       />
 
-      <SectionTableCard
-        title="Mes listes"
-        columns={myListColumns}
-        items={myListItems}
-        showExport={false}
-        emptyMessage="Vous n’avez créé aucune liste."
-        onExportSelect={() => {}}
-      />
+      <div className="relative">
+        <SectionTableCard
+          title={
+            <span>Mes listes</span>
+          }
+          columns={myListColumns}
+          items={myListItems}
+          showExport={false}
+          emptyMessage="Vous n’avez créé aucune liste."
+          onExportSelect={() => {}}
+        />
+        <button
+          className="absolute top-0 right-0 mt-2 mr-8 inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full text-sm z-10"
+          onClick={() => console.log('Nouvelle liste')}
+        >
+          Nouvelle liste
+        </button>
+      </div>
 
       <SectionTableCard
         title="Listes partagées"
