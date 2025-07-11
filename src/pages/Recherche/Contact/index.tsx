@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Building, Linkedin } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
 import { saveAs } from "file-saver";
+import ExportModalGlobal from "../../../components/ExportModalGlobal";
 
 const Contact: React.FC = () => {
   const {
@@ -15,7 +16,6 @@ const Contact: React.FC = () => {
   } = useFilterContext();
   const [selectedContacts, setSelectedContacts] = useState<Set<number>>(new Set());
   const [showExportPopup, setShowExportPopup] = useState(false);
-  const [exportListName, setExportListName] = useState("");
   const [displayLimit, setDisplayLimit] = useState(10);
   const [showLimitInput, setShowLimitInput] = useState(false);
   const [currentSort, setCurrentSort] = useState("Pertinence");
@@ -40,56 +40,11 @@ const Contact: React.FC = () => {
     else alert("No contacts selected for export.");
   };
 
-  // Handle export confirmation with CSV and localStorage
+  // Nouvelle fonction d'export (à adapter selon besoin)
   const handleConfirmExport = () => {
-    const selected = Array.from(selectedContacts).map((index) => filteredContacts[index]);
-    if (exportListName.trim() && selected.length > 0) {
-      // Generate CSV content
-      const csvContent = [
-        "Role,Subrole,Entreprise",
-        ...selected.map((contact) => `${contact.role || ""},${contact.subrole || ""},${contact.entreprise || ""}`),
-      ].join("\n");
-
-      // Convert to Base64
-      const base64Content = btoa(csvContent);
-
-      // Store in localStorage with prefix and filters
-      const exportKey = `export_${exportListName}`;
-      const exportData = {
-        csv: base64Content,
-        filters: filters,
-      };
-      localStorage.setItem(exportKey, JSON.stringify(exportData));
-
-      // Save as CSV file
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      saveAs(blob, `${exportListName}.csv`);
-
-      setShowExportPopup(false);
-      setExportListName("");
-      setSelectedContacts(new Set());
-    } else {
-      alert("Please enter a valid export list name.");
-    }
-  };
-
-  // Handle popup close
-  const handleClosePopup = () => {
+    // ... logique d'export CSV ou API ...
     setShowExportPopup(false);
-    setExportListName("");
-  };
-
-  // Handle limit input confirmation
-  const handleConfirmLimit = () => {
-    const limit = parseInt(displayLimit.toString(), 10);
-    if (!isNaN(limit) && limit > 0) setShowLimitInput(false);
-    else alert("Please enter a valid number of contacts.");
-  };
-
-  // Handle limit input cancellation
-  const handleCancelLimit = () => {
-    setShowLimitInput(false);
-    setDisplayLimit(10);
+    setSelectedContacts(new Set());
   };
 
   // Handle sort change and update currentSort
@@ -98,6 +53,18 @@ const Contact: React.FC = () => {
     setSort(sortValue);
     setCurrentSort(sortValue);
     setSelectedContacts(new Set());
+  };
+
+  // Statistiques pour le popup
+  const statsEntreprise = {
+    total: headerStats.totalEntreprises || 0,
+  };
+  const statsContact = {
+    total: headerStats.totalContacts || 0,
+    entreprises: headerStats.totalEntreprises || 0,
+    contactsDirectEmail: headerStats.contactsDirects.avecEmail || 0,
+    contactsDirectLinkedin: headerStats.contactsDirects.avecLinkedIn || 0,
+    contactsGeneriquesTel: headerStats.contactsGeneriques.avecTelephone || 0,
   };
 
   return (
@@ -177,13 +144,13 @@ const Contact: React.FC = () => {
           />
           <button
             className="px-2 py-1 bg-green-500 text-white rounded text-sm"
-            onClick={handleConfirmLimit}
+            onClick={() => { const limit = parseInt(displayLimit.toString(), 10); if (!isNaN(limit) && limit > 0) setShowLimitInput(false); else alert("Please enter a valid number of contacts."); }}
           >
             Ok
           </button>
           <button
             className="px-2 py-1 bg-gray-300 rounded text-sm"
-            onClick={handleCancelLimit}
+            onClick={() => { setShowLimitInput(false); setDisplayLimit(10); }}
           >
             Annuler
           </button>
@@ -281,35 +248,16 @@ const Contact: React.FC = () => {
         </div>
       </div>
 
-      {/* Export Popup */}
+      {/* Nouveau Export Popup */}
       {showExportPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-            <h2 className="text-lg font-semibold mb-4">Nom de la liste d'exportation</h2>
-            <input
-              type="text"
-              className="w-full border rounded px-3 py-2 mb-4"
-              value={exportListName}
-              onChange={(e) => setExportListName(e.target.value)}
-              placeholder="Entrez le nom de la liste"
-              autoFocus
-            />
-            <div className="flex justify-end gap-4">
-              <button
-                className="px-4 py-2 bg-gray-300 rounded"
-                onClick={handleClosePopup}
-              >
-                Annuler
-              </button>
-              <button
-                className="px-4 py-2 bg-green-500 text-white rounded"
-                onClick={handleConfirmExport}
-              >
-                Exporter
-              </button>
-            </div>
-          </div>
-        </div>
+        <ExportModalGlobal
+          mode="contact"
+          selectedCount={selectedContacts.size}
+          statsEntreprise={statsEntreprise}
+          statsContact={statsContact}
+          onClose={() => setShowExportPopup(false)}
+          onExport={handleConfirmExport}
+        />
       )}
     </div>
   );
