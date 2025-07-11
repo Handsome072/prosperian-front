@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SectionCard from "@shared/components/SectionCard/SectionCard";
 import SectionTableCard from "@shared/components/SectionCard/SectionTableCard";
+import Papa from "papaparse";
+import { Building, User, MoreVertical, Settings, Trash2 } from 'lucide-react';
 
 const Lists: React.FC = () => {
   const [showNewListModal, setShowNewListModal] = useState(false);
@@ -8,6 +10,20 @@ const Lists: React.FC = () => {
   const [listType, setListType] = useState("Entreprise (SIREN)");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
+  const [myListItems, setMyListItems] = useState<React.ReactNode[][]>([]);
+  const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (menuOpenIndex === null) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpenIndex(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpenIndex]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -22,8 +38,61 @@ const Lists: React.FC = () => {
     }
   };
 
-  const myListColumns = ["Type", "Nom", "Éléments", "Créée le"];
-  const myListItems: React.ReactNode[][] = [];
+  const handleCreateList = () => {
+    if (!file || !listName) return;
+    Papa.parse(file, {
+      complete: (results) => {
+        const data = results.data as string[][];
+        // Ignore empty lines
+        const filtered = data.filter(row => Array.isArray(row) && row.some(cell => cell && cell.toString().trim() !== ""));
+        const count = filtered.length > 1 ? filtered.length - 1 : 0; // remove header
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("fr-FR") + ' ' + now.toLocaleTimeString("fr-FR");
+        setMyListItems(prev => [
+          [
+            listType.includes('Entreprise') ? <Building className="w-5 h-5 text-gray-400" /> : <User className="w-5 h-5 text-gray-400" />,
+            listName,
+            count,
+            dateStr,
+            dateStr,
+            (_, idx) => (
+              <div className="relative" ref={menuOpenIndex === idx ? menuRef : undefined}>
+                <button onClick={() => setMenuOpenIndex(idx === menuOpenIndex ? null : idx)} className="p-2"><MoreVertical className="w-5 h-5 text-gray-400" /></button>
+                {menuOpenIndex === idx && (
+                  <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-20">
+                    <button className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 gap-2" onClick={() => {/* TODO: handle config */}}>
+                      <Settings className="w-4 h-4 text-gray-500" />
+                      Configurer
+                    </button>
+                    <button className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-500 gap-2" onClick={() => handleDeleteList(idx)}>
+                      <Trash2 className="w-4 h-4" />
+                      Supprimer
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          ],
+          ...prev
+        ]);
+        setShowNewListModal(false);
+        setListName("");
+        setFile(null);
+        setFileError("");
+      },
+      error: () => {
+        setFileError("Erreur lors de la lecture du fichier");
+        console.log("Erreur lors de la lecture du fichier CSV");
+      }
+    });
+  };
+
+  const handleDeleteList = (idx: number) => {
+    setMyListItems(prev => prev.filter((_, i) => i !== idx));
+    setMenuOpenIndex(null);
+  };
+
+  const myListColumns = ["Type", "Nom", "Éléments", "Créée le", "Modifiée le", ""];
 
   const sharedListColumns = ["Type", "Nom", "Éléments", "Créée le", "Modifiée le"];
   const sharedListItems: React.ReactNode[][] = [
@@ -64,7 +133,7 @@ const Lists: React.FC = () => {
                 <input
                   id="file-upload"
                   type="file"
-                  accept=".csv,.xlsx"
+                  accept=".csv"
                   className="hidden"
                   onChange={handleFileChange}
                 />
@@ -73,7 +142,7 @@ const Lists: React.FC = () => {
             </div>
             <div className="flex items-center text-xs text-gray-500 mt-1 mb-4">
               <span className="text-orange-500 mr-1">&#9888;</span>
-              Formats supportés: CSV et XLSX
+              Formats supportés: CSV
             </div>
             {fileError && <div className="text-xs text-red-500 mb-2">{fileError}</div>}
             <div className="flex justify-between mt-6">
@@ -86,7 +155,7 @@ const Lists: React.FC = () => {
               <button
                 className="px-6 py-2 rounded-full bg-gradient-to-r from-orange-400 to-[#E95C41] text-white font-medium hover:opacity-90 disabled:opacity-50"
                 disabled={!listName || !file}
-                onClick={() => {/* Créer la liste ici */}}
+                onClick={handleCreateList}
               >
                 Créer
               </button>
@@ -120,7 +189,10 @@ const Lists: React.FC = () => {
             <span>Mes listes</span>
           }
           columns={myListColumns}
-          items={myListItems}
+          items={myListItems.map((row, idx) => {
+            // inject the menu with correct index
+            return row.map((cell, i) => (typeof cell === 'function' ? cell(null, idx) : cell));
+          })}
           showExport={false}
           emptyMessage="Vous n’avez créé aucune liste."
           onExportSelect={() => {}}
