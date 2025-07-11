@@ -27,6 +27,8 @@ export interface BusinessOptionsProps {
   layout: 'list' | 'grid';
   setLayout: (layout: 'list' | 'grid') => void;
   selectedIds: number[]; // <-- Ajout de la prop
+  storedEnterprisesCount?: number; // Compteur depuis localStorage
+  storedContactsCount?: number; // Compteur contacts depuis localStorage
 }
 
 const BusinessOptions: React.FC<BusinessOptionsProps> = ({
@@ -43,6 +45,8 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   layout,
   setLayout,
   selectedIds = [], // valeur par défaut ajoutée
+  storedEnterprisesCount = 0, // valeur par défaut ajoutée
+  storedContactsCount = 0, // valeur par défaut ajoutée
 }) => {
   // Récupérer les exports BusinessCard (base64 string, pas JSON)
   const exportBusinessCardLists = Object.keys(localStorage)
@@ -166,7 +170,7 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
               <ExportModalGlobal
                 mode="entreprise"
                 selectedCount={selectedCount}
-                statsEntreprise={{ total: 12416180 }} // à remplacer par la vraie valeur si besoin
+                statsEntreprise={{ total: 12416180 }} // valeur globale mockée
                 statsContact={{
                   total: 12224982,
                   entreprises: 1149984,
@@ -174,6 +178,8 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
                   contactsDirectLinkedin: 11914156,
                   contactsGeneriquesTel: 620018,
                 }}
+                selectedEntrepriseListsCount={storedEnterprisesCount} // Nombre d'entreprises sélectionnées depuis localStorage
+                selectedContactListsCount={storedContactsCount} // Nombre de contacts sélectionnés depuis localStorage
                 onClose={() => setShowExportModal(false)}
                 onExport={onExport}
               />

@@ -14,6 +14,8 @@ interface ExportModalGlobalProps {
     contactsDirectLinkedin: number;
     contactsGeneriquesTel: number;
   };
+  selectedEntrepriseListsCount: number; // Ajouté
+  selectedContactListsCount: number;    // Ajouté
   onClose: () => void;
   onExport: () => void;
 }
@@ -23,6 +25,8 @@ const ExportModalGlobal: React.FC<ExportModalGlobalProps> = ({
   selectedCount,
   statsEntreprise,
   statsContact,
+  selectedEntrepriseListsCount, // Ajouté
+  selectedContactListsCount,    // Ajouté
   onClose,
   onExport,
 }) => {
@@ -63,6 +67,9 @@ const ExportModalGlobal: React.FC<ExportModalGlobalProps> = ({
             <div className="mt-6 text-center">
               <div className="text-[15px] text-gray-500 mb-1">Entreprises</div>
               <div className="text-[26px] font-bold tracking-tight">{statsEntreprise.total.toLocaleString()}</div>
+              <div className="text-[13px] text-gray-500 mt-1">
+                {selectedEntrepriseListsCount} liste{selectedEntrepriseListsCount > 1 ? "s" : ""} sélectionnée{selectedEntrepriseListsCount > 1 ? "s" : ""}
+              </div>
             </div>
           </div>
           {/* Contacts */}
@@ -81,6 +88,9 @@ const ExportModalGlobal: React.FC<ExportModalGlobalProps> = ({
             <div className="mt-2 text-center w-full">
               <div className="text-[15px] text-gray-500 mb-1">Sélectionnés</div>
               <div className="text-[26px] font-bold text-orange-600 mb-2">{selectedCount}</div>
+              <div className="text-[13px] text-gray-500 mt-1">
+                {selectedContactListsCount} liste{selectedContactListsCount > 1 ? "s" : ""} sélectionnée{selectedContactListsCount > 1 ? "s" : ""}
+              </div>
               <div className="flex flex-col gap-1 text-[13px] text-gray-600 w-full">
                 <div className="flex items-center justify-center gap-1">
                   <span>Contacts <span className="italic">(estimés)</span></span>

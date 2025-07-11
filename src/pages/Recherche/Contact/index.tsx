@@ -3,6 +3,13 @@ import { Building, Linkedin } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
 import { saveAs } from "file-saver";
 import ExportModalGlobal from "../../../components/ExportModalGlobal";
+import { 
+  getSelectedContactsCount, 
+  setSelectedContactsCount, 
+  resetSelectedContactsCount, 
+  getSelectedEnterprisesCount 
+} from "../../../utils/localStorageCounters";
+import { calculateSelectedContactStats } from "../../../utils/selectionStats";
 
 const Contact: React.FC = () => {
   const {
@@ -19,10 +26,24 @@ const Contact: React.FC = () => {
   const [displayLimit, setDisplayLimit] = useState(10);
   const [showLimitInput, setShowLimitInput] = useState(false);
   const [currentSort, setCurrentSort] = useState("Pertinence");
+  const [storedContactsCount, setStoredContactsCount] = useState(0);
+  const [storedEnterprisesCount, setStoredEnterprisesCount] = useState(0);
 
   useEffect(() => {
     console.log("Filtered Contacts:", filteredContacts); // Debug: Check rendered data
   }, [filteredContacts]);
+
+  // Charger le compteur depuis localStorage au montage
+  useEffect(() => {
+    setStoredContactsCount(getSelectedContactsCount());
+    setStoredEnterprisesCount(getSelectedEnterprisesCount());
+  }, []);
+
+  // Mettre à jour le localStorage quand selectedContacts change
+  useEffect(() => {
+    setSelectedContactsCount(selectedContacts.size);
+    setStoredContactsCount(selectedContacts.size);
+  }, [selectedContacts.size]);
 
   // Handle checkbox change for individual contacts
   const handleCheckboxChange = (index: number) => {
@@ -53,9 +74,10 @@ const Contact: React.FC = () => {
     setSort(sortValue);
     setCurrentSort(sortValue);
     setSelectedContacts(new Set());
+    resetSelectedContactsCount(); // Reset le compteur localStorage
   };
 
-  // Statistiques pour le popup
+  // Statistiques pour le popup (version globale)
   const statsEntreprise = {
     total: headerStats.totalEntreprises || 0,
   };
@@ -255,6 +277,8 @@ const Contact: React.FC = () => {
           selectedCount={selectedContacts.size}
           statsEntreprise={statsEntreprise}
           statsContact={statsContact}
+          selectedEntrepriseListsCount={storedEnterprisesCount} // Nombre d'entreprises sélectionnées depuis localStorage
+          selectedContactListsCount={storedContactsCount} // Nombre de contacts sélectionnés depuis localStorage
           onClose={() => setShowExportPopup(false)}
           onExport={handleConfirmExport}
         />
