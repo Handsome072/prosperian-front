@@ -23,7 +23,7 @@ h6 {
   display: none;
 }
 
-.text-common-blue {
+p, .text-common-blue {
   color: #212555;
 }
 

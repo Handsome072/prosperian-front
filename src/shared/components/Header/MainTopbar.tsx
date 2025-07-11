@@ -1,9 +1,25 @@
 import React, { useState } from "react";
 import { Sun, BookOpen, MessageCircle, User, Menu, X } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useSearchLayoutContext } from "@contexts/SearchLayoutContext";
 
+const NAV_ITEMS: { label: string; to: string }[] = [
+  { label: "Recherche", to: "/recherche" },
+  { label: "Enrichissement", to: "/enrichissement" },
+  { label: "Surveillance", to: "#" },
+  { label: "Veille", to: "#" },
+];
 
 export const MainTopbar: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const { pathname } = useLocation();
+  const { setShowSidebar } = useSearchLayoutContext();
+
+  const handleSidebar = (href: string) => {
+    if (href === "/recherche") {
+      setShowSidebar(true);
+    }
+  };
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -18,7 +34,7 @@ export const MainTopbar: React.FC = () => {
               </span>
             </div>
             <div className="hidden lg:flex items-center space-x-8 text-white">
-              <MenuNavLinks />
+              <MenuNavLinks pathname={pathname} handleSidebar={handleSidebar} />
             </div>
           </div>
 
@@ -51,7 +67,7 @@ export const MainTopbar: React.FC = () => {
           </button>
         </div>
         <nav className="flex flex-col items-center space-y-6 mt-8">
-          <MenuNavLinks vertical />
+          <MenuNavLinks vertical pathname={pathname} handleSidebar={handleSidebar} />
           <IconButtons vertical />
         </nav>
       </aside>
@@ -59,20 +75,29 @@ export const MainTopbar: React.FC = () => {
   );
 };
 
-const MenuNavLinks: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
+const MenuNavLinks: React.FC<{ vertical?: boolean; pathname: string; handleSidebar: (to: string) => void }> = ({
+  vertical,
+  pathname,
+  handleSidebar,
+}) => (
   <div className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-8"}>
     <nav className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-6"}>
-      {["Recherche", "Enrichissement", "Surveillance", "Veille"].map((label) => (
-        <a
-          key={label}
-          href="#"
-          className={`${
-            label === "Recherche" ? "text-[#E95C41]" : "text-white hover:text-[#E95C41] active:text-[#E95C41]"
-          } transition-colors`}
-        >
-          {label}
-        </a>
-      ))}
+      {NAV_ITEMS.map(({ label, to }) => {
+        const isActive = pathname.startsWith(to);
+        return (
+          <Link
+            key={label}
+            to={to}
+            className={`
+              transition-colors
+              ${isActive ? "text-[#E95C41]" : "text-white hover:text-[#E95C41]"}
+            `}
+            onClick={() => handleSidebar(to)}
+          >
+            {label}
+          </Link>
+        );
+      })}
     </nav>
   </div>
 );

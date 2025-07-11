@@ -1,22 +1,25 @@
 import React, { useRef, useState, useLayoutEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useSearchLayoutContext } from "@contexts/SearchLayoutContext";
+import { Link, useLocation } from "react-router-dom";
 
-interface Link {
+interface Links {
   label: string;
   href: string;
 }
 
 interface ScrollableNavProps {
-  links: Link[];
-  activeHref: string;
+  links: Links[];
   /** how many pixels to scroll per click */
   scrollOffset?: number;
 }
 
-export const ScrollableNav: React.FC<ScrollableNavProps> = ({ links, activeHref, scrollOffset = 200 }) => {
+export const ScrollableNav: React.FC<ScrollableNavProps> = ({ links, scrollOffset = 200 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const { setShowSidebar } = useSearchLayoutContext();
+  const { pathname } = useLocation();
 
   // update whether we have overflow on each side
   const updateScrollState = () => {
@@ -39,6 +42,15 @@ export const ScrollableNav: React.FC<ScrollableNavProps> = ({ links, activeHref,
   }, []);
 
   const scrollBy = (offset: number) => containerRef.current?.scrollBy({ left: offset, behavior: "smooth" });
+  const normalizedHref = pathname === "/recherche" ? "/recherche/entreprises" : pathname;
+
+  const handleSidebar = (href: string) => {
+    if (href !== "/recherche/entreprises" && href !== "/recherche/contact") {
+      setShowSidebar(false);
+    } else {
+      setShowSidebar(true);
+    }
+  };
 
   return (
     <div className="relative w-full">
@@ -57,26 +69,19 @@ export const ScrollableNav: React.FC<ScrollableNavProps> = ({ links, activeHref,
         className="w-full overflow-x-auto whitespace-nowrap scroll-smooth no-scrollbar py-0 lg:py-1 flex justify-start"
       >
         {links.map(({ label, href }) => {
-          const isActive = href === activeHref;
+          const isActive = href === normalizedHref;
           return (
-            <a
+            <Link
               key={href}
-              href={href}
-              /* className={`
-                inline-block px-2
-                ${isActive ? "text-[#E95C41]" : "text-common-blue"}
-                hover:text-[#E95C41] active:text-[#E95C41]
-                transition-colors
-              `} */
+              to={href}
               className={`
-                inline-block px-2
-                ${label === "Entreprises" ? "text-[#E95C41]" : "text-common-blue"}
-                hover:text-[#E95C41] active:text-[#E95C41]
-                transition-colors
-              `}
+              inline-block px-2 transition-colors
+              ${isActive ? "text-[#E95C41]" : "text-common-blue"}
+              hover:text-[#E95C41] active:text-[#E95C41]`}
+              onClick={() => handleSidebar(href)}
             >
               {label}
-            </a>
+            </Link>
           );
         })}
       </div>

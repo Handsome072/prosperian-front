@@ -14,7 +14,6 @@ export const SecondaryNav: React.FC = () => {
             { label: "Exports", href: "/recherche/export" },
             { label: "Mes Recherches", href: "/recherche/mes-recherches" },
           ]}
-          activeHref={window.location.pathname}
         />
       </div>
       <div className="w-full lg:max-w-lg">

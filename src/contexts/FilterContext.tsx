@@ -1,4 +1,3 @@
-// In FilterContext.tsx
 import React, { createContext, useContext, useState, useMemo, ReactNode, useEffect } from 'react';
 import { mockBusinesses } from '@data/mockBusinesses';
 import { mockContacts } from '@data/mockContacts';
