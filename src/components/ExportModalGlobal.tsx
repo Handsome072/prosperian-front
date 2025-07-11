@@ -65,11 +65,13 @@ const ExportModalGlobal: React.FC<ExportModalGlobalProps> = ({
               <span className="font-semibold text-gray-700 text-[17px]">Exporter des entreprises</span>
             </div>
             <div className="mt-6 text-center">
-              <div className="text-[15px] text-gray-500 mb-1">Entreprises</div>
-              <div className="text-[26px] font-bold tracking-tight">{statsEntreprise.total.toLocaleString()}</div>
+              <div className="text-[15px] text-gray-500 mb-1">Sélectionnées</div>
+              <div className="text-[26px] font-bold text-orange-600 mb-2">{mode === "entreprise" ? selectedCount : selectedEntrepriseListsCount}</div>
               <div className="text-[13px] text-gray-500 mt-1">
                 {selectedEntrepriseListsCount} liste{selectedEntrepriseListsCount > 1 ? "s" : ""} sélectionnée{selectedEntrepriseListsCount > 1 ? "s" : ""}
               </div>
+              <div className="text-[15px] text-gray-500 mb-1 mt-3">Entreprises</div>
+              <div className="text-[22px] font-bold tracking-tight">{statsEntreprise.total.toLocaleString()}</div>
             </div>
           </div>
           {/* Contacts */}
@@ -87,7 +89,7 @@ const ExportModalGlobal: React.FC<ExportModalGlobalProps> = ({
             </div>
             <div className="mt-2 text-center w-full">
               <div className="text-[15px] text-gray-500 mb-1">Sélectionnés</div>
-              <div className="text-[26px] font-bold text-orange-600 mb-2">{selectedCount}</div>
+              <div className="text-[26px] font-bold text-orange-600 mb-2">{mode === "contact" ? selectedCount : selectedContactListsCount}</div>
               <div className="text-[13px] text-gray-500 mt-1">
                 {selectedContactListsCount} liste{selectedContactListsCount > 1 ? "s" : ""} sélectionnée{selectedContactListsCount > 1 ? "s" : ""}
               </div>

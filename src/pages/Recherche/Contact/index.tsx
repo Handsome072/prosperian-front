@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Building, Linkedin } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
-import { saveAs } from "file-saver";
 import ExportModalGlobal from "../../../components/ExportModalGlobal";
 import { 
   getSelectedContactsCount, 
@@ -79,14 +78,14 @@ const Contact: React.FC = () => {
 
   // Statistiques pour le popup (version globale)
   const statsEntreprise = {
-    total: headerStats.totalEntreprises || 0,
+    total: Number(headerStats.totalEntreprises || 0),
   };
   const statsContact = {
-    total: headerStats.totalContacts || 0,
-    entreprises: headerStats.totalEntreprises || 0,
-    contactsDirectEmail: headerStats.contactsDirects.avecEmail || 0,
-    contactsDirectLinkedin: headerStats.contactsDirects.avecLinkedIn || 0,
-    contactsGeneriquesTel: headerStats.contactsGeneriques.avecTelephone || 0,
+    total: Number(headerStats.totalContacts || 0),
+    entreprises: Number(headerStats.totalEntreprises || 0),
+    contactsDirectEmail: Number(headerStats.contactsDirects.avecEmail || 0),
+    contactsDirectLinkedin: Number(headerStats.contactsDirects.avecLinkedIn || 0),
+    contactsGeneriquesTel: Number(headerStats.contactsGeneriques.avecTelephone || 0),
   };
 
   return (
@@ -230,7 +229,7 @@ const Contact: React.FC = () => {
           <div className="bg-white shadow p-4 rounded-lg">
             <div className="font-semibold text-gray-700 mb-2">Types de postes</div>
             {postes.map((item, index) => (
-              <div key={index} className="mb-2">
+              <div key={`poste-${index}-${item.label}`} className="mb-2">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{item.label}</span>
                   <span>
@@ -253,7 +252,7 @@ const Contact: React.FC = () => {
           <div className="bg-white shadow p-4 rounded-lg">
             <div className="font-semibold text-gray-700 mb-2">Niveaux hiérarchiques</div>
             {niveaux.map((item, index) => (
-              <div key={index} className="mb-3">
+              <div key={`niveau-${index}-${item.label}`} className="mb-3">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{item.label}</span>
                   <span>{item.value} M+</span>
