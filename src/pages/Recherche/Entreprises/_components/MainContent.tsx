@@ -5,6 +5,13 @@ import { Business } from "@entities/Business";
 import BusinessOptions from "./BusinessOptions";
 import BusinessSummaryCard from "./BusinessSummaryCard";
 import { saveAs } from 'file-saver';
+import { 
+  getSelectedEnterprisesCount, 
+  setSelectedEnterprisesCount, 
+  resetSelectedEnterprisesCount, 
+  getSelectedContactsCount 
+} from "../../../../utils/localStorageCounters";
+import { calculateSelectedEntrepriseStats } from "../../../../utils/selectionStats";
 
 export interface MainContentProps {
   businesses: Business[];
@@ -21,11 +28,28 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
   const [selectedBusinesses, setSelectedBusinesses] = useState<Set<number>>(new Set());
   const [showExportModal, setShowExportModal] = React.useState(false);
   const [exportFileName, setExportFileName] = React.useState('ma_liste');
+  const [storedEnterprisesCount, setStoredEnterprisesCount] = useState(0);
+  const [storedContactsCount, setStoredContactsCount] = useState(0);
 
   // Si showCheckbox passe à true, on force le layout à 'list'
   React.useEffect(() => {
     if (showCheckbox) setLayout('list');
   }, [showCheckbox]);
+
+  // Charger les compteurs depuis localStorage au montage
+  React.useEffect(() => {
+    const enterprisesCount = getSelectedEnterprisesCount();
+    const contactsCount = getSelectedContactsCount();
+    setStoredEnterprisesCount(isNaN(enterprisesCount) ? 0 : enterprisesCount);
+    setStoredContactsCount(isNaN(contactsCount) ? 0 : contactsCount);
+  }, []);
+
+  // Mettre à jour le localStorage quand selectedBusinesses change
+  React.useEffect(() => {
+    const count = selectedBusinesses.size;
+    setSelectedEnterprisesCount(count);
+    setStoredEnterprisesCount(count);
+  }, [selectedBusinesses.size]);
 
   const handleCheckboxChange = (id: number) => {
     setSelectedBusinesses(prev => {
@@ -115,6 +139,8 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
           }}
           onExport={handleExport}
           selectedIds={Array.from(selectedBusinesses)}
+          storedEnterprisesCount={storedEnterprisesCount}
+          storedContactsCount={storedContactsCount}
         />
         {/* Export Modal */}
         {showExportModal && (

@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Building, Linkedin } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
-import { saveAs } from "file-saver";
 import ExportModalGlobal from "../../../components/ExportModalGlobal";
+import { 
+  getSelectedContactsCount, 
+  setSelectedContactsCount, 
+  resetSelectedContactsCount, 
+  getSelectedEnterprisesCount 
+} from "../../../utils/localStorageCounters";
+import { calculateSelectedContactStats } from "../../../utils/selectionStats";
 
 const Contact: React.FC = () => {
   const {
@@ -19,10 +25,27 @@ const Contact: React.FC = () => {
   const [displayLimit, setDisplayLimit] = useState(10);
   const [showLimitInput, setShowLimitInput] = useState(false);
   const [currentSort, setCurrentSort] = useState("Pertinence");
+  const [storedContactsCount, setStoredContactsCount] = useState(0);
+  const [storedEnterprisesCount, setStoredEnterprisesCount] = useState(0);
 
   useEffect(() => {
     console.log("Filtered Contacts:", filteredContacts); // Debug: Check rendered data
   }, [filteredContacts]);
+
+  // Charger le compteur depuis localStorage au montage
+  useEffect(() => {
+    const contactsCount = getSelectedContactsCount();
+    const enterprisesCount = getSelectedEnterprisesCount();
+    setStoredContactsCount(isNaN(contactsCount) ? 0 : contactsCount);
+    setStoredEnterprisesCount(isNaN(enterprisesCount) ? 0 : enterprisesCount);
+  }, []);
+
+  // Mettre à jour le localStorage quand selectedContacts change
+  useEffect(() => {
+    const count = selectedContacts.size;
+    setSelectedContactsCount(count);
+    setStoredContactsCount(count);
+  }, [selectedContacts.size]);
 
   // Handle checkbox change for individual contacts
   const handleCheckboxChange = (index: number) => {
@@ -53,18 +76,19 @@ const Contact: React.FC = () => {
     setSort(sortValue);
     setCurrentSort(sortValue);
     setSelectedContacts(new Set());
+    resetSelectedContactsCount(); // Reset le compteur localStorage
   };
 
-  // Statistiques pour le popup
+  // Statistiques pour le popup (version globale)
   const statsEntreprise = {
-    total: headerStats.totalEntreprises || 0,
+    total: Number(headerStats.totalEntreprises || 0),
   };
   const statsContact = {
-    total: headerStats.totalContacts || 0,
-    entreprises: headerStats.totalEntreprises || 0,
-    contactsDirectEmail: headerStats.contactsDirects.avecEmail || 0,
-    contactsDirectLinkedin: headerStats.contactsDirects.avecLinkedIn || 0,
-    contactsGeneriquesTel: headerStats.contactsGeneriques.avecTelephone || 0,
+    total: Number(headerStats.totalContacts || 0),
+    entreprises: Number(headerStats.totalEntreprises || 0),
+    contactsDirectEmail: Number(headerStats.contactsDirects.avecEmail || 0),
+    contactsDirectLinkedin: Number(headerStats.contactsDirects.avecLinkedIn || 0),
+    contactsGeneriquesTel: Number(headerStats.contactsGeneriques.avecTelephone || 0),
   };
 
   return (
@@ -208,7 +232,7 @@ const Contact: React.FC = () => {
           <div className="bg-white shadow p-4 rounded-lg">
             <div className="font-semibold text-gray-700 mb-2">Types de postes</div>
             {postes.map((item, index) => (
-              <div key={index} className="mb-2">
+              <div key={`poste-${index}-${item.label}`} className="mb-2">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{item.label}</span>
                   <span>
@@ -231,7 +255,7 @@ const Contact: React.FC = () => {
           <div className="bg-white shadow p-4 rounded-lg">
             <div className="font-semibold text-gray-700 mb-2">Niveaux hiérarchiques</div>
             {niveaux.map((item, index) => (
-              <div key={index} className="mb-3">
+              <div key={`niveau-${index}-${item.label}`} className="mb-3">
                 <div className="flex justify-between text-xs text-gray-500">
                   <span>{item.label}</span>
                   <span>{item.value} M+</span>
@@ -255,6 +279,8 @@ const Contact: React.FC = () => {
           selectedCount={selectedContacts.size}
           statsEntreprise={statsEntreprise}
           statsContact={statsContact}
+          selectedEntrepriseListsCount={storedEnterprisesCount} // Nombre d'entreprises sélectionnées depuis localStorage
+          selectedContactListsCount={storedContactsCount} // Nombre de contacts sélectionnés depuis localStorage
           onClose={() => setShowExportPopup(false)}
           onExport={handleConfirmExport}
         />
