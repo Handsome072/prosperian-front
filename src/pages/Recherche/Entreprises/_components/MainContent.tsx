@@ -114,6 +114,7 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
             setLayout('list');
           }}
           onExport={handleExport}
+          selectedIds={Array.from(selectedBusinesses)}
         />
         {/* Export Modal */}
         {showExportModal && (

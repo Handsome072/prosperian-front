@@ -11,6 +11,7 @@ import {
   List as LayoutList,
 } from "lucide-react";
 import { Business } from "@entities/Business";
+import ExportModalGlobal from "../../../../components/ExportModalGlobal";
 
 export interface BusinessOptionsProps {
   businesses: Business[];
@@ -23,8 +24,9 @@ export interface BusinessOptionsProps {
   onExport?: () => void;
   onDelete?: () => void;
   onSortChange?: (sortKey: string) => void;
-  layout: "list" | "grid";
-  setLayout: (layout: "list" | "grid") => void;
+  layout: 'list' | 'grid';
+  setLayout: (layout: 'list' | 'grid') => void;
+  selectedIds: number[]; // <-- Ajout de la prop
 }
 
 const BusinessOptions: React.FC<BusinessOptionsProps> = ({
@@ -40,6 +42,7 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   onSortChange = () => {},
   layout,
   setLayout,
+  selectedIds = [], // valeur par défaut ajoutée
 }) => {
   // Récupérer les exports BusinessCard (base64 string, pas JSON)
   const exportBusinessCardLists = Object.keys(localStorage)
@@ -58,6 +61,7 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   const addDropdownRef = useRef<HTMLDivElement>(null);
   const [showDeleteDropdown, setShowDeleteDropdown] = useState(false);
   const deleteDropdownRef = useRef<HTMLDivElement>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   // Fermer le dropdown si on clique en dehors
   useEffect(() => {
@@ -101,6 +105,8 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   const handlePrevPage = () => onPageChange(Math.max(1, currentPage - 1));
   const handleNextPage = () => onPageChange(Math.min(currentPage + 1, totalPages));
 
+  const selectedCount = selectedIds.length;
+
   return (
     <div className="mb-6 bg-white rounded-lg shadow-sm border border-gray-200 p-3">
       {/* Top row: left buttons / right filters + layout toggles */}
@@ -136,14 +142,38 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
               </div>
             )}
           </div>
-          <button
-            onClick={onExport}
-            className="flex items-center bg-[#E95C41] hover:bg-orange-600 text-white 
-                 rounded-md px-3 py-2 transition"
-          >
-            <Download className="w-4 h-4 spec-xl:mr-2" />
-            <span className="hidden spec-xl:inline">Exporter</span>
-          </button>
+          <div className="flex flex-col items-start">
+            <button
+              onClick={() => {
+                if (selectedCount === 0) {
+                  setShowExportModal(false);
+                } else {
+                  setShowExportModal(true);
+                }
+              }}
+              className="flex items-center bg-[#E95C41] hover:bg-orange-600 text-white 
+                   rounded-md px-3 py-2 transition"
+            >
+              <Download className="w-4 h-4 spec-xl:mr-2" />
+              <span className="hidden spec-xl:inline">Exporter</span>
+            </button>
+            {showExportModal && (
+              <ExportModalGlobal
+                mode="entreprise"
+                selectedCount={selectedCount}
+                statsEntreprise={{ total: 12416180 }} // à remplacer par la vraie valeur si besoin
+                statsContact={{
+                  total: 12224982,
+                  entreprises: 1149984,
+                  contactsDirectEmail: 6684902,
+                  contactsDirectLinkedin: 11914156,
+                  contactsGeneriquesTel: 620018,
+                }}
+                onClose={() => setShowExportModal(false)}
+                onExport={onExport}
+              />
+            )}
+          </div>
           <div className="relative">
             <button
               onClick={() => setShowAddDropdown((v) => !v)}
