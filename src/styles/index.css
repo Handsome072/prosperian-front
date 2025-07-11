@@ -27,6 +27,10 @@ p, .text-common-blue {
   color: #212555;
 }
 
+.text-dark-blue {
+  color: #141838;
+}
+
 .main-topbar {
   background: linear-gradient(to right, #141838, #2a2f5a);
 }
