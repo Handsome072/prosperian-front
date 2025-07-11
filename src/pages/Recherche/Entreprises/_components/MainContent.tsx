@@ -97,7 +97,7 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
 
   return (
     <div className="flex-1 p-6 bg-gray-50 min-h-screen">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-full mx-auto">
         <BusinessSummaryCard businesses={businesses} />
         <BusinessOptions
           businesses={businesses}
