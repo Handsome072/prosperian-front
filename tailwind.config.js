@@ -18,8 +18,11 @@ export default {
         },
       },
       screens: {
+        "spec-xs": "480px",
+        "spec-md" : "950px",
         "spec-lg": "1120px",
-        "spec-xl": "1380px",
+        "spec-xl": "1450px",
+        "spec-2xl": "1620px",
       },
     },
     container: {
