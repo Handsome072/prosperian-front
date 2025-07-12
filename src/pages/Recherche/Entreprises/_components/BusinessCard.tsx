@@ -1,9 +1,15 @@
 import React from 'react';
-import { MapPin, Phone, Users, Star, ExternalLink, Building } from 'lucide-react';
+import { MapPin, Phone, Users, Star, ExternalLink, Building, Globe, Mail, Linkedin, Facebook, User } from 'lucide-react';
 import { Business } from '@entities/Business';
 
 interface BusinessCardProps {
-  company: Business;
+  company: Business & {
+    contactsCount?: number;
+    email?: string;
+    linkedin?: string;
+    google?: string;
+    facebook?: string;
+  };
   id?: number;
   showCheckbox?: boolean;
   checked?: boolean;
@@ -17,42 +23,59 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ company, id, showChe
   if (showCheckbox) {
     // Mode liste avec checkbox (t lignes)
     return (
-      <div className="p-3 hover:bg-gray-50 flex items-start justify-between">
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={!!checked}
-            onChange={e => {
-              console.log('Checkbox click', { id, checked: e.target.checked });
-              if (onCheckboxChange && typeof id === 'number') {
-                onCheckboxChange(id);
-              }
-            }}
-            aria-label={`Sélectionner l'entreprise ${company.name}`}
+      <div className="p-3 hover:bg-gray-50 flex items-center gap-2 border-b overflow-x-auto">
+        <input
+          type="checkbox"
+          checked={!!checked}
+          onChange={e => {
+            console.log('Checkbox click', { id, checked: e.target.checked });
+            if (onCheckboxChange && typeof id === 'number') {
+              onCheckboxChange(id);
+            }
+          }}
+          aria-label={`Sélectionner l'entreprise ${company.name}`}
+        />
+        {/* Logo */}
+        {company.logo ? (
+          <img
+            src={company.logo}
+            alt={`${company.name} logo`}
+            className="w-8 h-8 rounded-lg object-cover border border-gray-200"
           />
-          {/* Logo après la checkbox */}
-          {company.logo ? (
-            <img
-              src={company.logo}
-              alt={`${company.name} logo`}
-              className="w-8 h-8 rounded-lg object-cover border border-gray-200"
-            />
-          ) : (
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <Building className="w-4 h-4 text-white" />
-            </div>
-          )}
-          <div className="flex-1">
-            <div className="font-semibold text-gray-800">{company.name}</div>
-            <div className="text-gray-500 text-xs">{company.activity}</div>
+        ) : (
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+            <Building className="w-4 h-4 text-white" />
+          </div>
+        )}
+        {/* Nom + icônes */}
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-blue-800 text-sm hover:underline cursor-pointer truncate">
+            {company.name}
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-gray-400 text-xs">
+            <Globe className="w-4 h-4" />
+            <Phone className="w-4 h-4" />
+            <Mail className="w-4 h-4" />
+            <Linkedin className="w-4 h-4" />
+            <User className="w-4 h-4" /> {/* Google icon placeholder */}
+            <Facebook className="w-4 h-4" />
           </div>
         </div>
-        <div className="flex items-center gap-3 text-gray-500">
-          <span className="text-xs">{company.city}</span>
-          <Building size={16} />
-          <span className="text-xs text-blue-600 underline">
-            {company.legalForm}
-          </span>
+        {/* # Contacts */}
+        <div className="w-20 text-center text-sm text-gray-800 font-medium">
+          {company.contactsCount ?? '-'}
+        </div>
+        {/* # Employés */}
+        <div className="w-20 text-center text-sm text-gray-800 font-medium">
+          {company.employeeCount ?? company.employees ?? '-'}
+        </div>
+        {/* CA */}
+        <div className="w-24 text-center text-sm text-gray-800 font-medium">
+          {company.revenue ? `${(company.revenue / 1_000_000).toLocaleString()} M €` : '-'}
+        </div>
+        {/* Adresse */}
+        <div className="w-32 text-right text-sm text-gray-700 truncate">
+          {company.postalCode} {company.city}
         </div>
       </div>
     );

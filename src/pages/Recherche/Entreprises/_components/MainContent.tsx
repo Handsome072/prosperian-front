@@ -175,7 +175,19 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
         {/* Business Cards Grid */}
         {paginatedList.length > 0 ? (
           <>
-            <div className={layout === 'list' ? 'divide-y bg-white rounded-lg border border-gray-200' : 'grid grid-cols-1 md:grid-cols-2 gap-6'}>
+            {layout === 'list' && (
+              <div className="flex items-center gap-2 px-3 pt-3 pb-2 text-xs font-semibold text-gray-500 uppercase bg-white border-t border-l border-r border-gray-200 rounded-t-lg">
+                <span className="w-4" /> {/* Checkbox */}
+                <span className="w-8" /> {/* Logo */}
+                <span className="flex-1 min-w-0">Nom</span>
+                <span className="w-32 text-center">&nbsp;</span> {/* Icônes */}
+                <span className="w-20 text-center"># Contacts</span>
+                <span className="w-20 text-center"># Employés</span>
+                <span className="w-24 text-center">CA</span>
+                <span className="w-32 text-right">Adresse</span>
+              </div>
+            )}
+            <div className={layout === 'list' ? 'divide-y bg-white rounded-lg border border-gray-200 max-h-[calc(100vh-12rem)] overflow-y-auto' : 'grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[calc(100vh-12rem)] overflow-y-auto'}>
               {paginatedList.map((business) => {
                 const numId = Number(business.id);
                 // Si showCheckbox est true, toujours afficher avec checkbox
