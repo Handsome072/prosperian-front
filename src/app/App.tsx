@@ -9,6 +9,7 @@ import Contact from "@pages/Recherche/Contact";
 import Lists from "@pages/Recherche/Lists";
 import Export from "@pages/Recherche/Export";
 import MySearches from "@pages/Recherche/MySearches";
+import SocieteDetails from "@pages/Recherche/Societe/SocieteDetails";
 
 import Enrichment from "@pages/Enrichissement";
 /* import Surveillance   from "@pages/Surveillance";
@@ -28,6 +29,8 @@ export const App = () => {
           <Route path="export" element={<Export />} />
           <Route path="mes-recherches" element={<MySearches />} />
         </Route>
+
+        <Route path="recherche/societes/:id" element={<SocieteDetails />} />
 
         <Route path="enrichissement" element={<Enrichment />} />
         {/* <Route path="surveillance"   element={<Surveillance />} />

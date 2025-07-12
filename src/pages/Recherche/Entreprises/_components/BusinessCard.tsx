@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapPin, Phone, Users, Star, ExternalLink, Building, Globe, Mail, Linkedin, Facebook, User } from 'lucide-react';
 import { Business } from '@entities/Business';
 
@@ -17,8 +18,13 @@ interface BusinessCardProps {
 }
 
 export const BusinessCard: React.FC<BusinessCardProps> = ({ company, id, showCheckbox, checked, onCheckboxChange }) => {
+  const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const companyAge = company.foundedYear ? currentYear - company.foundedYear : null;
+
+  const handleCompanyClick = () => {
+    navigate(`/recherche/societes/${company.id}`);
+  };
 
   if (showCheckbox) {
     // Mode liste avec checkbox (t lignes)
@@ -49,7 +55,10 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ company, id, showChe
         )}
         {/* Nom + icônes */}
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-blue-800 text-sm hover:underline cursor-pointer truncate">
+          <div 
+            className="font-semibold text-blue-800 text-sm hover:underline cursor-pointer truncate"
+            onClick={handleCompanyClick}
+          >
             {company.name}
           </div>
           <div className="flex items-center gap-2 mt-1 text-gray-400 text-xs">
@@ -105,7 +114,10 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ company, id, showChe
           {/* Company Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
-              <h3 className="text-lg font-bold text-gray-900 leading-tight truncate">
+              <h3 
+                className="text-lg font-bold text-gray-900 leading-tight truncate cursor-pointer hover:text-blue-600"
+                onClick={handleCompanyClick}
+              >
                 {company.name}
               </h3>
               {company.rating && (
