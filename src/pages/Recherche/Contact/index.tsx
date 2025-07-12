@@ -3,12 +3,7 @@ import { Building, Linkedin, Globe, Phone, Mail, User, Facebook, Eye, Twitter } 
 import { useFilterContext } from "@contexts/FilterContext";
 import ContactOptions from "./_components/ContactOptions";
 import ExportModalGlobal from "../../../components/ExportModalGlobal";
-/* import { 
-  getSelectedContactsCount, 
-  setSelectedContactsCount, 
-  resetSelectedContactsCount, 
-  getSelectedEnterprisesCount 
-} from "../../../../utils/localStorageCounters"; */
+
 import { RightPanel } from "../Entreprises/_components/RightPanel";
 
 const Contact: React.FC = () => {
