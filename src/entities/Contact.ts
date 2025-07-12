@@ -13,6 +13,14 @@ export interface Contact {
   revenue?: number;
   postalCode?: string;
   city?: string;
+  logo?: string;
+  civilite?: string;
+  prenom?: string;
+  nom?: string;
+  niveau?: string;
+  domaine?: string;
+  webmail?: string;
+  statut?: string;
 }
   
   export interface Poste {

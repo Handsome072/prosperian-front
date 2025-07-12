@@ -14,6 +14,8 @@ const Contact: React.FC = () => {
   const [currentSort, setCurrentSort] = useState("Pertinence");
   const [showExportPopup, setShowExportPopup] = useState(false);
   const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [showContactModal, setShowContactModal] = useState(false);
 
   const { filteredBusinesses } = useFilterContext();
   const [businessesOverride, setBusinessesOverride] = useState(null);
@@ -94,6 +96,57 @@ const Contact: React.FC = () => {
 
   return (
     <>
+      {/* Popup contact */}
+      {showContactModal && selectedContact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative animate-fade-in">
+            <button
+              className="absolute top-4 right-6 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              onClick={() => setShowContactModal(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <div className="text-center mb-2 text-lg font-semibold text-gray-800">
+              {selectedContact.role}
+            </div>
+            <div className="text-center mb-4">
+              <span className="text-blue-900 font-bold text-base underline cursor-pointer">
+                {selectedContact.entreprise}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mb-6">
+              <div className="text-gray-500">Civilité</div>
+              <div className="text-gray-900">{selectedContact.civilite}</div>
+              <div className="text-gray-500">Prénom</div>
+              <div className="text-gray-900">{selectedContact.prenom}</div>
+              <div className="text-gray-500">Nom</div>
+              <div className="text-gray-900">{selectedContact.nom}</div>
+              <div className="text-gray-500">Niveau</div>
+              <div className="text-gray-900">{selectedContact.niveau}</div>
+              <div className="text-gray-500">Domaine</div>
+              <div className="text-gray-900">{selectedContact.domaine}</div>
+              <div className="text-gray-500">LinkedIn</div>
+              <div className="text-blue-700 underline truncate cursor-pointer">{selectedContact.linkedin}</div>
+              <div className="text-gray-500">Email</div>
+              <div className="text-orange-700 truncate">{selectedContact.email}</div>
+              <div className="text-gray-500">Webmail</div>
+              <div className="text-gray-900">{selectedContact.webmail}</div>
+              <div className="text-gray-500">statut :</div>
+              <div className="text-gray-900">{selectedContact.statut}</div>
+            </div>
+            <div className="flex justify-between items-center mt-6">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-orange-400 text-orange-500 font-medium bg-white hover:bg-orange-50">
+                <Eye className="w-4 h-4" />
+                Plus de contacts
+              </button>
+              <button className="px-6 py-2 rounded-full bg-gradient-to-r from-orange-400 to-[#E95C41] text-white font-medium hover:opacity-90">
+                1 crédit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex-1 p-6 bg-gray-50 min-h-screen">
         <div className="max-w-full mx-auto">
           {/* Header */}
@@ -181,7 +234,7 @@ const Contact: React.FC = () => {
                         </div>
                         {/* WEB */}
                         <div className="w-24 flex items-center justify-center gap-2 text-gray-400">
-                          <Eye className="w-5 h-5" />
+                          <Eye className="w-5 h-5 cursor-pointer" onClick={() => { setSelectedContact(item); setShowContactModal(true); }} />
                           <Mail className="w-5 h-5" />
                           <Linkedin className="w-5 h-5" />
                         </div>
