@@ -1,8 +1,19 @@
 export interface Contact {
-    role: string;
-    subrole: string;
-    entreprise: string;
-  }
+  id: string;
+  role: string;
+  subrole?: string;
+  entreprise: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  google?: string;
+  facebook?: string;
+  contactsCount?: number;
+  employeesCount?: number;
+  revenue?: number;
+  postalCode?: string;
+  city?: string;
+}
   
   export interface Poste {
     label: string;
