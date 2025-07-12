@@ -6,26 +6,51 @@ export const mockContacts: MockContacts = {
       role: "Président du directoire",
       entreprise: "TRICOTAGE DES VOSGES",
       subrole: "",
+      id: "1",
+      contactsCount: 2555,
+      revenue: 3000000000,
+      postalCode: "92000",
+      city: "NANTERRE"
     },
     {
       role: "Mandataire / Direction Générale",
       subrole: "Président du conseil de surveillance | Directeur a...",
       entreprise: "TRICOTAGE DES VOSGES",
+      id: "2",
+      contactsCount: 2555,
+      revenue: 3000000000,
+      postalCode: "92000",
+      city: "NANTERRE"
     },
     {
       role: "Directeur / Commerce",
       subrole: "Directeur régional des ventes",
       entreprise: "TRICOTAGE DES VOSGES",
+      id: "3",
+      contactsCount: 2555,
+      revenue: 3000000000,
+      postalCode: "92000",
+      city: "NANTERRE"
     },
     {
       role: "Directeur / Commerce",
       subrole: "Directeur commercial",
       entreprise: "TRICOTAGE DES VOSGES",
+      id: "4",
+      contactsCount: 2555,
+      revenue: 3000000000,
+      postalCode: "92000",
+      city: "NANTERRE"
     },
     {
       role: "Directeur",
       subrole: "Directeur de production",
       entreprise: "TRICOTAGE DES VOSGES",
+      id: "5",
+      contactsCount: 2555,
+      revenue: 3000000000,
+      postalCode: "92000",
+      city: "NANTERRE"
     },
   ],
   postes: [

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Building, Linkedin } from "lucide-react";
+import { Building, Linkedin, Globe, Phone, Mail, User, Facebook, Eye, Twitter } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
 import ContactOptions from "./_components/ContactOptions";
 import ExportModalGlobal from "../../../components/ExportModalGlobal";
@@ -155,12 +155,23 @@ const Contact: React.FC = () => {
           <div className="flex gap-6 w-full max-w-full">
             {/* Table principale (gauche) */}
             <div className="flex-1 bg-white shadow rounded-lg overflow-hidden">
-              <div className="divide-y">
-                {filteredContacts.length > 0 ? (
-                  filteredContacts.slice(0, displayLimit).map((item, index) => (
-                    <div key={item.id} className="p-3 hover:bg-gray-50 flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        {currentSort !== "Pertinence" && (
+              <div className="overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto">
+                {/* Header colonnes */}
+                <div className="flex items-center gap-2 px-3 pt-3 pb-2 text-xs font-semibold text-gray-500 uppercase bg-white border-t border-l border-r border-gray-200 rounded-t-lg min-w-[900px]">
+                  {currentSort !== 'Pertinence' && <span className="w-8" />} {/* Checkbox */}
+                  <span className="flex-1 min-w-0">Rôle</span>
+                  <span className="w-24 text-center">Web</span>
+                  <span className="flex-[1.5] min-w-0">Entreprise</span>
+                  <span className="w-24 text-center text-[#E95C41]"># Contacts</span>
+                  <span className="w-24 text-center">CA</span>
+                  <span className="w-32 text-right">Adresse</span>
+                </div>
+                <div className="divide-y">
+                  {filteredContacts.length > 0 ? (
+                    filteredContacts.slice(0, displayLimit).map((item, index) => (
+                      <div key={item.id || index} className="p-3 hover:bg-gray-50 flex items-center gap-2 min-w-[900px]">
+                        {/* Checkbox (si tri != Pertinence) */}
+                        {currentSort !== 'Pertinence' && (
                           <input
                             type="checkbox"
                             checked={selectedContacts.has(index)}
@@ -168,57 +179,59 @@ const Contact: React.FC = () => {
                             aria-label={`Select contact ${item.role} at ${item.entreprise}`}
                           />
                         )}
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-800">{item.role || "No Role"}</div>
-                          {item.subrole && <div className="text-gray-500 text-xs">{item.subrole}</div>}
+                        {/* Rôle */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-gray-900 text-sm truncate">{item.role}</div>
+                          {item.subrole && <div className="text-xs text-gray-500 truncate">{item.subrole}</div>}
+                        </div>
+                        {/* WEB */}
+                        <div className="w-24 flex items-center justify-center gap-2 text-gray-400">
+                          <Eye className="w-5 h-5" />
+                          <Mail className="w-5 h-5" />
+                          <Linkedin className="w-5 h-5" />
+                        </div>
+                        {/* ENTREPRISE */}
+                        <div className="flex-[1.5] min-w-0 flex items-center gap-2">
+                          {item.logo ? (
+                            <img src={item.logo} alt={item.entreprise} className="w-8 h-8 rounded-lg object-cover border border-gray-200" />
+                          ) : (
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                              <User className="w-4 h-4 text-white" />
+                            </div>
+                          )}
+                          <div className="flex flex-col min-w-0">
+                            <span className="font-semibold text-blue-800 text-sm underline truncate cursor-pointer">{item.entreprise}</span>
+                            <div className="flex items-center gap-1 mt-1 text-gray-400 text-xs">
+                              <Globe className="w-4 h-4" />
+                              <Phone className="w-4 h-4" />
+                              <Mail className="w-4 h-4" />
+                              <Linkedin className="w-4 h-4" />
+                              <User className="w-4 h-4" /> {/* Google icon placeholder */}
+                              <Twitter className="w-4 h-4" />
+                              <Facebook className="w-4 h-4" />
+                            </div>
+                          </div>
+                        </div>
+                        {/* # CONTACTS */}
+                        <div className="w-24 text-center text-sm font-semibold text-[#E95C41]">
+                          {item.contactsCount ?? '-'}
+                        </div>
+                        {/* CA */}
+                        <div className="w-24 text-center text-sm text-gray-800 font-medium">
+                          {item.revenue ? `${(item.revenue / 1_000_000).toLocaleString()} M €` : '-'}
+                        </div>
+                        {/* Adresse */}
+                        <div className="w-32 text-right text-sm text-blue-800 underline truncate">
+                          {item.postalCode} {item.city}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 text-gray-500">
-                        <span className="text-xs">WEB</span>
-                        <Linkedin size={16} />
-                        <Building size={16} />
-                        <span className="text-xs text-blue-600 underline">{item.entreprise || "No Entreprise"}</span>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="p-4 text-gray-500 text-center">Aucun contact trouvé avec les filtres actuels.</div>
-                )}
+                    ))
+                  ) : (
+                    <div className="p-4 text-gray-500 text-center">Aucun contact trouvé avec les filtres actuels.</div>
+                  )}
+                </div>
               </div>
             </div>
-
-            {/* Sidebar Stats (droite) */}
-            {/* Types de postes && Niveaux hiérarchiques */}
-            {/* <div className="w-80 flex-shrink-0 space-y-6">
-            <div className="bg-white shadow p-4 rounded-lg">
-              <div className="font-semibold text-gray-700 mb-2">Types de postes</div>
-              {postes.map((item, index) => (
-                <div key={`poste-${index}-${item.label}`} className="mb-2">
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>{item.label}</span>
-                    <span>{item.value >= 1 ? `${item.value}M+` : `${(item.value * 1000).toFixed(0)}K+`}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 h-2 rounded">
-                    <div className="bg-red-500 h-2 rounded" style={{ width: `${(item.value / 1.5) * 100}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="bg-white shadow p-4 rounded-lg">
-              <div className="font-semibold text-gray-700 mb-2">Niveaux hiérarchiques</div>
-              {niveaux.map((item, index) => (
-                <div key={`niveau-${index}-${item.label}`} className="mb-3">
-                  <div className="flex justify-between text-xs text-gray-500">
-                    <span>{item.label}</span>
-                    <span>{item.value} M+</span>
-                  </div>
-                  <div className="w-full bg-gray-200 h-2 rounded">
-                    <div className="bg-red-500 h-2 rounded" style={{ width: `${(item.value / 4.7) * 100}%` }}></div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div> */}
           </div>
         </div>
       </div>
