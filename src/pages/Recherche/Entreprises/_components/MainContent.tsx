@@ -15,17 +15,42 @@ import { calculateSelectedEntrepriseStats } from "../../../../utils/selectionSta
 
 export interface MainContentProps {
   businesses: Business[];
+  totalBusinesses: number;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   showCheckbox?: boolean;
+  loading?: boolean;
+  error?: string | null;
+  onRetry?: () => void;
+  currentPage?: number;
+  totalPages?: number;
+  itemsPerPage?: number;
+  totalLeads?: number;
+  failedCategories?: number;
+  onPageChange?: (page: number) => void;
+  onItemsPerPageChange?: (itemsPerPage: number) => void;
 }
 
-export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm, onSearchChange, showCheckbox }) => {
+export const MainContent: React.FC<MainContentProps> = ({ 
+  businesses, 
+  totalBusinesses,
+  searchTerm, 
+  onSearchChange, 
+  showCheckbox,
+  loading = false,
+  error = null,
+  onRetry,
+  currentPage = 1,
+  totalPages = 1,
+  itemsPerPage = 12,
+  totalLeads = 0,
+  failedCategories = 0,
+  onPageChange,
+  onItemsPerPageChange
+}) => {
   // pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(25);
   const [layout, setLayout] = useState<'list' | 'grid'>(showCheckbox ? 'list' : 'grid');
-  const [selectedBusinesses, setSelectedBusinesses] = useState<Set<number>>(new Set());
+  const [selectedBusinesses, setSelectedBusinesses] = useState<Set<string>>(new Set());
   const [showExportModal, setShowExportModal] = React.useState(false);
   const [exportFileName, setExportFileName] = React.useState('ma_liste');
   const [storedEnterprisesCount, setStoredEnterprisesCount] = useState(0);
@@ -54,22 +79,19 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
   const handleCheckboxChange = (id: number) => {
     setSelectedBusinesses(prev => {
       const newSet = new Set(prev);
-      const numId = Number(id);
-      if (newSet.has(numId)) {
-        newSet.delete(numId);
+      const stringId = String(id);
+      if (newSet.has(stringId)) {
+        newSet.delete(stringId);
       } else {
-        newSet.add(numId);
+        newSet.add(stringId);
       }
       return newSet;
     });
   };
 
-  const total = businesses.length;
+  const total = totalLeads || businesses.length;
   const start = (currentPage - 1) * itemsPerPage + 1;
   const end = Math.min(currentPage * itemsPerPage, total);
-
-  // slice the array for the current page
-  const paginatedList = businesses.slice(start - 1, end);
 
   // Exporter les entreprises sélectionnées en CSV
   const handleExport = () => {
@@ -78,7 +100,7 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
 
   const handleExportConfirm = () => {
     const listName = exportFileName.trim() || 'ma_liste';
-    const selected = businesses.filter(b => selectedBusinesses.has(Number(b.id)));
+    const selected = businesses.filter(b => selectedBusinesses.has(b.id));
     if (selected.length === 0) {
       setShowExportModal(false);
       return;
@@ -122,26 +144,50 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
   return (
     <div className="flex-1 p-6 bg-gray-50 min-h-screen">
       <div className="max-w-full mx-auto">
-        <BusinessSummaryCard businesses={businesses} />
+        <BusinessSummaryCard businesses={businesses} totalBusinesses={totalBusinesses} />
+        
+
+        
         <BusinessOptions
           businesses={businesses}
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
           start={start}
           end={end}
-          onPageChange={setCurrentPage}
+          totalPages={totalPages}
+          totalItems={totalLeads}
+          onPageChange={onPageChange || (() => {})}
           layout={layout}
           setLayout={setLayout}
-          onItemsPerPageChange={(newSize) => {
-            setItemsPerPage(newSize);
-            setCurrentPage(1);
-            setLayout('list');
-          }}
+          onItemsPerPageChange={onItemsPerPageChange || (() => {})}
           onExport={handleExport}
-          selectedIds={Array.from(selectedBusinesses)}
+          selectedIds={Array.from(selectedBusinesses).map(id => Number(id))}
           storedEnterprisesCount={storedEnterprisesCount}
           storedContactsCount={storedContactsCount}
         />
+        
+        {/* États de chargement et d'erreur */}
+        {loading && (
+          <div className="flex items-center justify-center p-8 bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-2 text-gray-600">Chargement des entreprises...</span>
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <p className="text-red-800">Erreur: {error}</p>
+            {onRetry && (
+              <button 
+                onClick={onRetry}
+                className="mt-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Réessayer
+              </button>
+            )}
+          </div>
+        )}
+        
         {/* Export Modal */}
         {showExportModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -172,8 +218,9 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
             </div>
           </div>
         )}
-        {/* Business Cards Grid */}
-        {paginatedList.length > 0 ? (
+        
+        {/* Business Cards Grid - Affichage optimisé */}
+        {!loading && !error && businesses.length > 0 && (
           <>
             {layout === 'list' && (
               <div className="flex items-center gap-2 px-3 pt-3 pb-2 text-xs font-semibold text-gray-500 uppercase bg-white border-t border-l border-r border-gray-200 rounded-t-lg">
@@ -188,38 +235,43 @@ export const MainContent: React.FC<MainContentProps> = ({ businesses, searchTerm
               </div>
             )}
             <div className={layout === 'list' ? 'divide-y bg-white rounded-lg border border-gray-200 max-h-[calc(100vh-12rem)] overflow-y-auto' : 'grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[calc(100vh-12rem)] overflow-y-auto'}>
-              {paginatedList.map((business) => {
+              {businesses.map((business, index) => {
                 const numId = Number(business.id);
                 // Si showCheckbox est true, toujours afficher avec checkbox
                 if (showCheckbox) {
                   return (
                     <BusinessCard
-                      key={numId}
+                      key={`${business.id}-${index}`}
                       company={business}
                       id={numId}
                       showCheckbox
-                      checked={selectedBusinesses.has(numId)}
+                      checked={selectedBusinesses.has(business.id)}
                       onCheckboxChange={handleCheckboxChange}
+                      isProntoData={true}
                     />
                   );
                 }
                 // Sinon, comportement normal
                 return layout === 'list' ? (
                   <BusinessCard
-                    key={numId}
+                    key={`${business.id}-${index}`}
                     company={business}
                     id={numId}
                     showCheckbox
-                    checked={selectedBusinesses.has(numId)}
+                    checked={selectedBusinesses.has(business.id)}
                     onCheckboxChange={handleCheckboxChange}
+                    isProntoData={true}
                   />
                 ) : (
-                  <BusinessCard key={numId} company={business} />
+                  <BusinessCard key={`${business.id}-${index}`} company={business} isProntoData={true} />
                 );
               })}
             </div>
           </>
-        ) : (
+        )}
+        
+        {/* État vide - seulement si pas en chargement et pas d'erreur */}
+        {!loading && !error && businesses.length === 0 && (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">

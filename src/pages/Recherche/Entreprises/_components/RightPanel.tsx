@@ -25,9 +25,10 @@ const cityColors = [
 
 interface RightPanelProps {
   businesses: { city: string; activity: string }[];
+  totalBusinesses: number;
 }
 
-export const RightPanel: React.FC<RightPanelProps> = ({ businesses }) => {
+export const RightPanel: React.FC<RightPanelProps> = ({ businesses, totalBusinesses }) => {
   // Répartition géographique
   const getGeographicDistribution = () => {
     const cityCount: { [key: string]: number } = {};
@@ -105,7 +106,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ businesses }) => {
               colors={regionColors} // <--- ICI on passe le mapping couleurs par région
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <div className="text-2xl font-bold text-orange-700">{businesses.length}</div>
+              <div className="text-2xl font-bold text-orange-700">{totalBusinesses}</div>
               <div className="text-sm text-orange-600">entreprises</div>
             </div>
           </div>
@@ -166,7 +167,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ businesses }) => {
         {/* Légende */}
         <div className="mt-6 pt-4 border-t border-gray-200">
           <div className="text-xs text-gray-500 text-center">
-            Répartition basée sur {businesses.length} entreprises analysées
+            Répartition basée sur {totalBusinesses} entreprises analysées
           </div>
         </div>
       </div>

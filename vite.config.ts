@@ -8,6 +8,15 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
   resolve: {
     alias: {
       "@app": path.resolve(__dirname, "src/app"),
@@ -21,6 +30,9 @@ export default defineConfig({
       "@assets": path.resolve(__dirname, "./src/assets"),
       "@data": path.resolve(__dirname, "./src/data"),
       "@contexts": path.resolve(__dirname, "./src/contexts"),
+      "@services": path.resolve(__dirname, "./src/services"),
+      "@hooks": path.resolve(__dirname, "./src/hooks"),
+      "@config": path.resolve(__dirname, "./src/config"),
     },
   },
 });

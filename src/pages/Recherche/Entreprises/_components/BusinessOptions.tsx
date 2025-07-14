@@ -19,6 +19,8 @@ export interface BusinessOptionsProps {
   itemsPerPage: number;
   start: number;
   end: number;
+  totalPages?: number;
+  totalItems?: number;
   onPageChange: (page: number) => void;
   onItemsPerPageChange: (size: number) => void;
   onExport?: () => void;
@@ -37,10 +39,11 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   itemsPerPage,
   start,
   end,
+  totalPages = 1,
+  totalItems = 0,
   onPageChange,
   onItemsPerPageChange,
   onExport = () => {},
-  onDelete = () => {},
   onSortChange = () => {},
   layout,
   setLayout,
@@ -103,8 +106,7 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
     onSortChange(next);
   };
 
-  const totalItems = businesses.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const displayTotalItems = totalItems || businesses.length;
 
   const handlePrevPage = () => onPageChange(Math.max(1, currentPage - 1));
   const handleNextPage = () => onPageChange(Math.min(currentPage + 1, totalPages));
@@ -356,9 +358,9 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
               <ChevronLeft className="w-5 h-5" />
             </button>
             <span className="text-sm">
-              {start}–{end} sur {totalItems}
+              {start}–{end} sur {displayTotalItems}
             </span>
-            <button onClick={handleNextPage} disabled={end >= totalItems} className="p-1 hover:bg-gray-100 rounded">
+            <button onClick={handleNextPage} disabled={currentPage >= totalPages} className="p-1 hover:bg-gray-100 rounded">
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
