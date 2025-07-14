@@ -167,7 +167,7 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
               <ExportModalGlobal
                 mode="entreprise"
                 selectedCount={selectedCount}
-                statsEntreprise={{ total: 12416180 }} // valeur globale mockée
+                statsEntreprise={{ total: displayTotalItems }} // Use the same total as BusinessSummaryCard
                 statsContact={{
                   total: 12224982,
                   entreprises: 1149984,
