@@ -66,12 +66,16 @@ export class ExportService {
     const headers = [
       // Données du lead
       'Lead Status',
+      'Lead Rejection Reasons',
       'Lead First Name',
       'Lead Last Name',
       'Lead Gender',
       'Lead Email',
       'Lead Email Status',
       'Lead Phone Numbers',
+      'Lead Phone Status',
+      'Lead Phone Provider',
+      'Lead Phone Type',
       'Lead LinkedIn URL',
       'Lead Profile Image URL',
       'Lead Location',
@@ -101,39 +105,55 @@ export class ExportService {
     const csvRows = [headers.join(',')];
 
     data.leads.forEach(leadData => {
+      // Lead fields
+      const lead = leadData.lead || {};
+      const company = leadData.company || {};
+      const headquarters = company.headquarters || {};
+      // Phones
+      const phones = Array.isArray(lead.phone) ? lead.phone : [];
+      const phoneNumbers = phones.map(p => p.number).join('; ');
+      const phoneStatuses = phones.map(p => p.status).join('; ');
+      const phoneProviders = phones.map(p => p.provider).join('; ');
+      const phoneTypes = phones.map(p => p.phone_type).join('; ');
+      // Rejection reasons
+      const rejectionReasons = Array.isArray(lead.rejection_reasons) ? lead.rejection_reasons.join('; ') : '';
       const row = [
         // Données du lead
-        `"${leadData.lead.status || ''}"`,
-        `"${leadData.lead.first_name || ''}"`,
-        `"${leadData.lead.last_name || ''}"`,
-        `"${leadData.lead.gender || ''}"`,
-        `"${leadData.lead.email || ''}"`,
-        `"${leadData.lead.email_status || ''}"`,
-        `"${leadData.lead.phone?.map(p => p.number).join('; ') || ''}"`,
-        `"${leadData.lead.linkedin_url || ''}"`,
-        `"${leadData.lead.profile_image_url || ''}"`,
-        `"${leadData.lead.location || ''}"`,
-        `"${leadData.lead.title || ''}"`,
-        leadData.lead.years_in_position || '',
-        leadData.lead.months_in_position || '',
-        leadData.lead.years_in_company || '',
-        leadData.lead.months_in_company || '',
+        `"${lead.status || ''}"`,
+        `"${rejectionReasons}"`,
+        `"${lead.first_name || ''}"`,
+        `"${lead.last_name || ''}"`,
+        `"${lead.gender || ''}"`,
+        `"${lead.email || ''}"`,
+        `"${lead.email_status || ''}"`,
+        `"${phoneNumbers}"`,
+        `"${phoneStatuses}"`,
+        `"${phoneProviders}"`,
+        `"${phoneTypes}"`,
+        `"${lead.linkedin_url || ''}"`,
+        `"${lead.profile_image_url || ''}"`,
+        `"${lead.location || ''}"`,
+        `"${lead.title || ''}"`,
+        lead.years_in_position || '',
+        lead.months_in_position || '',
+        lead.years_in_company || '',
+        lead.months_in_company || '',
         // Données de l'entreprise
-        `"${leadData.company.name || ''}"`,
-        `"${leadData.company.cleaned_name || ''}"`,
-        `"${leadData.company.website || ''}"`,
-        `"${leadData.company.location || ''}"`,
-        `"${leadData.company.industry || ''}"`,
-        `"${leadData.company.headquarters?.city || ''}"`,
-        `"${leadData.company.headquarters?.line1 || ''}"`,
-        `"${leadData.company.headquarters?.country || ''}"`,
-        `"${leadData.company.headquarters?.postalCode || ''}"`,
-        `"${leadData.company.headquarters?.geographicArea || ''}"`,
-        `"${leadData.company.description || ''}"`,
-        `"${leadData.company.linkedin_url || ''}"`,
-        `"${leadData.company.linkedin_id || ''}"`,
-        `"${leadData.company.employee_range || ''}"`,
-        `"${leadData.company.company_profile_picture || ''}"`
+        `"${company.name || ''}"`,
+        `"${company.cleaned_name || ''}"`,
+        `"${company.website || ''}"`,
+        `"${company.location || ''}"`,
+        `"${company.industry || ''}"`,
+        `"${headquarters.city || ''}"`,
+        `"${headquarters.line1 || ''}"`,
+        `"${headquarters.country || ''}"`,
+        `"${headquarters.postalCode || ''}"`,
+        `"${headquarters.geographicArea || ''}"`,
+        `"${company.description || ''}"`,
+        `"${company.linkedin_url || ''}"`,
+        `"${company.linkedin_id || ''}"`,
+        `"${company.employee_range || ''}"`,
+        `"${company.company_profile_picture || ''}"`
       ];
       csvRows.push(row.join(','));
     });
@@ -206,45 +226,67 @@ export class ExportService {
     try {
       // Convertir les données BusinessCard en format d'export
       const exportData: ExportData = {
-        leads: selectedBusinesses.map(business => ({
-          lead: {
-            status: 'QUALIFIED',
-            rejection_reasons: [],
-            first_name: business.lead?.first_name || '',
-            last_name: business.lead?.last_name || '',
-            gender: business.lead?.gender || null,
-            email: business.lead?.email || business.email || null,
-            email_status: business.lead?.email_status || null,
-            phone: business.lead?.phone || (business.phone ? [{ number: business.phone, status: 'VALID', provider: '', phone_type: '' }] : []),
-            linkedin_url: business.lead?.linkedin_url || business.linkedin || '',
-            profile_image_url: business.lead?.profile_image_url || '',
-            location: business.lead?.location || business.city || '',
-            title: business.lead?.title || '',
-            years_in_position: business.lead?.years_in_position || 0,
-            months_in_position: business.lead?.months_in_position || 0,
-            years_in_company: business.lead?.years_in_company || 0,
-            months_in_company: business.lead?.months_in_company || 0
-          },
-          company: {
-            name: business.name || business.company?.name || '',
-            cleaned_name: business.company?.cleaned_name || business.name || '',
-            website: business.website || business.company?.website || '',
-            location: business.company?.location || business.city || '',
-            industry: business.activity || business.company?.industry || '',
-            headquarters: {
-              city: business.city || business.company?.headquarters?.city || '',
-              line1: business.address || business.company?.headquarters?.line1 || '',
-              country: business.company?.headquarters?.country || 'France',
-              postalCode: business.postalCode || business.company?.headquarters?.postalCode || '',
-              geographicArea: business.company?.headquarters?.geographicArea || ''
-            },
-            description: business.description || business.company?.description || '',
-            linkedin_url: business.company?.linkedin_url || '',
-            linkedin_id: business.company?.linkedin_id || '',
-            employee_range: business.employees || business.company?.employee_range || '',
-            company_profile_picture: business.logo || business.company?.company_profile_picture || ''
+        leads: selectedBusinesses.map(business => {
+          // Correction du mapping phone
+          let phones: any[] = [];
+          if (Array.isArray(business.lead?.phone)) {
+            // Déjà un tableau d'objets
+            phones = business.lead.phone;
+          } else if (typeof business.lead?.phone === 'string') {
+            phones = [{ number: business.lead.phone, status: '', provider: '', phone_type: '' }];
+          } else if (business.phone) {
+            if (Array.isArray(business.phone)) {
+              phones = business.phone.map((num: any) =>
+                typeof num === 'string'
+                  ? { number: num, status: '', provider: '', phone_type: '' }
+                  : num
+              );
+            } else if (typeof business.phone === 'string') {
+              phones = [{ number: business.phone, status: '', provider: '', phone_type: '' }];
+            } else if (typeof business.phone === 'object' && business.phone !== null) {
+              phones = [business.phone];
+            }
           }
-        }))
+          return {
+            lead: {
+              status: business.lead?.status || 'QUALIFIED',
+              rejection_reasons: business.lead?.rejection_reasons || [],
+              first_name: business.lead?.first_name || '',
+              last_name: business.lead?.last_name || '',
+              gender: business.lead?.gender || null,
+              email: business.lead?.email || business.email || null,
+              email_status: business.lead?.email_status || null,
+              phone: phones,
+              linkedin_url: business.lead?.linkedin_url || business.linkedin || '',
+              profile_image_url: business.lead?.profile_image_url || '',
+              location: business.lead?.location || business.city || '',
+              title: business.lead?.title || '',
+              years_in_position: business.lead?.years_in_position || 0,
+              months_in_position: business.lead?.months_in_position || 0,
+              years_in_company: business.lead?.years_in_company || 0,
+              months_in_company: business.lead?.months_in_company || 0
+            },
+            company: {
+              name: business.name || business.company?.name || '',
+              cleaned_name: business.company?.cleaned_name || business.name || '',
+              website: business.website || business.company?.website || '',
+              location: business.company?.location || business.city || '',
+              industry: business.activity || business.company?.industry || '',
+              headquarters: {
+                city: business.city || business.company?.headquarters?.city || '',
+                line1: business.address || business.company?.headquarters?.line1 || '',
+                country: business.company?.headquarters?.country || 'France',
+                postalCode: business.postalCode || business.company?.headquarters?.postalCode || '',
+                geographicArea: business.company?.headquarters?.geographicArea || ''
+              },
+              description: business.description || business.company?.description || '',
+              linkedin_url: business.company?.linkedin_url || '',
+              linkedin_id: business.company?.linkedin_id || '',
+              employee_range: business.employees || business.company?.employee_range || '',
+              company_profile_picture: business.logo || business.company?.company_profile_picture || ''
+            }
+          };
+        })
       };
 
       // Convertir en CSV
@@ -253,9 +295,21 @@ export class ExportService {
       this.downloadFile(csvContent, `${filename}.csv`, 'text/csv;charset=utf-8;');
       this.downloadFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       // Envoyer au backend (CSV)
-      await this.uploadExportedFile(csvContent, `${filename}.csv`, 'text/csv;charset=utf-8;');
+      const csvRes = await this.uploadExportedFile(csvContent, `${filename}.csv`, 'text/csv;charset=utf-8;');
       // Envoyer au backend (XLSX, ici même contenu que CSV)
-      await this.uploadExportedFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const xlsxRes = await this.uploadExportedFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      // Récupérer les chemins réels (avec incrémentation éventuelle)
+      const csvPath = csvRes?.filePath || `/public/file/${filename}.csv`;
+      const xlsxPath = xlsxRes?.filePath || `/public/file/${filename}.xlsx`;
+      // Appel à l'API export (file sans extension, path tableau)
+      await fetch(buildApiUrl('/api/file/export'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file: filename,
+          path: [csvPath, xlsxPath]
+        })
+      });
       return true;
     } catch (error) {
       console.error('Error exporting selected businesses:', error);
