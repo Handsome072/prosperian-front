@@ -301,13 +301,15 @@ export class ExportService {
       // Récupérer les chemins réels (avec incrémentation éventuelle)
       const csvPath = csvRes?.filePath || `/public/file/${filename}.csv`;
       const xlsxPath = xlsxRes?.filePath || `/public/file/${filename}.xlsx`;
-      // Appel à l'API export (file sans extension, path tableau)
+      // Appel à l'API export (file sans extension, path tableau, type et ligne)
       await fetch(buildApiUrl('/api/file/export'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           file: filename,
-          path: [csvPath, xlsxPath]
+          path: [csvPath, xlsxPath],
+          type: 'entreprise',
+          ligne: exportData.leads.length
         })
       });
       return true;
