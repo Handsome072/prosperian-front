@@ -126,6 +126,7 @@ export const Entreprises = () => {
       {/* Contenu principal */}
       <MainContent
         businesses={businesses}
+        leads={leads}
         totalBusinesses={totalLeads}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}

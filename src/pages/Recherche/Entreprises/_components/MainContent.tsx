@@ -12,9 +12,11 @@ import {
   getSelectedContactsCount 
 } from "../../../../utils/localStorageCounters";
 import { calculateSelectedEntrepriseStats } from "../../../../utils/selectionStats";
+import { ExportService } from '../../../../services/exportService';
 
 export interface MainContentProps {
   businesses: Business[];
+  leads: any[]; // Ajout de la prop leads pour accès aux objets complets
   totalBusinesses: number;
   searchTerm: string;
   onSearchChange: (term: string) => void;
@@ -33,6 +35,7 @@ export interface MainContentProps {
 
 export const MainContent: React.FC<MainContentProps> = ({ 
   businesses, 
+  leads, // Ajout
   totalBusinesses,
   searchTerm, 
   onSearchChange, 
@@ -100,44 +103,17 @@ export const MainContent: React.FC<MainContentProps> = ({
 
   const handleExportConfirm = () => {
     const listName = exportFileName.trim() || 'ma_liste';
-    const selected = businesses.filter(b => selectedBusinesses.has(b.id));
-    if (selected.length === 0) {
+    // Trouver les index sélectionnés
+    const selectedIndexes = businesses
+      .map((b, idx) => selectedBusinesses.has(b.id) ? idx : -1)
+      .filter(idx => idx !== -1);
+    // Utiliser leads pour récupérer les objets complets
+    const selectedLeads = selectedIndexes.map(idx => leads[idx]);
+    if (selectedLeads.length === 0) {
       setShowExportModal(false);
       return;
     }
-    // Générer le CSV (même méthode que Contact)
-    const headers = [
-      'Nom',
-      'Activité',
-      'Ville',
-      'Adresse',
-      'Code Postal',
-      'Téléphone',
-      'Forme Juridique',
-      'Description',
-      'Année de création',
-      'Nombre employés',
-      'Chiffre d\'affaires',
-    ];
-    const rows = selected.map(b => [
-      b.name,
-      b.activity,
-      b.city,
-      b.address,
-      b.postalCode,
-      b.phone,
-      b.legalForm,
-      b.description,
-      b.foundedYear,
-      b.employeeCount,
-      b.revenue,
-    ]);
-    const csvContent = [headers.join(','), ...rows.map(row => row.map(val => (val ?? '').toString().replace(/"/g, '""')).map(val => `"${val}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    saveAs(blob, `${listName}.csv`);
-    // Stocker le CSV en base64 dans localStorage
-    const base64Content = btoa(unescape(encodeURIComponent(csvContent)));
-    localStorage.setItem(`export_${listName}`, base64Content);
+    ExportService.exportSelectedBusinesses(selectedLeads, listName);
     setShowExportModal(false);
   };
 
