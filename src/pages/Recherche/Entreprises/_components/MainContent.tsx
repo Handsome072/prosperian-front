@@ -13,6 +13,7 @@ import {
 } from "../../../../utils/localStorageCounters";
 import { calculateSelectedEntrepriseStats } from "../../../../utils/selectionStats";
 import { ExportService } from '../../../../services/exportService';
+import { useNavigate } from 'react-router-dom';
 
 export interface MainContentProps {
   businesses: Business[];
@@ -51,6 +52,7 @@ export const MainContent: React.FC<MainContentProps> = ({
   onPageChange,
   onItemsPerPageChange
 }) => {
+  const navigate = useNavigate();
   // pagination state
   const [layout, setLayout] = useState<'list' | 'grid'>(showCheckbox ? 'list' : 'grid');
   const [selectedBusinesses, setSelectedBusinesses] = useState<Set<string>>(new Set());
@@ -115,6 +117,7 @@ export const MainContent: React.FC<MainContentProps> = ({
     }
     ExportService.exportSelectedBusinesses(selectedLeads, listName);
     setShowExportModal(false);
+    navigate('/recherche/export');
   };
 
   return (
@@ -210,7 +213,11 @@ export const MainContent: React.FC<MainContentProps> = ({
                 <span className="w-32 text-right">Adresse</span>
               </div>
             )}
-            <div className={layout === 'list' ? 'divide-y bg-white rounded-lg border border-gray-200 max-h-[calc(100vh-12rem)] overflow-y-auto' : 'grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[calc(100vh-12rem)] overflow-y-auto'}>
+            <div className={
+              layout === 'list'
+                ? 'divide-y bg-white rounded-lg border border-gray-200 max-h-[calc(100vh-12rem)] overflow-y-auto'
+                : 'grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[calc(100vh-12rem)] overflow-y-auto'
+            }>
               {businesses.map((business, index) => {
                 const numId = Number(business.id);
                 // Si showCheckbox est true, toujours afficher avec checkbox

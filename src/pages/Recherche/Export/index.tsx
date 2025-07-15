@@ -16,51 +16,34 @@ const Exports: React.FC = () => {
         const data = await res.json();
         setItems(
           Array.isArray(data)
-            ? data.map((exp) => {
-                const hasFiles = Array.isArray(exp.path) && exp.path.length > 0;
-                const csvPath = hasFiles ? exp.path.find((p: string) => p.endsWith(".csv")) : null;
-                const xlsxPath = hasFiles ? exp.path.find((p: string) => p.endsWith(".xlsx")) : null;
-                return [
-                  exp.type || "-", // Type
-                  exp.file || "-", // Nom de fichier (sans extension)
-                  hasFiles ? (
-                    <span className="text-green-600 font-medium">Disponible</span>
-                  ) : (
-                    <span className="text-red-600 font-medium">Erreur</span>
-                  ),
-                  new Date(exp.created_at).toLocaleString("fr-FR"),
-                  exp.ligne ?? "-",
-                  <div className="flex gap-2">
-                    {hasFiles && (
-                      <button
-                        className="px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100 text-xs"
-                        onClick={() => {
-                          if (csvPath) {
-                            const link = document.createElement('a');
-                            link.href = `${API_CONFIG.BASE_URL}${csvPath}`;
-                            link.download = '';
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }
-                          if (xlsxPath) {
-                            setTimeout(() => {
-                              const link = document.createElement('a');
-                              link.href = `${API_CONFIG.BASE_URL}${xlsxPath}`;
-                              link.download = '';
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                            }, 500); // petite pause pour éviter conflit navigateur
-                          }
-                        }}
-                      >
-                        Télécharger
-                      </button>
-                    )}
-                  </div>
-                ];
-              })
+            ? data.map((exp) => [
+                exp.type || "-", // Type
+                exp.file || "-", // Nom de fichier (avec extension)
+                exp.path ? (
+                  <span className="text-green-600 font-medium">Disponible</span>
+                ) : (
+                  <span className="text-red-600 font-medium">Erreur</span>
+                ),
+                new Date(exp.created_at).toLocaleString("fr-FR"),
+                exp.ligne ?? "-",
+                <div className="flex gap-2">
+                  {exp.path && (
+                    <button
+                      className="inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = `${API_CONFIG.BASE_URL}${exp.path}`;
+                        link.download = '';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                    >
+                      Télécharger
+                    </button>
+                  )}
+                </div>
+              ])
             : []
         );
       } catch (e) {
@@ -73,28 +56,30 @@ const Exports: React.FC = () => {
   }, []);
 
   return (
-    <div className="mx-auto p-3">
-      <SectionCard
-        mainTitle="Gérez vos exports en toute simplicité !"
-        subTitle="Avec le service d'export, vous pouvez :"
-        items={[
-          "Exporter les données d'entreprises et/ou de contacts en quelques clics",
-          "Appliquer un repoussoir de contacts ou d'entreprises",
-          "Prévisualiser vos résultats avant de confirmer votre achat",
-          "Paramétrer des champs additionnels dans votre format d'export",
-        ]}
-        remark={
-          <>
-            Pour mieux comprendre notre <strong>service d'export</strong>, nous vous recommandons de jeter un œil à nos{" "}
-            <a href="/tutoriels" className="underline font-medium">
-              tutoriels
-            </a>{" "}
-            !
-          </>
-        }
-        buttonText="Lancer une recherche"
-        onButtonClick={() => {}}
-      />
+    <div className={`mx-auto p-3 ${!loading && items.length !== 0 ? "w-full max-w-none" : ""}`}>
+      {!loading && items.length === 0 && (
+        <SectionCard
+          mainTitle="Gérez vos exports en toute simplicité !"
+          subTitle="Avec le service d'export, vous pouvez :"
+          items={[
+            "Exporter les données d'entreprises et/ou de contacts en quelques clics",
+            "Appliquer un repoussoir de contacts ou d'entreprises",
+            "Prévisualiser vos résultats avant de confirmer votre achat",
+            "Paramétrer des champs additionnels dans votre format d'export",
+          ]}
+          remark={
+            <>
+              Pour mieux comprendre notre <strong>service d'export</strong>, nous vous recommandons de jeter un œil à nos{" "}
+              <a href="/tutoriels" className="underline font-medium">
+                tutoriels
+              </a>{" "}
+              !
+            </>
+          }
+          buttonText="Lancer une recherche"
+          onButtonClick={() => {}}
+        />
+      )}
       <SectionTableCard
         title="Mes exports"
         columns={columns}

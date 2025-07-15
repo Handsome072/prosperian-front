@@ -248,43 +248,43 @@ export class ExportService {
             }
           }
           return {
-            lead: {
+          lead: {
               status: business.lead?.status || 'QUALIFIED',
               rejection_reasons: business.lead?.rejection_reasons || [],
-              first_name: business.lead?.first_name || '',
-              last_name: business.lead?.last_name || '',
-              gender: business.lead?.gender || null,
-              email: business.lead?.email || business.email || null,
-              email_status: business.lead?.email_status || null,
+            first_name: business.lead?.first_name || '',
+            last_name: business.lead?.last_name || '',
+            gender: business.lead?.gender || null,
+            email: business.lead?.email || business.email || null,
+            email_status: business.lead?.email_status || null,
               phone: phones,
-              linkedin_url: business.lead?.linkedin_url || business.linkedin || '',
-              profile_image_url: business.lead?.profile_image_url || '',
-              location: business.lead?.location || business.city || '',
-              title: business.lead?.title || '',
-              years_in_position: business.lead?.years_in_position || 0,
-              months_in_position: business.lead?.months_in_position || 0,
-              years_in_company: business.lead?.years_in_company || 0,
-              months_in_company: business.lead?.months_in_company || 0
+            linkedin_url: business.lead?.linkedin_url || business.linkedin || '',
+            profile_image_url: business.lead?.profile_image_url || '',
+            location: business.lead?.location || business.city || '',
+            title: business.lead?.title || '',
+            years_in_position: business.lead?.years_in_position || 0,
+            months_in_position: business.lead?.months_in_position || 0,
+            years_in_company: business.lead?.years_in_company || 0,
+            months_in_company: business.lead?.months_in_company || 0
+          },
+          company: {
+            name: business.name || business.company?.name || '',
+            cleaned_name: business.company?.cleaned_name || business.name || '',
+            website: business.website || business.company?.website || '',
+            location: business.company?.location || business.city || '',
+            industry: business.activity || business.company?.industry || '',
+            headquarters: {
+              city: business.city || business.company?.headquarters?.city || '',
+              line1: business.address || business.company?.headquarters?.line1 || '',
+              country: business.company?.headquarters?.country || 'France',
+              postalCode: business.postalCode || business.company?.headquarters?.postalCode || '',
+              geographicArea: business.company?.headquarters?.geographicArea || ''
             },
-            company: {
-              name: business.name || business.company?.name || '',
-              cleaned_name: business.company?.cleaned_name || business.name || '',
-              website: business.website || business.company?.website || '',
-              location: business.company?.location || business.city || '',
-              industry: business.activity || business.company?.industry || '',
-              headquarters: {
-                city: business.city || business.company?.headquarters?.city || '',
-                line1: business.address || business.company?.headquarters?.line1 || '',
-                country: business.company?.headquarters?.country || 'France',
-                postalCode: business.postalCode || business.company?.headquarters?.postalCode || '',
-                geographicArea: business.company?.headquarters?.geographicArea || ''
-              },
-              description: business.description || business.company?.description || '',
-              linkedin_url: business.company?.linkedin_url || '',
-              linkedin_id: business.company?.linkedin_id || '',
-              employee_range: business.employees || business.company?.employee_range || '',
-              company_profile_picture: business.logo || business.company?.company_profile_picture || ''
-            }
+            description: business.description || business.company?.description || '',
+            linkedin_url: business.company?.linkedin_url || '',
+            linkedin_id: business.company?.linkedin_id || '',
+            employee_range: business.employees || business.company?.employee_range || '',
+            company_profile_picture: business.logo || business.company?.company_profile_picture || ''
+          }
           };
         })
       };
@@ -296,18 +296,26 @@ export class ExportService {
       this.downloadFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       // Envoyer au backend (CSV)
       const csvRes = await this.uploadExportedFile(csvContent, `${filename}.csv`, 'text/csv;charset=utf-8;');
-      // Envoyer au backend (XLSX, ici même contenu que CSV)
-      const xlsxRes = await this.uploadExportedFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      // Récupérer les chemins réels (avec incrémentation éventuelle)
       const csvPath = csvRes?.filePath || `/public/file/${filename}.csv`;
-      const xlsxPath = xlsxRes?.filePath || `/public/file/${filename}.xlsx`;
-      // Appel à l'API export (file sans extension, path tableau, type et ligne)
       await fetch(buildApiUrl('/api/file/export'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          file: filename,
-          path: [csvPath, xlsxPath],
+          file: `${filename}.csv`,
+          path: csvPath,
+          type: 'entreprise',
+          ligne: exportData.leads.length
+        })
+      });
+      // Envoyer au backend (XLSX)
+      const xlsxRes = await this.uploadExportedFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      const xlsxPath = xlsxRes?.filePath || `/public/file/${filename}.xlsx`;
+      await fetch(buildApiUrl('/api/file/export'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          file: `${filename}.xlsx`,
+          path: xlsxPath,
           type: 'entreprise',
           ligne: exportData.leads.length
         })

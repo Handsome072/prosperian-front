@@ -5,8 +5,10 @@ import ContactOptions from "./_components/ContactOptions";
 import ExportModalGlobal from "../../../components/ExportModalGlobal";
 
 import { RightPanel } from "../Entreprises/_components/RightPanel";
+import { useNavigate } from 'react-router-dom';
 
 const Contact: React.FC = () => {
+  const navigate = useNavigate();
   const { filteredContacts, headerStats, postes, niveaux, setSort, filters, setFilters } = useFilterContext();
   const [selectedContacts, setSelectedContacts] = useState<Set<number>>(new Set());
   const [displayLimit, setDisplayLimit] = useState(10);
@@ -79,6 +81,7 @@ const Contact: React.FC = () => {
     // ... logique d'export CSV ou API ...
     setShowExportPopup(false);
     setSelectedContacts(new Set());
+    navigate('/recherche/export');
   };
 
   const handleExportClose = () => setShowExportPopup(false);
