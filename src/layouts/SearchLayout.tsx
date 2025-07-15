@@ -1,5 +1,5 @@
 import React from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { useFilterContext } from "@contexts/FilterContext";
 import { SecondaryNav } from "@shared/components/Header/SecondaryNav";
 import { ResponsiveSidebar } from "@shared/components/Sidebar/ResponsiveSidebar";
@@ -7,6 +7,8 @@ import { FilterState } from "@entities/Business";
 import { useSearchLayoutContext } from "@contexts/SearchLayoutContext";
 
 export const SearchLayout: React.FC = () => {
+  const location = useLocation();
+  const isExportPage = location.pathname.includes("/recherche/export");
   const {
     filters,
     setFilters,
@@ -33,7 +35,7 @@ export const SearchLayout: React.FC = () => {
       {/* Content */}
       <div className="flex flex-col md:flex-row">
         {/* Filter Sidebar */}
-        {showSidebar && (
+        {showSidebar && !isExportPage && (
           <ResponsiveSidebar
             filters={filters}
             onFiltersChange={handleFiltersChange}
