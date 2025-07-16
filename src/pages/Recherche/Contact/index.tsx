@@ -23,8 +23,8 @@ const Contact: React.FC = () => {
   const [businessesOverride, setBusinessesOverride] = useState(null);
 
   useEffect(() => {
-    const handler = (e) => {
-      setBusinessesOverride(e.detail);
+    const handler = (e: unknown) => {
+      setBusinessesOverride((e as any).detail);
     };
     window.addEventListener("updateBusinessList", handler);
     return () => {
@@ -65,24 +65,28 @@ const Contact: React.FC = () => {
   // Fonction pour extraire l'adresse de manière sécurisée (copiée de BusinessCard)
   const extractAddress = (headquarters: unknown) => {
     if (!headquarters) return 'Adresse non disponible';
+    const h = headquarters as unknown as { line1?: string; city?: string; postalCode?: string; country?: string };
     const parts = [];
-    if (headquarters.line1) parts.push(headquarters.line1);
-    if (headquarters.city) parts.push(headquarters.city);
-    if (headquarters.postalCode) parts.push(headquarters.postalCode);
-    if (headquarters.country) parts.push(headquarters.country);
+    if (h.line1) parts.push(h.line1);
+    if (h.city) parts.push(h.city);
+    if (h.postalCode) parts.push(h.postalCode);
+    if (h.country) parts.push(h.country);
     return parts.length > 0 ? parts.join(', ') : 'Adresse non disponible';
   };
 
   // Mapping des leads en objets contacts formatés (comme pour BusinessCard)
-  const contacts = leads.map((leadWithCompany, index) => ({
-    id: String(index),
-    role: leadWithCompany.lead?.title || '',
-    website: leadWithCompany.company.website || '',
-    logo: leadWithCompany.company.company_profile_picture || '',
-    entreprise: leadWithCompany.company.name || '',
-    address: extractAddress(leadWithCompany.company.headquarters),
-    // ... autres champs si besoin
-  }));
+  const contacts = leads.map((leadWithCompany: unknown, index: number) => {
+    const lwc = leadWithCompany as { lead?: { title?: string }, company?: { website?: string, company_profile_picture?: string, name?: string, headquarters?: unknown } };
+    return {
+      id: String(index),
+      role: lwc.lead?.title || '',
+      website: lwc.company?.website || '',
+      logo: lwc.company?.company_profile_picture || '',
+      entreprise: lwc.company?.name || '',
+      address: extractAddress(lwc.company?.headquarters),
+      // ... autres champs si besoin
+    };
+  });
 
   const handlePrevPage = () => {
     if (currentPage > 1) loadPage(currentPage - 1);
@@ -155,6 +159,14 @@ const Contact: React.FC = () => {
     navigate('/recherche/export');
   };
 
+  // Calcul du nombre de leads avec email et avec LinkedIn
+  const totalWithEmail = leads.filter(
+    l => l.lead && l.lead.most_probable_email
+  ).length;
+  const totalWithLinkedIn = leads.filter(
+    l => l.lead && l.lead.linkedin_profile_url
+  ).length;
+
   return (
     <>
       {/* Popup contact */}
@@ -215,18 +227,18 @@ const Contact: React.FC = () => {
             <div className="hidden lg:grid grid-cols-3 gap-4 mb-6">
               <div className="bg-white shadow rounded-lg p-4">
                 <div className="text-common-blue font-bold mb-1">Contacts</div>
-                <div className="text-xl font-bold text-dark-blue">{headerStats.totalContacts}</div>
-                <div className="text-gray-400 text-sm">Entreprises : {headerStats.totalEntreprises}</div>
+                <div className="text-xl font-bold text-dark-blue">{totalLeads}</div>
+                {/* <div className="text-gray-400 text-sm">Entreprises : {headerStats.totalEntreprises}</div> */}
               </div>
-              <div className="bg-white shadow rounded-lg p-4">
+              {/* <div className="bg-white shadow rounded-lg p-4">
                 <div className="text-common-blue font-bold mb-1">Contacts directs</div>
                 <div className="flex justify-between text-sm">
                   <span className="text-dark-blue">Avec email :</span>
-                  <span className="font-semibold text-dark-blue">{headerStats.contactsDirects.avecEmail}</span>
+                  <span className="font-semibold text-dark-blue">{totalWithEmail}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-dark-blue">Avec LinkedIn :</span>
-                  <span className="font-semibold text-dark-blue">{headerStats.contactsDirects.avecLinkedIn}</span>
+                  <span className="font-semibold text-dark-blue">{totalWithLinkedIn}</span>
                 </div>
               </div>
               <div className="bg-white shadow rounded-lg p-4">
@@ -235,7 +247,7 @@ const Contact: React.FC = () => {
                   <span className="text-dark-blue">Avec téléphone :</span>
                   <span className="font-semibold text-dark-blue">{headerStats.contactsGeneriques.avecTelephone}</span>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             <ContactOptions
@@ -271,7 +283,7 @@ const Contact: React.FC = () => {
                       <th className="text-left p-3">Rôle</th>
                       <th className="w-24 text-center p-3">Web</th>
                       <th className="text-left p-3">Entreprise</th>
-                      <th className="w-24 text-center text-[#E95C41] p-3"># Contacts</th>
+                      <th className="w-24 text-center text-[#E95C41] p-3">Contacts</th>
                       <th className="w-24 text-center p-3">CA</th>
                       <th className="w-32 text-right p-3">Adresse</th>
                     </tr>
