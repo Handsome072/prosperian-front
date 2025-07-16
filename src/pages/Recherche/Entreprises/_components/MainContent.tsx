@@ -103,6 +103,27 @@ export const MainContent: React.FC<MainContentProps> = ({
     setShowExportModal(true);
   };
 
+  // Ajout : Export direct avec nom par défaut (pour ExportModalGlobal)
+  const handleDirectExport = () => {
+    // Générer 2x 8 chiffres aléatoires
+    const randomDigits1 = Math.floor(10000000 + Math.random() * 90000000);
+    const randomDigits2 = Math.floor(10000000 + Math.random() * 90000000);
+    const fileName = `export_${randomDigits1}-${randomDigits2}`;
+    // Trouver les index sélectionnés
+    const selectedIndexes = businesses
+      .map((b, idx) => selectedBusinesses.has(b.id) ? idx : -1)
+      .filter(idx => idx !== -1);
+    // Utiliser leads pour récupérer les objets complets
+    const selectedLeads = selectedIndexes.map(idx => leads[idx]);
+    if (selectedLeads.length === 0) {
+      setShowExportModal(false);
+      return;
+    }
+    ExportService.exportSelectedBusinesses(selectedLeads, fileName);
+    setShowExportModal(false);
+    navigate('/recherche/export');
+  };
+
   const handleExportConfirm = () => {
     const listName = exportFileName.trim() || 'ma_liste';
     // Trouver les index sélectionnés
@@ -139,7 +160,8 @@ export const MainContent: React.FC<MainContentProps> = ({
           layout={layout}
           setLayout={setLayout}
           onItemsPerPageChange={onItemsPerPageChange || (() => {})}
-          onExport={handleExport}
+          // Remplacer handleExport par handleDirectExport pour l'export direct
+          onExport={handleDirectExport}
           selectedIds={Array.from(selectedBusinesses).map(id => Number(id))}
           storedEnterprisesCount={storedEnterprisesCount}
           storedContactsCount={storedContactsCount}
@@ -171,7 +193,7 @@ export const MainContent: React.FC<MainContentProps> = ({
         {showExportModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
             <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-xs">
-              <h2 className="text-lg font-bold mb-4 text-gray-900">Exporter la liste</h2>
+              <h2 className="text-lg font-bold mb-4 text-gray-900"></h2>
               <label className="block text-sm text-gray-700 mb-2">Nom du fichier :</label>
               <input
                 type="text"

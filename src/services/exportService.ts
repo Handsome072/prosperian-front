@@ -62,8 +62,13 @@ export class ExportService {
   }
 
   // Fonction pour convertir les données en format CSV
-  static convertToCSV(data: ExportData): string {
-    const headers = [
+  static convertToCSV(data: ExportData, type: string = 'entreprise'): string {
+    // Colonnes personnalisées pour contact
+    const contactHeaders = [
+      'first name', 'last name', 'gender', 'title', 'email', 'phone', 'all phones', 'company name', 'company cleaned name', 'company website', 'company domain', 'linkedin profile url', 'company linkedin id url', 'location', 'company location', 'company industry', 'employee count', 'employee range', 'revenue', 'headquarters', 'year founded', 'linkedin headline', 'linkedin connections count', 'start date job', 'start date company', 'years in position', 'months in position', 'years in company', 'months in company', 'current positions count', 'title description', 'summary', 'full name', 'sales navigator profile url', 'linkedin id url', 'profile image url', 'company profile picture', 'company description', 'company linkedin', 'connection degree', 'is premium linkedin', 'is open profile linkedin', 'is open to work linkedin'
+    ];
+    // Colonnes standard pour l'entreprise
+    const standardHeaders = [
       // Données du lead
       'Lead Status',
       'Lead Rejection Reasons',
@@ -101,61 +106,137 @@ export class ExportService {
       'Company Employee Range',
       'Company Profile Picture'
     ];
+    // Colonnes personnalisées pour entreprise (export depuis entreprise)
+    const entrepriseHeaders = [
+      'Company Name', 'Website', 'Domain', 'Description', 'Country', 'Industry', 'Employees', 'LinkedIn URL', 'LinkedIn ID'
+    ];
 
-    const csvRows = [headers.join(',')];
+    const headers = type === 'contact' ? contactHeaders : (type === 'entreprise' ? entrepriseHeaders : standardHeaders);
+
+    const csvRows = [headers.join('\t')];
+
+    // Fonction utilitaire pour nettoyer les champs (supprimer \n, \r)
+    function cleanField(val: any) {
+      if (typeof val !== 'string') return val || '';
+      return val.replace(/[\n\r]+/g, ' ').replace(/\s+/g, ' ').trim();
+    }
 
     data.leads.forEach(leadData => {
-      // Lead fields
       const lead = leadData.lead || {};
       const company = leadData.company || {};
       const headquarters = company.headquarters || {};
-      // Phones
       const phones = Array.isArray(lead.phone) ? lead.phone : [];
-      const phoneNumbers = phones.map(p => p.number).join('; ');
-      const phoneStatuses = phones.map(p => p.status).join('; ');
-      const phoneProviders = phones.map(p => p.provider).join('; ');
-      const phoneTypes = phones.map(p => p.phone_type).join('; ');
-      // Rejection reasons
-      const rejectionReasons = Array.isArray(lead.rejection_reasons) ? lead.rejection_reasons.join('; ') : '';
-      const row = [
-        // Données du lead
-        `"${lead.status || ''}"`,
-        `"${rejectionReasons}"`,
-        `"${lead.first_name || ''}"`,
-        `"${lead.last_name || ''}"`,
-        `"${lead.gender || ''}"`,
-        `"${lead.email || ''}"`,
-        `"${lead.email_status || ''}"`,
-        `"${phoneNumbers}"`,
-        `"${phoneStatuses}"`,
-        `"${phoneProviders}"`,
-        `"${phoneTypes}"`,
-        `"${lead.linkedin_url || ''}"`,
-        `"${lead.profile_image_url || ''}"`,
-        `"${lead.location || ''}"`,
-        `"${lead.title || ''}"`,
-        lead.years_in_position || '',
-        lead.months_in_position || '',
-        lead.years_in_company || '',
-        lead.months_in_company || '',
-        // Données de l'entreprise
-        `"${company.name || ''}"`,
-        `"${company.cleaned_name || ''}"`,
-        `"${company.website || ''}"`,
-        `"${company.location || ''}"`,
-        `"${company.industry || ''}"`,
-        `"${headquarters.city || ''}"`,
-        `"${headquarters.line1 || ''}"`,
-        `"${headquarters.country || ''}"`,
-        `"${headquarters.postalCode || ''}"`,
-        `"${headquarters.geographicArea || ''}"`,
-        `"${company.description || ''}"`,
-        `"${company.linkedin_url || ''}"`,
-        `"${company.linkedin_id || ''}"`,
-        `"${company.employee_range || ''}"`,
-        `"${company.company_profile_picture || ''}"`
-      ];
-      csvRows.push(row.join(','));
+
+      if (type === 'contact') {
+        // Mapping personnalisé pour contact
+        const row = [
+          cleanField(lead.first_name),
+          cleanField(lead.last_name),
+          cleanField(lead.gender),
+          cleanField(lead.title),
+          cleanField(lead.email),
+          cleanField(phones[0]?.number),
+          cleanField(phones.map(p => p.number).join('; ')),
+          cleanField(company.name),
+          cleanField(company.cleaned_name),
+          cleanField(company.website),
+          cleanField(company.domain),
+          cleanField(lead.linkedin_url),
+          cleanField(company.linkedin_id),
+          cleanField(lead.location),
+          cleanField(company.location),
+          cleanField(company.industry),
+          cleanField(company.employee_count),
+          cleanField(company.employee_range),
+          cleanField(company.revenue),
+          cleanField(headquarters.line1),
+          cleanField(company.year_founded),
+          cleanField(lead.linkedin_headline),
+          cleanField(lead.linkedin_connections_count),
+          cleanField(lead.start_date_job),
+          cleanField(lead.start_date_company),
+          cleanField(lead.years_in_position),
+          cleanField(lead.months_in_position),
+          cleanField(lead.years_in_company),
+          cleanField(lead.months_in_company),
+          cleanField(lead.current_positions_count),
+          cleanField(lead.title_description),
+          cleanField(lead.summary),
+          cleanField(lead.full_name),
+          cleanField(lead.sales_navigator_profile_url),
+          cleanField(lead.linkedin_id_url),
+          cleanField(lead.profile_image_url),
+          cleanField(company.company_profile_picture),
+          cleanField(company.description),
+          cleanField(company.linkedin_url),
+          cleanField(lead.connection_degree),
+          cleanField(lead.is_premium_linkedin),
+          cleanField(lead.is_open_profile_linkedin),
+          cleanField(lead.is_open_to_work_linkedin)
+        ];
+        csvRows.push(row.join('\t'));
+      } else if (type === 'entreprise') {
+        // Mapping personnalisé pour entreprise
+        const row = [
+          cleanField(company.name),
+          cleanField(company.website),
+          cleanField(company.domain),
+          cleanField(company.description),
+          cleanField(headquarters.country),
+          cleanField(company.industry),
+          company.employee_range ? cleanField(company.employee_range) + ' employees' : '',
+          cleanField(company.linkedin_url),
+          cleanField(company.linkedin_id)
+        ];
+        csvRows.push(row.join('\t'));
+      } else {
+        // Lead fields
+        const phoneNumbers = phones.map(p => p.number).join('; ');
+        const phoneStatuses = phones.map(p => p.status).join('; ');
+        const phoneProviders = phones.map(p => p.provider).join('; ');
+        const phoneTypes = phones.map(p => p.phone_type).join('; ');
+        // Rejection reasons
+        const rejectionReasons = Array.isArray(lead.rejection_reasons) ? lead.rejection_reasons.join('; ') : '';
+        const row = [
+          // Données du lead
+          `"${lead.status || ''}"`,
+          `"${rejectionReasons}"`,
+          `"${lead.first_name || ''}"`,
+          `"${lead.last_name || ''}"`,
+          `"${lead.gender || ''}"`,
+          `"${lead.email || ''}"`,
+          `"${lead.email_status || ''}"`,
+          `"${phoneNumbers}"`,
+          `"${phoneStatuses}"`,
+          `"${phoneProviders}"`,
+          `"${phoneTypes}"`,
+          `"${lead.linkedin_url || ''}"`,
+          `"${lead.profile_image_url || ''}"`,
+          `"${lead.location || ''}"`,
+          `"${lead.title || ''}"`,
+          lead.years_in_position || '',
+          lead.months_in_position || '',
+          lead.years_in_company || '',
+          lead.months_in_company || '',
+          // Données de l'entreprise
+          `"${company.name || ''}"`,
+          `"${company.cleaned_name || ''}"`,
+          `"${company.website || ''}"`,
+          `"${company.location || ''}"`,
+          `"${company.industry || ''}"`,
+          `"${headquarters.city || ''}"`,
+          `"${headquarters.line1 || ''}"`,
+          `"${headquarters.country || ''}"`,
+          `"${headquarters.postalCode || ''}"`,
+          `"${headquarters.geographicArea || ''}"`,
+          `"${company.description || ''}"`,
+          `"${company.linkedin_url || ''}"`,
+          `"${company.linkedin_id || ''}"`,
+          `"${company.employee_range || ''}"`,
+          `"${company.company_profile_picture || ''}"`
+        ];
+        csvRows.push(row.join(','));
+      }
     });
 
     return csvRows.join('\n');
@@ -222,7 +303,7 @@ export class ExportService {
   }
 
   // Fonction pour exporter les données sélectionnées depuis BusinessCard
-  static async exportSelectedBusinesses(selectedBusinesses: any[], filename: string) {
+  static async exportSelectedBusinesses(selectedBusinesses: any[], filename: string, type: string = 'entreprise') {
     try {
       // Convertir les données BusinessCard en format d'export
       const exportData: ExportData = {
@@ -290,7 +371,7 @@ export class ExportService {
       };
 
       // Convertir en CSV
-      const csvContent = this.convertToCSV(exportData);
+      const csvContent = this.convertToCSV(exportData, type);
       // Télécharger les fichiers
       this.downloadFile(csvContent, `${filename}.csv`, 'text/csv;charset=utf-8;');
       this.downloadFile(csvContent, `${filename}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
@@ -303,7 +384,7 @@ export class ExportService {
         body: JSON.stringify({
           file: `${filename}.csv`,
           path: csvPath,
-          type: 'entreprise',
+          type,
           ligne: exportData.leads.length
         })
       });
@@ -316,7 +397,7 @@ export class ExportService {
         body: JSON.stringify({
           file: `${filename}.xlsx`,
           path: xlsxPath,
-          type: 'entreprise',
+          type,
           ligne: exportData.leads.length
         })
       });
