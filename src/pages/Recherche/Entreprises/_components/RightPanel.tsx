@@ -84,7 +84,7 @@ export const RightPanel: React.FC<RightPanelProps> = ({ businesses, totalBusines
   const colors = cityColors;
 
   return (
-    <div className="w-100 md:w-80 bg-white border-l border-gray-200 h-screen overflow-y-auto">
+    <div className="w-full max-w-xs md:w-80 flex-shrink-0 bg-white border-l border-gray-200 h-screen overflow-y-auto">
       {/* Répartition géographique */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-2 mb-4">
