@@ -7,6 +7,7 @@ const Exports: React.FC = () => {
   const columns = ["Type", "Nom de fichier", "Statut", "Crée le", "#lignes", "Action"];
   const [items, setItems] = React.useState<React.ReactNode[][]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [selectedFormat, setSelectedFormat] = React.useState<'csv' | 'xlsx'>('csv');
 
   React.useEffect(() => {
     const fetchExports = async () => {
@@ -16,34 +17,36 @@ const Exports: React.FC = () => {
         const data = await res.json();
         setItems(
           Array.isArray(data)
-            ? data.map((exp) => [
-                exp.type || "-", // Type
-                exp.file || "-", // Nom de fichier (avec extension)
-                exp.path ? (
-                  <span className="text-green-600 font-medium">Disponible</span>
-                ) : (
-                  <span className="text-red-600 font-medium">Erreur</span>
-                ),
-                new Date(exp.created_at).toLocaleString("fr-FR"),
-                exp.ligne ?? "-",
-                <div className="flex gap-2">
-                  {exp.path && (
-                    <button
-                      className="inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full"
-                      onClick={() => {
-                        const link = document.createElement('a');
-                        link.href = `${API_CONFIG.BASE_URL}${exp.path}`;
-                        link.download = '';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                    >
-                      Télécharger
-                    </button>
-                  )}
-                </div>
-              ])
+            ? data
+                .filter((exp) => selectedFormat === 'csv' ? exp.file?.endsWith('.csv') : exp.file?.endsWith('.xlsx'))
+                .map((exp) => [
+                  exp.type || "-", // Type
+                  exp.file || "-", // Nom de fichier (avec extension)
+                  exp.path ? (
+                    <span className="text-green-600 font-medium">Disponible</span>
+                  ) : (
+                    <span className="text-red-600 font-medium">Erreur</span>
+                  ),
+                  new Date(exp.created_at).toLocaleString("fr-FR"),
+                  exp.ligne ?? "-",
+                  <div className="flex gap-2">
+                    {exp.path && (
+                      <button
+                        className="inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full"
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = `${API_CONFIG.BASE_URL}${exp.path}`;
+                          link.download = '';
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                      >
+                        Télécharger
+                      </button>
+                    )}
+                  </div>
+                ])
             : []
         );
       } catch (e) {
@@ -53,7 +56,7 @@ const Exports: React.FC = () => {
       }
     };
     fetchExports();
-  }, []);
+  }, [selectedFormat]);
 
   return (
     <div className={`mx-auto p-3 ${!loading && items.length !== 0 ? "w-full max-w-none" : ""}`}>
@@ -85,7 +88,7 @@ const Exports: React.FC = () => {
         columns={columns}
         items={items}
         emptyMessage={loading ? "Chargement..." : "Vous n'avez pas encore réalisé un export."}
-        onExportSelect={() => console.log("Export CSV")}
+        onExportSelect={(format) => setSelectedFormat(format)}
       />
     </div>
   );
