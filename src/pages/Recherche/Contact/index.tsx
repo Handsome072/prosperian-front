@@ -6,6 +6,7 @@ import ContactOptions from "./_components/ContactOptions";
 import { RightPanel } from "../Entreprises/_components/RightPanel";
 import { useNavigate } from 'react-router-dom';
 import { useProntoData } from "@hooks/useProntoData";
+import { ExportService } from '@services/exportService';
 
 const Contact: React.FC = () => {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ const Contact: React.FC = () => {
   }, [searches.length, isInitialized, leads.length, loadPage]);
 
   // Fonction pour extraire l'adresse de manière sécurisée (copiée de BusinessCard)
-  const extractAddress = (headquarters: any) => {
+  const extractAddress = (headquarters: unknown) => {
     if (!headquarters) return 'Adresse non disponible';
     const parts = [];
     if (headquarters.line1) parts.push(headquarters.line1);
@@ -137,14 +138,22 @@ const Contact: React.FC = () => {
     else alert("No contacts selected for export.");
   };
 
-  const handleConfirmExport = () => {
-    // ... logique d'export CSV ou API ...
+  const handleExportClose = () => setShowExportPopup(false);
+
+  // Ajout : Export direct avec nom par défaut (pour ExportModalGlobal)
+  const handleDirectExport = () => {
+    if (selectedContacts.size === 0) return;
+    const randomDigits1 = Math.floor(10000000 + Math.random() * 90000000);
+    const randomDigits2 = Math.floor(10000000 + Math.random() * 90000000);
+    const fileName = `export_${randomDigits1}-${randomDigits2}`;
+    // Récupérer les contacts sélectionnés
+    const selectedLeads = Array.from(selectedContacts).map(idx => leads[idx]);
+    if (selectedLeads.length === 0) return;
+    ExportService.exportSelectedBusinesses(selectedLeads, fileName, 'contact');
     setShowExportPopup(false);
     setSelectedContacts(new Set());
     navigate('/recherche/export');
   };
-
-  const handleExportClose = () => setShowExportPopup(false);
 
   return (
     <>
@@ -241,7 +250,7 @@ const Contact: React.FC = () => {
               selectedCount={selectedContacts.size}
               onExportClick={handleExport}
               showExportModal={showExportPopup}
-              onExportConfirm={handleConfirmExport}
+              onExportConfirm={handleDirectExport}
               onExportClose={handleExportClose}
               filteredTotal={totalLeads}
               pageStart={pageStart}
