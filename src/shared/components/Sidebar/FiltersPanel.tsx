@@ -1,6 +1,7 @@
 // In FiltersPanel.tsx
 import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Filter, MapPin, X } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { Filter, MapPin, ChevronDown } from "lucide-react";
 import { FilterState } from "@entities/Business";
 import { useFilterContext } from "@contexts/FilterContext";
 
@@ -129,42 +130,53 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   revenueRange,
   ageRange,
 }) => {
-  const { setFilteredContacts } = useFilterContext();
-  const [expandedSections, setExpandedSections] = useState<string[]>(["activities", "key-figures", "roles", "export-lists"]);
+  useFilterContext();
+  const location = useLocation();
+  // Détecter la section par défaut selon la route
+  const isContactPage = location.pathname.includes("/recherche/contact");
+  const isEntreprisePage = location.pathname.includes("/recherche/entreprises") || location.pathname === "/recherche";
+
+  const [expandedMainSection, setExpandedMainSection] = useState<'entreprise' | 'contact' | null>(
+    isContactPage ? 'contact' : 'entreprise'
+  );
+
   const [activitySearch, setActivitySearch] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
 
-  // Safely get saved export lists from localStorage with prefix
-  const exportLists = Object.keys(localStorage)
-    .filter((key) => key.startsWith("export_"))
-    .map((key) => {
-      try {
-        const data = JSON.parse(localStorage.getItem(key) || "{}");
-        if (data.filters) return key.replace("export_", ""); // Remove prefix for display
-        return null;
-      } catch (e) {
-        console.warn(`Invalid JSON for key ${key}:`, e);
-        return null;
-      }
-    })
-    .filter((key): key is string => key !== null); // Filter out null values
+  // Gestion de l'ouverture/fermeture des sous-filtres dans chaque section principale
+  const [openEntrepriseFilters, setOpenEntrepriseFilters] = useState<{ [key: string]: boolean }>(() => {
+    return {
+      activites: isEntreprisePage,
+      chiffres: isEntreprisePage,
+      forme: isEntreprisePage,
+    };
+  });
+  const [openContactFilters, setOpenContactFilters] = useState<{ [key: string]: boolean }>(() => {
+    return {
+      roles: isContactPage,
+      localisation: isContactPage,
+    };
+  });
 
-  // Récupérer les exports BusinessCard (base64 string, pas JSON)
-  const exportBusinessCardLists = Object.keys(localStorage)
-    .filter((key) => key.startsWith("export_"))
-    .map((key) => {
-      const value = localStorage.getItem(key);
-      // On considère que c'est un export BusinessCard si ce n'est pas du JSON (donc pas d'accolade en début)
-      if (value && value[0] !== '{') return key.replace("export_", "");
-      return null;
-    })
-    .filter((key): key is string => key !== null);
+  // Synchroniser l'ouverture par défaut lors du changement de route
+  useEffect(() => {
+    setExpandedMainSection(isContactPage ? 'contact' : 'entreprise');
+    setOpenEntrepriseFilters({
+      activites: isEntreprisePage,
+      chiffres: isEntreprisePage,
+      forme: isEntreprisePage,
+    });
+    setOpenContactFilters({
+      roles: isContactPage,
+      localisation: isContactPage,
+    });
+  }, [isContactPage, isEntreprisePage]);
 
-  const [businessCardLists, setBusinessCardLists] = useState(exportBusinessCardLists);
-  useEffect(() => { setBusinessCardLists(exportBusinessCardLists); }, [exportBusinessCardLists.length]);
-
-  const toggleSection = (section: string) => {
-    setExpandedSections((prev) => (prev.includes(section) ? prev.filter((s) => s !== section) : [...prev, section]));
+  const toggleEntrepriseFilter = (key: string) => {
+    setOpenEntrepriseFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+  const toggleContactFilter = (key: string) => {
+    setOpenContactFilters((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const updateFilters = (updates: Partial<FilterState>) => {
@@ -207,69 +219,29 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     role.toLowerCase().includes(roleSearch.toLowerCase())
   );
 
-  const FilterSection = ({
+  // Nouveau composant pour les sections principales
+  const MainSection = ({
     title,
     id,
     children,
-    hasCheckbox = false,
   }: {
     title: string;
-    id: string;
+    id: 'entreprise' | 'contact';
     children?: React.ReactNode;
-    hasCheckbox?: boolean;
   }) => (
     <div className="border-b border-gray-200 last:border-b-0">
       <button
-        onClick={() => toggleSection(id)}
-        className="w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors rounded-t-lg bg-gray-100"
+        onClick={() => setExpandedMainSection(expandedMainSection === id ? null : id)}
+        className={`w-full flex items-center justify-between p-4 text-left hover:bg-gray-50 transition-colors rounded-t-lg ${expandedMainSection === id ? 'bg-gray-100' : ''}`}
       >
-        <div className="flex items-center space-x-3">
-          {hasCheckbox && <div className="w-4 h-4 border border-gray-300 rounded"></div>}
-          <span className="font-medium text-gray-900">{title}</span>
-        </div>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform ${expandedSections.includes(id) ? "rotate-180" : ""}`}
-        />
+        <span className="font-medium text-gray-900">{title}</span>
+        <span className="text-xl font-bold text-gray-500 select-none">
+          {expandedMainSection === id ? '-' : '+'}
+        </span>
       </button>
-      {expandedSections.includes(id) && children && <div className="px-4 pb-4">{children}</div>}
+      {expandedMainSection === id && children && <div className="px-4 pb-4">{children}</div>}
     </div>
   );
-
-  // Handle applying an export list and loading CSV contacts
-  const handleApplyExportList = (listName: string) => {
-    const exportKey = `export_${listName}`;
-    const exportData = JSON.parse(localStorage.getItem(exportKey) || "{}");
-    if (exportData.csv) {
-      // Decode Base64 and parse CSV
-      const csvContent = atob(exportData.csv);
-      const lines = csvContent.split("\n").filter((line) => line.trim());
-      const headers = lines[0].split(",").map(header => header.trim().toLowerCase());
-      console.log("Headers:", headers);
-      const contacts = lines.slice(1).map((line) => {
-        const values = line.split(",").map(value => value.trim());
-        console.log("Raw values:", values);
-        const contact = {};
-        headers.forEach((header, index) => {
-          if (header === "role" || header === "role") contact["role"] = values[index] || "";
-          if (header === "subrole" || header === "subrole") contact["subrole"] = values[index] || "";
-          if (header === "entreprise" || header === "entreprise") contact["entreprise"] = values[index] || "";
-        });
-        console.log("Parsed contact:", contact);
-        return contact;
-      });
-      setFilteredContacts(contacts);
-    } else if (exportData.filters) {
-      onFiltersChange(exportData.filters);
-    }
-  };
-
-  // Handle removing an export list
-  const handleRemoveExportList = (listName: string) => {
-    const exportKey = `export_${listName}`;
-    localStorage.removeItem(exportKey);
-    // Recompute exportLists to refresh the UI
-    setExpandedSections((prev) => [...prev]); // Trigger re-render
-  };
 
   return (
     <>
@@ -299,209 +271,378 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       </div>
 
       <div>
-        <FilterSection title="Activités" id="activities">
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Rechercher une activité..."
-              value={activitySearch}
-              onChange={(e) => setActivitySearch(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded text-sm"
-            />
-            <div className="max-h-48 overflow-y-auto space-y-2">
-              {filteredActivities.map((activity) => (
-                <label key={activity} className="flex items-center space-x-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={filters.activities.includes(activity)}
-                    onChange={() => toggleActivity(activity)}
-                    className="w-4 h-4 text-orange-600 rounded"
+        {/* Affichage dynamique de l'ordre des sections selon la page */}
+        {isContactPage ? (
+          <>
+            <MainSection title="Contact" id="contact">
+              {/* Rôles */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('roles')}
+                >
+                  <span className="font-semibold">Rôles</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
                   />
-                  <span className="text-gray-700">{activity}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </FilterSection>
-
-        <FilterSection title="Rôles" id="roles">
-          <div className="space-y-4">
-            <input
-              type="text"
-              placeholder="Rechercher un rôle..."
-              value={roleSearch}
-              onChange={(e) => setRoleSearch(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded text-sm"
-            />
-            <div className="max-h-48 overflow-y-auto space-y-2">
-              {filteredRoles.map((role) => (
-                <label key={role} className="flex items-center space-x-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={filters.roles.includes(role)}
-                    onChange={() => toggleRole(role)}
-                    className="w-4 h-4 text-orange-600 rounded"
+                </button>
+                {openContactFilters.roles && (
+                  <div className="pt-2 pb-4">
+                    <input
+                      type="text"
+                      placeholder="Rechercher un rôle..."
+                      value={roleSearch}
+                      onChange={(e) => setRoleSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {filteredRoles.map((role) => (
+                        <label key={role} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={filters.roles.includes(role)}
+                            onChange={() => toggleRole(role)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{role}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Localisation */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('localisation')}
+                >
+                  <span className="font-semibold">Localisation</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
                   />
-                  <span className="text-gray-700">{role}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </FilterSection>
-
-        <FilterSection title="Chiffres clés" id="key-figures">
-          <div className="space-y-6">
-            <RangeSlider
-              min={ageRange[0]}
-              max={ageRange[1]}
-              value={filters.ageRange}
-              onChange={(value) => updateFilters({ ageRange: value })}
-              label="Âge de l'entreprise"
-              unit=" ans"
-            />
-            <RangeSlider
-              min={employeeRange[0]}
-              max={employeeRange[1]}
-              value={filters.employeeRange}
-              onChange={(value) => updateFilters({ employeeRange: value })}
-              label="Nombre d'employés"
-            />
-            <RangeSlider
-              min={revenueRange[0]}
-              max={revenueRange[1]}
-              value={filters.revenueRange}
-              onChange={(value) => updateFilters({ revenueRange: value })}
-              label="Chiffre d'affaires"
-              formatValue={(v) => `${Math.round(v / 1000)}k`}
-              unit="€"
-            />
-            <RangeSlider
-              min={0}
-              max={5}
-              value={filters.ratingRange}
-              onChange={(value) => updateFilters({ ratingRange: value })}
-              label="Note minimum"
-              formatValue={(v) => v.toFixed(1)}
-              unit="⭐"
-            />
-          </div>
-        </FilterSection>
-
-        <FilterSection title="Forme juridique" id="legal">
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {availableLegalForms.map((form) => (
-              <label key={form} className="flex items-center space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={filters.legalForms.includes(form)}
-                  onChange={() => toggleLegalForm(form)}
-                  className="w-4 h-4 text-orange-600 rounded"
-                />
-                <span className="text-gray-700">{form}</span>
-              </label>
-            ))}
-          </div>
-        </FilterSection>
-
-        <FilterSection title="Localisation" id="location">
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {availableCities.map((city) => (
-              <label key={city} className="flex items-center space-x-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={filters.cities.includes(city)}
-                  onChange={() => toggleCity(city)}
-                  className="w-4 h-4 text-orange-600 rounded"
-                />
-                <span className="text-gray-700 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
-                  {city}
-                </span>
-              </label>
-            ))}
-          </div>
-        </FilterSection>
-
-        <FilterSection title="Listes exportées" id="export-lists">
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {exportLists.map((listName) => (
-              <div
-                key={listName}
-                className="flex items-center min-w-0 flex-shrink-0 bg-blue-800 text-white rounded-full"
-              >
-                <button
-                  onClick={() => handleApplyExportList(listName)}
-                  className="flex-1 text-center px-3 py-1 focus:outline-none"
-                >
-                  {listName}
                 </button>
-                <button
-                  onClick={() => handleRemoveExportList(listName)}
-                  className="ml-2 text-white hover:text-gray-300 px-2 focus:outline-none"
-                >
-                  <X size={10} />
-                </button>
+                {openContactFilters.localisation && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                    {availableCities.map((city) => (
+                      <label key={city} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filters.cities.includes(city)}
+                          onChange={() => toggleCity(city)}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span className="text-gray-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {city}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </FilterSection>
-        {/* Nouvelle section pour les exports BusinessCard */}
-        <FilterSection title="Listes exportées 2" id="export-lists-2">
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {businessCardLists.length === 0 && (
-              <div className="text-gray-400 text-sm">Aucune liste exportée</div>
-            )}
-            {businessCardLists.map((listName) => (
-              <div
-                key={listName}
-                className="flex items-center min-w-0 flex-shrink-0 bg-blue-600 text-white rounded-full"
-              >
+            </MainSection>
+            <MainSection title="Entreprise" id="entreprise">
+              {/* Activités */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
-                  className="flex-1 text-center px-3 py-1 focus:outline-none"
-                  onClick={() => {
-                    // Récupérer le base64
-                    const base64 = localStorage.getItem(`export_${listName}`);
-                    if (!base64) return;
-                    // Décoder le CSV
-                    const csv = decodeURIComponent(escape(atob(base64)));
-                    const lines = csv.split('\n').filter(Boolean);
-                    const businesses = lines.slice(1).map(line => {
-                      const values = line.replace(/\r/g, '').split(',').map(v => v.replace(/"/g, '').trim());
-                      // Adapter l'ordre aux headers utilisés à l'export
-                      return {
-                        id: Math.random().toString(36).substr(2, 9),
-                        name: values[0] || '',
-                        activity: values[1] || '',
-                        city: values[2] || '',
-                        address: values[3] || '',
-                        postalCode: values[4] || '',
-                        phone: values[5] || '',
-                        legalForm: values[6] || '',
-                        description: values[7] || '',
-                        foundedYear: values[8] ? Number(values[8]) : undefined,
-                        employeeCount: values[9] ? Number(values[9]) : undefined,
-                        revenue: values[10] ? Number(values[10]) : undefined,
-                      };
-                    });
-                    window.dispatchEvent(new CustomEvent('updateBusinessList', { detail: businesses }));
-                  }}
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleEntrepriseFilter('activites')}
                 >
-                  {listName}
+                  <span className="font-semibold">Activités</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
+                  />
                 </button>
-                <button
-                  onClick={() => {
-                    localStorage.removeItem(`export_${listName}`);
-                    setBusinessCardLists((prev) => prev.filter((n) => n !== listName));
-                  }}
-                  className="ml-2 text-white hover:text-gray-300 px-2 focus:outline-none"
-                  aria-label={`Supprimer la liste ${listName}`}
-                >
-                  <X size={10} />
-                </button>
+                {openEntrepriseFilters.activites && (
+                  <div className="pt-2 pb-4">
+                    <input
+                      type="text"
+                      placeholder="Rechercher une activité..."
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {filteredActivities.map((activity) => (
+                        <label key={activity} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={filters.activities.includes(activity)}
+                            onChange={() => toggleActivity(activity)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{activity}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </FilterSection>
+              {/* Chiffres clés */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleEntrepriseFilter('chiffres')}
+                >
+                  <span className="font-semibold">Chiffres clés</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.chiffres ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openEntrepriseFilters.chiffres && (
+                  <div className="pt-2 pb-4 space-y-4">
+                    <RangeSlider
+                      min={ageRange[0]}
+                      max={ageRange[1]}
+                      value={filters.ageRange}
+                      onChange={(value) => updateFilters({ ageRange: value })}
+                      label="Âge de l'entreprise"
+                      unit=" ans"
+                    />
+                    <RangeSlider
+                      min={employeeRange[0]}
+                      max={employeeRange[1]}
+                      value={filters.employeeRange}
+                      onChange={(value) => updateFilters({ employeeRange: value })}
+                      label="Nombre d'employés"
+                    />
+                    <RangeSlider
+                      min={revenueRange[0]}
+                      max={revenueRange[1]}
+                      value={filters.revenueRange}
+                      onChange={(value) => updateFilters({ revenueRange: value })}
+                      label="Chiffre d'affaires"
+                      formatValue={(v) => `${Math.round(v / 1000)}k`}
+                      unit="€"
+                    />
+                    <RangeSlider
+                      min={0}
+                      max={5}
+                      value={filters.ratingRange}
+                      onChange={(value) => updateFilters({ ratingRange: value })}
+                      label="Note minimum"
+                      formatValue={(v) => v.toFixed(1)}
+                      unit="⭐"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* Forme juridique */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleEntrepriseFilter('forme')}
+                >
+                  <span className="font-semibold">Forme juridique</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.forme ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openEntrepriseFilters.forme && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                    {availableLegalForms.map((form) => (
+                      <label key={form} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filters.legalForms.includes(form)}
+                          onChange={() => toggleLegalForm(form)}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span className="text-gray-700">{form}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </MainSection>
+          </>
+        ) : (
+          <>
+            <MainSection title="Entreprise" id="entreprise">
+              {/* Activités */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleEntrepriseFilter('activites')}
+                >
+                  <span className="font-semibold">Activités</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openEntrepriseFilters.activites && (
+                  <div className="pt-2 pb-4">
+                    <input
+                      type="text"
+                      placeholder="Rechercher une activité..."
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {filteredActivities.map((activity) => (
+                        <label key={activity} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={filters.activities.includes(activity)}
+                            onChange={() => toggleActivity(activity)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{activity}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Chiffres clés */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleEntrepriseFilter('chiffres')}
+                >
+                  <span className="font-semibold">Chiffres clés</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.chiffres ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openEntrepriseFilters.chiffres && (
+                  <div className="pt-2 pb-4 space-y-4">
+                    <RangeSlider
+                      min={ageRange[0]}
+                      max={ageRange[1]}
+                      value={filters.ageRange}
+                      onChange={(value) => updateFilters({ ageRange: value })}
+                      label="Âge de l'entreprise"
+                      unit=" ans"
+                    />
+                    <RangeSlider
+                      min={employeeRange[0]}
+                      max={employeeRange[1]}
+                      value={filters.employeeRange}
+                      onChange={(value) => updateFilters({ employeeRange: value })}
+                      label="Nombre d'employés"
+                    />
+                    <RangeSlider
+                      min={revenueRange[0]}
+                      max={revenueRange[1]}
+                      value={filters.revenueRange}
+                      onChange={(value) => updateFilters({ revenueRange: value })}
+                      label="Chiffre d'affaires"
+                      formatValue={(v) => `${Math.round(v / 1000)}k`}
+                      unit="€"
+                    />
+                    <RangeSlider
+                      min={0}
+                      max={5}
+                      value={filters.ratingRange}
+                      onChange={(value) => updateFilters({ ratingRange: value })}
+                      label="Note minimum"
+                      formatValue={(v) => v.toFixed(1)}
+                      unit="⭐"
+                    />
+                  </div>
+                )}
+              </div>
+              {/* Forme juridique */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleEntrepriseFilter('forme')}
+                >
+                  <span className="font-semibold">Forme juridique</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.forme ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openEntrepriseFilters.forme && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                    {availableLegalForms.map((form) => (
+                      <label key={form} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filters.legalForms.includes(form)}
+                          onChange={() => toggleLegalForm(form)}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span className="text-gray-700">{form}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </MainSection>
+            <MainSection title="Contact" id="contact">
+              {/* Rôles */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('roles')}
+                >
+                  <span className="font-semibold">Rôles</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.roles && (
+                  <div className="pt-2 pb-4">
+                    <input
+                      type="text"
+                      placeholder="Rechercher un rôle..."
+                      value={roleSearch}
+                      onChange={(e) => setRoleSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {filteredRoles.map((role) => (
+                        <label key={role} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={filters.roles.includes(role)}
+                            onChange={() => toggleRole(role)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{role}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Localisation */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('localisation')}
+                >
+                  <span className="font-semibold">Localisation</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.localisation && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                    {availableCities.map((city) => (
+                      <label key={city} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={filters.cities.includes(city)}
+                          onChange={() => toggleCity(city)}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span className="text-gray-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {city}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </MainSection>
+          </>
+        )}
       </div>
 
       {(filters.activities.length > 0 || filters.cities.length > 0 || filters.legalForms.length > 0 || filters.roles.length > 0) && (

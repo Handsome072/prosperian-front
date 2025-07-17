@@ -141,13 +141,7 @@ const Lists: React.FC = () => {
   ]);
 
   const sharedListColumns = ["Type", "Nom", "Éléments", "Créée le", "Modifiée le"];
-  const sharedListItems: React.ReactNode[][] = [
-    ["Base", "Base ORIAS - agrément CIF", "6210", "26/10/2023", "25/06/2025"],
-    ["Base", "Base ORIAS - agrément MIOBSP", "12362", "28/02/2024", "26/03/2024"],
-    ["Base", "Participants au salon CES 2024", "113", "23/01/2024", "27/01/2024"],
-    ["Base", "Participants au salon Vivatech 2023", "851", "21/09/2023", "07/11/2023"],
-    ["Base", "Entreprises avec DPO", "84902", "03/10/2023", "07/11/2023"],
-  ];
+  const sharedListItems: React.ReactNode[][] = [];
 
   return loading ? (
     <div className="flex items-center justify-center min-h-[60vh] w-full mx-auto">
