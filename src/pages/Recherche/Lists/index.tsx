@@ -149,8 +149,12 @@ const Lists: React.FC = () => {
     ["Base", "Entreprises avec DPO", "84902", "03/10/2023", "07/11/2023"],
   ];
 
-  return (
-    <div className="mx-auto p-3">
+  return loading ? (
+    <div className="flex items-center justify-center min-h-[60vh] w-full mx-auto">
+      <div className="animate-spin rounded-full h-24 w-24 border-8 border-gray-300 border-t-[#E95C41] border-l-orange-400" />
+    </div>
+  ) : (
+    <div className={`mx-auto p-3${lists.length !== 0 ? ' w-full max-w-none' : ''}`}>
       {/* Modal Nouvelle Liste */}
       {showNewListModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
@@ -210,25 +214,26 @@ const Lists: React.FC = () => {
         </div>
       )}
       {/* Fin Modal */}
-      <SectionCard
-        mainTitle="Créez et gérez vos listes en toute simplicité !"
-        subTitle="Pourquoi utiliser notre service de liste ?"
-        items={[
-          "Sélectionnez précisément les entreprises qui vous intéressent",
-          "Visualisez directement les contacts de votre liste d’entreprise",
-          "Créez une surveillance à partir d’une liste de sociétés",
-          "Accédez à des listes exclusives partagées par l’équipe SocieteInfo",
-        ]}
-        remark={
-          <>
-            Pour mieux comprendre notre <strong>service de liste</strong>, nous vous recommandons
-            de jeter un œil à nos <a href="#" className="text-[#E95C41] underline">tutoriels</a> !
-          </>
-        }
-        buttonText="Créer ma première liste"
-        onButtonClick={() => console.log("Créer une liste")}
-      />
-
+      {lists.length === 0 && (
+        <SectionCard
+          mainTitle="Créez et gérez vos listes en toute simplicité !"
+          subTitle="Pourquoi utiliser notre service de liste ?"
+          items={[
+            "Sélectionnez précisément les entreprises qui vous intéressent",
+            "Visualisez directement les contacts de votre liste d’entreprise",
+            "Créez une surveillance à partir d’une liste de sociétés",
+            "Accédez à des listes exclusives partagées par l’équipe SocieteInfo",
+          ]}
+          remark={
+            <>
+              Pour mieux comprendre notre <strong>service de liste</strong>, nous vous recommandons
+              de jeter un œil à nos <a href="#" className="text-[#E95C41] underline">tutoriels</a> !
+            </>
+          }
+          buttonText="Créer ma première liste"
+          onButtonClick={() => console.log("Créer une liste")}
+        />
+      )}
       <div className="relative">
         <SectionTableCard
           title={<span>Mes listes</span>}
@@ -245,7 +250,6 @@ const Lists: React.FC = () => {
           Nouvelle liste
         </button>
       </div>
-
       <SectionTableCard
         title="Listes partagées"
         columns={sharedListColumns}
@@ -254,7 +258,6 @@ const Lists: React.FC = () => {
         emptyMessage="Aucune liste partagée."
         onExportSelect={() => console.log("Export CSV")}
       />
-
       <p className="text-center text-xs text-gray-500 my-6">
         © SMART DATA 2024 · <a href="#" className="underline">CGV / CGU</a> · <a href="#" className="underline">Vie privée & Confidentialité</a> · <a href="#" className="underline">Mentions Légales</a>
       </p>
