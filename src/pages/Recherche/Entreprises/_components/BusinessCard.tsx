@@ -10,6 +10,7 @@ interface BusinessCardProps {
   checked?: boolean;
   onCheckboxChange?: (id: number) => void;
   isProntoData?: boolean;
+  loading?: boolean;
 }
 
 export const BusinessCard: React.FC<BusinessCardProps> = ({ 
@@ -18,7 +19,8 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   showCheckbox, 
   checked, 
   onCheckboxChange,
-  isProntoData = false 
+  isProntoData = false,
+  loading = false
 }) => {
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
@@ -112,6 +114,21 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   const handleCompanyClick = () => {
     navigate(`/recherche/societes/${companyData.id}`);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px] w-full mx-auto">
+        <style>{`
+          @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+          .animate-spin-reverse { animation: spin-reverse 1s linear infinite; }
+        `}</style>
+        <div className="relative w-12 h-12">
+          <div className="absolute inset-0 rounded-full border-4 border-orange-400 border-t-transparent animate-spin"></div>
+          <div className="absolute inset-2 rounded-full border-4 border-[#E95C41] border-b-transparent animate-spin-reverse"></div>
+        </div>
+      </div>
+    );
+  }
 
   if (showCheckbox) {
     // Mode liste avec checkbox (lignes)

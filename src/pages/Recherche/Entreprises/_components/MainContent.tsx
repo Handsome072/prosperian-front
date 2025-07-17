@@ -169,8 +169,15 @@ export const MainContent: React.FC<MainContentProps> = ({
         
         {/* États de chargement et d'erreur */}
         {loading && (
-          <div className="flex items-center justify-center p-8 bg-white rounded-lg shadow-sm border border-gray-200">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-sm border border-gray-200">
+            <style>{`
+              @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+              .animate-spin-reverse { animation: spin-reverse 1s linear infinite; }
+            `}</style>
+            <div className="relative w-12 h-12 mb-2">
+              <div className="absolute inset-0 rounded-full border-4 border-orange-400 border-t-transparent animate-spin"></div>
+              <div className="absolute inset-2 rounded-full border-4 border-[#E95C41] border-b-transparent animate-spin-reverse"></div>
+            </div>
             <span className="ml-2 text-gray-600">Chargement des entreprises...</span>
           </div>
         )}
@@ -253,6 +260,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                       checked={selectedBusinesses.has(business.id)}
                       onCheckboxChange={handleCheckboxChange}
                       isProntoData={true}
+                      loading={loading}
                     />
                   );
                 }
@@ -266,9 +274,10 @@ export const MainContent: React.FC<MainContentProps> = ({
                     checked={selectedBusinesses.has(business.id)}
                     onCheckboxChange={handleCheckboxChange}
                     isProntoData={true}
+                    loading={loading}
                   />
                 ) : (
-                  <BusinessCard key={`${business.id}-${index}`} company={business} isProntoData={true} />
+                  <BusinessCard key={`${business.id}-${index}`} company={business} isProntoData={true} loading={loading} />
                 );
               })}
             </div>

@@ -131,7 +131,7 @@ export const Entreprises = () => {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         showCheckbox={showCheckbox}
-        loading={loading && !isInitialized}
+        loading={loading}
         error={error}
         onRetry={handleRetry}
         currentPage={currentPage}
@@ -142,7 +142,6 @@ export const Entreprises = () => {
         onPageChange={handlePageChange}
         onItemsPerPageChange={handleItemsPerPageChange}
       />
-      
       {/* Panel de droite avec statistiques */}
       <RightPanel businesses={businesses} totalBusinesses={totalLeads} />
     </div>
