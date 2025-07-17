@@ -2,6 +2,7 @@ import React from "react";
 import SectionCard from "@shared/components/SectionCard/SectionCard";
 import SectionTableCard from "@shared/components/SectionCard/SectionTableCard";
 import { buildApiUrl, API_CONFIG } from "../../../config/api";
+import { Building, Users } from "lucide-react";
 
 const Exports: React.FC = () => {
   const columns = ["Type", "Nom de fichier", "Statut", "Crée le", "#lignes", "Action"];
@@ -20,7 +21,9 @@ const Exports: React.FC = () => {
             ? data
                 .filter((exp) => selectedFormat === 'csv' ? exp.file?.endsWith('.csv') : exp.file?.endsWith('.xlsx'))
                 .map((exp) => [
-                  exp.type || "-", // Type
+                  exp.type === 'entreprise' ? <Building className="w-5 h-5 text-blue-700 mx-auto" /> :
+                  exp.type === 'contact' ? <Users className="w-5 h-5 text-green-600 mx-auto" /> :
+                  "-", // Type
                   exp.file || "-", // Nom de fichier (avec extension)
                   exp.path ? (
                     <span className="text-green-600 font-medium">Disponible</span>
