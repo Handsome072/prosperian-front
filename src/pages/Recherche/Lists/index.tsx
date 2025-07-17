@@ -1,18 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
 import SectionCard from "@shared/components/SectionCard/SectionCard";
 import SectionTableCard from "@shared/components/SectionCard/SectionTableCard";
-import Papa from "papaparse";
-import { Building, User, MoreVertical, Settings, Trash2 } from 'lucide-react';
+import { ListService, List } from "@services/listService";
+import { Building, User, MoreVertical, Settings, Trash2, Download } from 'lucide-react';
 
 const Lists: React.FC = () => {
   const [showNewListModal, setShowNewListModal] = useState(false);
   const [listName, setListName] = useState("");
-  const [listType, setListType] = useState("Entreprise (SIREN)");
+  const [listType, setListType] = useState("Entreprise");
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState("");
-  const [myListItems, setMyListItems] = useState<React.ReactNode[][]>([]);
+  const [lists, setLists] = useState<List[]>([]);
+  const [loading, setLoading] = useState(true);
   const [menuOpenIndex, setMenuOpenIndex] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Charger les listes au montage du composant
+  useEffect(() => {
+    loadLists();
+  }, []);
 
   useEffect(() => {
     if (menuOpenIndex === null) return;
@@ -25,11 +31,24 @@ const Lists: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpenIndex]);
 
+  const loadLists = async () => {
+    try {
+      setLoading(true);
+      const data = await ListService.getAllLists();
+      setLists(data);
+    } catch (error) {
+      console.error('Erreur lors du chargement des listes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const f = e.target.files[0];
-      if (!["text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"].includes(f.type) && !f.name.endsWith(".csv") && !f.name.endsWith(".xlsx")) {
-        setFileError("Format de fichier non supporté");
+      const validation = ListService.validateCSVFile(f);
+      if (!validation.isValid) {
+        setFileError(validation.error || "Format de fichier non supporté");
         setFile(null);
       } else {
         setFile(f);
@@ -38,61 +57,88 @@ const Lists: React.FC = () => {
     }
   };
 
-  const handleCreateList = () => {
+  const handleCreateList = async () => {
     if (!file || !listName) return;
-    Papa.parse(file, {
-      complete: (results) => {
-        const data = results.data as string[][];
-        // Ignore empty lines
-        const filtered = data.filter(row => Array.isArray(row) && row.some(cell => cell && cell.toString().trim() !== ""));
-        const count = filtered.length > 1 ? filtered.length - 1 : 0; // remove header
-        const now = new Date();
-        const dateStr = now.toLocaleDateString("fr-FR") + ' ' + now.toLocaleTimeString("fr-FR");
-        setMyListItems(prev => [
-          [
-            listType.includes('Entreprise') ? <Building className="w-5 h-5 text-gray-400" /> : <User className="w-5 h-5 text-gray-400" />,
-            listName,
-            count,
-            dateStr,
-            dateStr,
-            (_, idx) => (
-              <div className="relative" ref={menuOpenIndex === idx ? menuRef : undefined}>
-                <button onClick={() => setMenuOpenIndex(idx === menuOpenIndex ? null : idx)} className="p-2"><MoreVertical className="w-5 h-5 text-gray-400" /></button>
-                {menuOpenIndex === idx && (
-                  <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-20">
-                    <button className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 gap-2" onClick={() => {/* TODO: handle config */}}>
-                      <Settings className="w-4 h-4 text-gray-500" />
-                      Configurer
-                    </button>
-                    <button className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-500 gap-2" onClick={() => handleDeleteList(idx)}>
-                      <Trash2 className="w-4 h-4" />
-                      Supprimer
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          ],
-          ...prev
-        ]);
-        setShowNewListModal(false);
-        setListName("");
-        setFile(null);
-        setFileError("");
-      },
-      error: () => {
-        setFileError("Erreur lors de la lecture du fichier");
-        console.log("Erreur lors de la lecture du fichier CSV");
-      }
-    });
+    
+    try {
+      await ListService.createList({
+        type: listType,
+        nom: listName,
+        file: file
+      });
+      
+      // Recharger les listes
+      await loadLists();
+      
+      // Fermer le modal et réinitialiser
+      setShowNewListModal(false);
+      setListName("");
+      setFile(null);
+      setFileError("");
+    } catch (error) {
+      console.error('Erreur lors de la création de la liste:', error);
+      setFileError("Erreur lors de la création de la liste");
+    }
   };
 
-  const handleDeleteList = (idx: number) => {
-    setMyListItems(prev => prev.filter((_, i) => i !== idx));
-    setMenuOpenIndex(null);
+  const handleDeleteList = async (id: string) => {
+    try {
+      await ListService.deleteList(id);
+      await loadLists(); // Recharger les listes
+      setMenuOpenIndex(null);
+    } catch (error) {
+      console.error('Erreur lors de la suppression de la liste:', error);
+    }
+  };
+
+  const handleDownloadList = async (id: string, nom: string) => {
+    try {
+      await ListService.downloadListFile(id, `${nom}.csv`);
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+    }
   };
 
   const myListColumns = ["Type", "Nom", "Éléments", "Créée le", "Modifiée le", ""];
+
+  // Convertir les listes en format pour le tableau
+  const myListItems = lists.map((list, index) => [
+    list.type === 'Entreprise' ? <Building className="w-5 h-5 text-gray-400" /> : <User className="w-5 h-5 text-gray-400" />,
+    list.nom,
+    list.elements,
+    new Date(list.created_at).toLocaleDateString("fr-FR"),
+    new Date(list.updated_at).toLocaleDateString("fr-FR"),
+    <div key={list.id} className="relative" ref={menuOpenIndex === index ? menuRef : undefined}>
+      <button onClick={() => setMenuOpenIndex(index === menuOpenIndex ? null : index)} className="p-2">
+        <MoreVertical className="w-5 h-5 text-gray-400" />
+      </button>
+      {menuOpenIndex === index && (
+        <div className="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded shadow-lg z-20">
+          <button 
+            className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 gap-2" 
+            onClick={() => handleDownloadList(list.id, list.nom)}
+          >
+            <Download className="w-4 h-4 text-gray-500" />
+            Télécharger
+          </button>
+          <button 
+            className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 gap-2" 
+            onClick={() => {/* TODO: handle config */}}
+          >
+            <Settings className="w-4 h-4 text-gray-500" />
+            Configurer
+          </button>
+          <button 
+            className="flex items-center w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-500 gap-2" 
+            onClick={() => handleDeleteList(list.id)}
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer
+          </button>
+        </div>
+      )}
+    </div>
+  ]);
 
   const sharedListColumns = ["Type", "Nom", "Éléments", "Créée le", "Modifiée le"];
   const sharedListItems: React.ReactNode[][] = [
@@ -121,8 +167,8 @@ const Lists: React.FC = () => {
               value={listType}
               onChange={e => setListType(e.target.value)}
             >
-              <option>Entreprise (SIREN)</option>
-              <option>Contact (Email)</option>
+              <option>Entreprise</option>
+              <option>Contact</option>
             </select>
             <div className="mb-2 font-medium text-gray-700">Ajouter des entreprises à ma liste</div>
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-5 mb-2 flex flex-col items-center justify-center text-center bg-gray-50">
@@ -185,16 +231,11 @@ const Lists: React.FC = () => {
 
       <div className="relative">
         <SectionTableCard
-          title={
-            <span>Mes listes</span>
-          }
+          title={<span>Mes listes</span>}
           columns={myListColumns}
-          items={myListItems.map((row, idx) => {
-            // inject the menu with correct index
-            return row.map((cell, i) => (typeof cell === 'function' ? cell(null, idx) : cell));
-          })}
+          items={myListItems}
           showExport={false}
-          emptyMessage="Vous n’avez créé aucune liste."
+          emptyMessage={loading ? "Chargement..." : "Vous n’avez créé aucune liste."}
           onExportSelect={() => {}}
         />
         <button
