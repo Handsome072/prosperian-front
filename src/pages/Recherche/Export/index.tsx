@@ -61,7 +61,11 @@ const Exports: React.FC = () => {
     fetchExports();
   }, [selectedFormat]);
 
-  return (
+  return loading ? (
+    <div className="flex items-center justify-center min-h-[60vh] w-full mx-auto">
+      <div className="animate-spin rounded-full h-24 w-24 border-8 border-gray-300 border-t-[#E95C41] border-l-orange-400" />
+    </div>
+  ) : (
     <div className={`mx-auto p-3 ${!loading && items.length !== 0 ? "w-full max-w-none" : ""}`}>
       {!loading && items.length === 0 && (
         <SectionCard
