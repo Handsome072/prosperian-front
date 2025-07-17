@@ -63,7 +63,14 @@ const Exports: React.FC = () => {
 
   return loading ? (
     <div className="flex items-center justify-center min-h-[60vh] w-full mx-auto">
-      <div className="animate-spin rounded-full h-24 w-24 border-8 border-gray-300 border-t-[#E95C41] border-l-orange-400" />
+      <style>{`
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        .animate-spin-reverse { animation: spin-reverse 1s linear infinite; }
+      `}</style>
+      <div className="relative w-12 h-12">
+        <div className="absolute inset-0 rounded-full border-4 border-orange-400 border-t-transparent animate-spin"></div>
+        <div className="absolute inset-2 rounded-full border-4 border-[#E95C41] border-b-transparent animate-spin-reverse"></div>
+      </div>
     </div>
   ) : (
     <div className={`mx-auto p-3 ${!loading && items.length !== 0 ? "w-full max-w-none" : ""}`}>
