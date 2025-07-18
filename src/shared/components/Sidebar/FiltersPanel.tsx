@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { Filter, MapPin, ChevronDown } from "lucide-react";
 import { FilterState } from "@entities/Business";
 import { useFilterContext } from "@contexts/FilterContext";
+import { ListService, List } from "@services/listService";
 
 interface RangeSliderProps {
   min: number;
@@ -136,7 +137,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const isContactPage = location.pathname.includes("/recherche/contact");
   const isEntreprisePage = location.pathname.includes("/recherche/entreprises") || location.pathname === "/recherche";
 
-  const [expandedMainSection, setExpandedMainSection] = useState<'entreprise' | 'contact' | null>(
+  // Ajout 'listes' comme valeur possible
+  const [expandedMainSection, setExpandedMainSection] = useState<'entreprise' | 'contact' | 'listes' | null>(
     isContactPage ? 'contact' : 'entreprise'
   );
 
@@ -219,14 +221,25 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     role.toLowerCase().includes(roleSearch.toLowerCase())
   );
 
-  // Nouveau composant pour les sections principales
+  const [importedLists, setImportedLists] = useState<List[]>([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+
+  useEffect(() => {
+    // Charger les listes importées au montage
+    ListService.getAllImportedLists()
+      .then((data) => setImportedLists(data))
+      .catch(() => setImportedLists([]))
+      .finally(() => setLoadingLists(false));
+  }, []);
+
+  // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
     title,
     id,
     children,
   }: {
     title: string;
-    id: 'entreprise' | 'contact';
+    id: 'entreprise' | 'contact' | 'listes';
     children?: React.ReactNode;
   }) => (
     <div className="border-b border-gray-200 last:border-b-0">
@@ -245,6 +258,29 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
   return (
     <>
+      {/* Section Listes importées toujours ouverte, non réductible */}
+      <div className="border-b border-gray-200 p-4 bg-gray-50">
+        <div className="font-medium text-gray-900 mb-2">Listes importées</div>
+        {loadingLists ? (
+          <div className="text-xs text-gray-500">Chargement...</div>
+        ) : importedLists.length === 0 ? (
+          <div className="text-xs text-gray-500">Aucune liste importée</div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {importedLists.map((list) => (
+              <button
+                key={list.id}
+                className="text-white text-sm font-normal py-1 px-3 rounded-full transition hover:opacity-90 truncate max-w-full"
+                type="button"
+                title={list.nom}
+                style={{ background: 'linear-gradient(to right, #141838, #2a2f5a)' }}
+              >
+                {list.nom}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-600" />
