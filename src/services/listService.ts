@@ -206,4 +206,19 @@ export class ListService {
       reader.readAsText(file);
     });
   }
+
+  // Récupérer toutes les listes importées
+  static async getAllImportedLists(): Promise<List[]> {
+    try {
+      const response = await fetch(buildApiUrl('/api/list/import'));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching imported lists:', error);
+      throw error;
+    }
+  }
 } 
