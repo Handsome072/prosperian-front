@@ -15,7 +15,7 @@ const cityToRegion: { [city: string]: string } = {
   RENNES: 'FR-BRE',
   TOULOUSE: 'FR-OCC',
   NICE: 'FR-PAC',
-  // ... Ajoute ici tes villes et leur région correspondante
+  
 };
 
 const cityColors = [

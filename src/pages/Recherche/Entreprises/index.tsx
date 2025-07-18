@@ -85,7 +85,8 @@ export const Entreprises = () => {
       employeeCount: leadWithCompany.company.employeeCount || null,
       revenue: leadWithCompany.company.revenue || null,
       logo: leadWithCompany.company.company_profile_picture || null, // Utiliser company_profile_picture pour le logo
-      rating: leadWithCompany.company.rating || null
+      rating: leadWithCompany.company.rating || null,
+      role: leadWithCompany.lead?.title || '', // <-- Ajout du rôle
     };
   });
 

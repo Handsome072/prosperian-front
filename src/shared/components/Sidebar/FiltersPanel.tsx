@@ -4,6 +4,8 @@ import { useLocation } from "react-router-dom";
 import { Filter, MapPin, ChevronDown } from "lucide-react";
 import { FilterState } from "@entities/Business";
 import { useFilterContext } from "@contexts/FilterContext";
+import { NafModal } from './NafModal';
+import { Business } from '@entities/Business';
 
 interface RangeSliderProps {
   min: number;
@@ -110,7 +112,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 export interface FiltersPanelProps extends FilterState {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
-  availableActivities: string[];
+  businesses: Business[]; // Ajouté pour accès aux résultats courants
   availableCities: string[];
   availableLegalForms: string[];
   availableRoles: string[];
@@ -119,10 +121,27 @@ export interface FiltersPanelProps extends FilterState {
   ageRange: [number, number];
 }
 
+// Fonction utilitaire pour obtenir tous les secteurs d'activité triés par fréquence (plus de slice(0, 10))
+const getSortedActivitySectors = (businesses: Business[]) => {
+  const activityCount: { [key: string]: number } = {};
+  businesses.forEach(business => {
+    if (business.activity) {
+      activityCount[business.activity] = (activityCount[business.activity] || 0) + 1;
+    }
+  });
+  return Object.entries(activityCount)
+    .map(([activity, count]) => ({
+      activity,
+      count,
+      percentage: ((count / businesses.length) * 100).toFixed(1)
+    }))
+    .sort((a, b) => b.count - a.count);
+};
+
 export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   filters,
   onFiltersChange,
-  availableActivities,
+  businesses = [], // valeur par défaut
   availableCities,
   availableLegalForms,
   availableRoles,
@@ -140,8 +159,50 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     isContactPage ? 'contact' : 'entreprise'
   );
 
-  const [activitySearch, setActivitySearch] = useState("");
-  const [roleSearch, setRoleSearch] = useState("");
+  // Ajout d'un état pour le mode de recherche d'activité
+  const [activityMode, setActivityMode] = useState<'naf' | 'gmb' | 'semantic' | 'franchise'>('naf');
+  const [activitySearch, setActivitySearch] = useState('');
+
+  // Ajout d'un état pour le code NAF et les résultats
+  const [nafCode, setNafCode] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [nafModalOpen, setNafModalOpen] = useState(false);
+  const [nafExclude, setNafExclude] = useState(false);
+
+  // Ajout d'un état pour l'activité sélectionnée dynamiquement
+  const [selectedActivity, setSelectedActivity] = useState<string | null>(null);
+
+  // Générer dynamiquement la liste des activités à partir des entreprises affichées (toutes, triées par fréquence)
+  const allActivities = getSortedActivitySectors(Array.isArray(businesses) ? businesses : []);
+
+  // Extraction dynamique des rôles à partir des données businesses (champ 'role' string)
+  const allRoles = Array.from(new Set(
+    (Array.isArray(businesses) ? businesses : [])
+      .map(b => b.role)
+      .filter((r): r is string => typeof r === 'string' && r.trim() !== '')
+  ));
+
+  // DEBUG : Afficher la liste brute des rôles extraits et la liste unique
+  console.log('roles extraits', (Array.isArray(businesses) ? businesses : []).map(b => b.role).filter((r): r is string => typeof r === 'string' && r.trim() !== ''));
+  console.log('allRoles uniques', allRoles);
+
+  // Fonction pour lancer la recherche par code NAF
+  const handleNafSearch = async () => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (filters.activities.length > 0) {
+      params.append('activitePrincipaleUniteLegale', filters.activities.join(','));
+    }
+    if (nafExclude) {
+      params.append('exclude', 'true');
+    }
+    // Ajoute d'autres filtres ici si besoin
+    const res = await fetch(`/insee/unitesLegales?${params.toString()}`);
+    const data = await res.json();
+    setSearchResults(data.unitesLegales || []);
+    setLoading(false);
+  };
 
   // Gestion de l'ouverture/fermeture des sous-filtres dans chaque section principale
   const [openEntrepriseFilters, setOpenEntrepriseFilters] = useState<{ [key: string]: boolean }>(() => {
@@ -211,13 +272,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     updateFilters({ roles: newRoles });
   };
 
-  const filteredActivities = availableActivities.filter((activity) =>
-    activity.toLowerCase().includes(activitySearch.toLowerCase())
-  );
-
-  const filteredRoles = availableRoles.filter((role) =>
-    role.toLowerCase().includes(roleSearch.toLowerCase())
-  );
+  const handleNafConfirm = (selected: string[], exclude: boolean) => {
+    updateFilters({ activities: selected });
+    setNafExclude(exclude);
+    setNafModalOpen(false);
+  };
 
   // Nouveau composant pour les sections principales
   const MainSection = ({
@@ -276,6 +335,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <>
             <MainSection title="Contact" id="contact">
               {/* Rôles */}
+              {/* Section Rôle dynamique */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
@@ -288,15 +348,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 </button>
                 {openContactFilters.roles && (
                   <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher un rôle..."
-                      value={roleSearch}
-                      onChange={(e) => setRoleSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
                     <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredRoles.map((role) => (
+                      {allRoles.length === 0 && (
+                        <div className="text-gray-400 text-sm">Aucun rôle trouvé</div>
+                      )}
+                      {allRoles.map((role) => (
                         <label key={role} className="flex items-center space-x-2 text-sm">
                           <input
                             type="checkbox"
@@ -344,41 +400,107 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             </MainSection>
             <MainSection title="Entreprise" id="entreprise">
               {/* Activités */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleEntrepriseFilter('activites')}
-                >
-                  <span className="font-semibold">Activités</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
+              {/* Section Activités avancée */}
+              <div className="mb-4 p-2 border rounded bg-orange-50">
+                <div className="font-semibold mb-1">Recherche par</div>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    className={`px-2 py-1 rounded ${activityMode === 'naf' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'}`}
+                    onClick={() => setActivityMode('naf')}
+                  >
+                    Code NAF
+                  </button>
+                  <button
+                    className={`px-2 py-1 rounded ${activityMode === 'gmb' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'}`}
+                    onClick={() => setActivityMode('gmb')}
+                  >
+                    Activité Google (GMB)
+                  </button>
+                  <button
+                    className={`px-2 py-1 rounded ${activityMode === 'semantic' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'}`}
+                    onClick={() => setActivityMode('semantic')}
+                  >
+                    Sémantique
+                  </button>
+                  <button
+                    className={`px-2 py-1 rounded ${activityMode === 'franchise' ? 'bg-orange-600 text-white' : 'bg-orange-100 text-orange-700'}`}
+                    onClick={() => setActivityMode('franchise')}
+                  >
+                    Enseigne/Franchise
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Mots-clés, code NAF"
+                  value={activitySearch}
+                  onChange={e => setActivitySearch(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                />
+                {/* Affichage de l'activité sélectionnée */}
+                {/* Ancien code à supprimer :
+                {selectedActivity && (
+                  <div className="mb-2 text-xs text-orange-700">Activité sélectionnée : <b>{selectedActivity}</b></div>
+                )} */}
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200"
+                    onClick={() => setNafModalOpen(true)}
+                  >
+                    Codes NAF
+                  </button>
+                  <button
+                    className="px-3 py-1 bg-orange-600 text-white rounded"
+                    onClick={() => {
+                      if (selectedActivity) {
+                        updateFilters({ activities: [selectedActivity] });
+                      }
+                      handleNafSearch();
+                    }}
+                    disabled={!selectedActivity}
+                  >
+                    Charger
+                  </button>
+                </div>
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={nafExclude}
+                    onChange={e => setNafExclude(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 rounded"
                   />
+                  <span>Exclure les éléments sélectionnés</span>
+                </label>
+              </div>
+              {/* Bouton Codes NAF et affichage des codes sélectionnés */}
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  className="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200"
+                  onClick={() => setNafModalOpen(true)}
+                >
+                  Codes NAF
                 </button>
-                {openEntrepriseFilters.activites && (
-                  <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher une activité..."
-                      value={activitySearch}
-                      onChange={(e) => setActivitySearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredActivities.map((activity) => (
-                        <label key={activity} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={filters.activities.includes(activity)}
-                            onChange={() => toggleActivity(activity)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{activity}</span>
-                        </label>
-                      ))}
-                    </div>
+                {filters.activities.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {filters.activities.map(code => (
+                      <span key={code} className="bg-orange-200 text-orange-800 px-2 py-0.5 rounded text-xs">{code}</span>
+                    ))}
                   </div>
                 )}
               </div>
+              <NafModal open={nafModalOpen} onClose={() => setNafModalOpen(false)} onConfirm={handleNafConfirm} />
+              {/* Affichage des résultats (exemple, à adapter selon ton UI) */}
+              {searchResults.length > 0 && (
+                <div className="mt-4">
+                  <div className="font-medium text-sm mb-2">Résultats ({searchResults.length}) :</div>
+                  <ul className="max-h-40 overflow-y-auto text-xs">
+                    {searchResults.map((ent, idx) => (
+                      <li key={ent.siren || idx} className="py-1 border-b last:border-b-0">
+                        <span className="font-bold">{ent.denominationUniteLegale}</span> — {ent.siren} — {ent.activitePrincipaleUniteLegale}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {/* Chiffres clés */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
@@ -461,41 +583,68 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <>
             <MainSection title="Entreprise" id="entreprise">
               {/* Activités */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleEntrepriseFilter('activites')}
-                >
-                  <span className="font-semibold">Activités</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
+              {/* Section Activités en ligne avec checkboxes (comme le right panel) */}
+              <div className="mb-4 p-2 border rounded bg-orange-50">
+                <div className="font-semibold mb-1">Activités</div>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {allActivities.map(item => (
+                    <label key={item.activity} className="flex items-center space-x-1 text-sm bg-orange-100 px-2 py-1 rounded cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.activities.includes(item.activity)}
+                        onChange={() => {
+                          const newActivities = filters.activities.includes(item.activity)
+                            ? filters.activities.filter(a => a !== item.activity)
+                            : [...filters.activities, item.activity];
+                          onFiltersChange({ ...filters, activities: newActivities });
+                        }}
+                        className="w-4 h-4 text-orange-600 rounded"
+                      />
+                      <span className="text-gray-700">{item.activity}</span>
+                      <span className="text-xs text-gray-500">({item.count})</span>
+                    </label>
+                  ))}
+                </div>
+                <label className="flex items-center space-x-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={nafExclude}
+                    onChange={e => setNafExclude(e.target.checked)}
+                    className="w-4 h-4 text-orange-600 rounded"
                   />
+                  <span>Exclure les éléments sélectionnés</span>
+                </label>
+              </div>
+              {/* Bouton Codes NAF et affichage des codes sélectionnés */}
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  className="px-3 py-1 bg-orange-100 text-orange-700 rounded border border-orange-300 hover:bg-orange-200"
+                  onClick={() => setNafModalOpen(true)}
+                >
+                  Codes NAF
                 </button>
-                {openEntrepriseFilters.activites && (
-                  <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher une activité..."
-                      value={activitySearch}
-                      onChange={(e) => setActivitySearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredActivities.map((activity) => (
-                        <label key={activity} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={filters.activities.includes(activity)}
-                            onChange={() => toggleActivity(activity)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{activity}</span>
-                        </label>
-                      ))}
-                    </div>
+                {filters.activities.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {filters.activities.map(code => (
+                      <span key={code} className="bg-orange-200 text-orange-800 px-2 py-0.5 rounded text-xs">{code}</span>
+                    ))}
                   </div>
                 )}
               </div>
+              <NafModal open={nafModalOpen} onClose={() => setNafModalOpen(false)} onConfirm={handleNafConfirm} />
+              {/* Affichage des résultats (exemple, à adapter selon ton UI) */}
+              {searchResults.length > 0 && (
+                <div className="mt-4">
+                  <div className="font-medium text-sm mb-2">Résultats ({searchResults.length}) :</div>
+                  <ul className="max-h-40 overflow-y-auto text-xs">
+                    {searchResults.map((ent, idx) => (
+                      <li key={ent.siren || idx} className="py-1 border-b last:border-b-0">
+                        <span className="font-bold">{ent.denominationUniteLegale}</span> — {ent.siren} — {ent.activitePrincipaleUniteLegale}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {/* Chiffres clés */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
@@ -587,15 +736,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 </button>
                 {openContactFilters.roles && (
                   <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher un rôle..."
-                      value={roleSearch}
-                      onChange={(e) => setRoleSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
                     <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredRoles.map((role) => (
+                      {allRoles.length === 0 && (
+                        <div className="text-gray-400 text-sm">Aucun rôle trouvé</div>
+                      )}
+                      {allRoles.map((role) => (
                         <label key={role} className="flex items-center space-x-2 text-sm">
                           <input
                             type="checkbox"

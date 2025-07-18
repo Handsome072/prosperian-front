@@ -34,6 +34,10 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Ajout pour support JSON */
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

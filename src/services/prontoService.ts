@@ -81,4 +81,11 @@ export class ProntoService {
       throw error;
     }
   }
+}
+
+export async function getAvailableActivities(): Promise<string[]> {
+  const res = await fetch('/api/pronto/activities');
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.activities || [];
 } 

@@ -15,6 +15,7 @@ export interface Business {
     employeeCount?: number;
     revenue?: number;
     legalForm?: string;
+    role?: string; // <-- Ajout du champ role pour compatibilité FilterPanel
   }
   
   export interface FilterState {
@@ -113,3 +114,10 @@ export interface BusinessWithProntoData extends Business {
     company?: ProntoCompany;
   };
 }
+
+// Table de correspondance code NAF -> mots-clés d'activité (à enrichir)
+export const nafKeywordsMap: Record<string, string[]> = {
+  'Télécommunication': ['télécom', 'telecom', 'it', 'logiciel', 'software', 'application', 'développement', 'informatique', 'digital'],
+  'Développement logiciel': ['logiciel', 'software', 'application', 'développement', 'it', 'informatique'],
+  // ... à compléter pour chaque code NAF pertinent
+};
