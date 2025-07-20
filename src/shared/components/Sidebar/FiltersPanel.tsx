@@ -5,6 +5,7 @@ import { Filter, MapPin, ChevronDown } from "lucide-react";
 import { FilterState } from "@entities/Business";
 import { useFilterContext } from "@contexts/FilterContext";
 import { ListService, List } from "@services/listService";
+import axios from 'axios';
 
 interface RangeSliderProps {
   min: number;
@@ -274,6 +275,16 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 type="button"
                 title={list.nom}
                 style={{ background: 'linear-gradient(to right, #141838, #2a2f5a)' }}
+                onClick={async () => {
+                  try {
+                    const res = await axios.get(`/api/list/${list.id}/first-column`);
+                    window.dispatchEvent(new CustomEvent('updateBusinessList', { detail: res.data }));
+                    console.log('Liste des noms autorisés envoyée:', res.data);
+                  } catch (err) {
+                    alert("Erreur lors de la récupération des noms d'entreprise !");
+                    console.error(err);
+                  }
+                }}
               >
                 {list.nom}
               </button>
@@ -281,6 +292,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           </div>
         )}
       </div>
+      
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
           <Filter className="w-5 h-5 text-gray-600" />

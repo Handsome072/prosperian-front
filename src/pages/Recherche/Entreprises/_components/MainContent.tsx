@@ -14,6 +14,7 @@ import {
 import { calculateSelectedEntrepriseStats } from "../../../../utils/selectionStats";
 import { ExportService } from '../../../../services/exportService';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export interface MainContentProps {
   businesses: Business[];
@@ -60,6 +61,26 @@ export const MainContent: React.FC<MainContentProps> = ({
   const [exportFileName, setExportFileName] = React.useState('ma_liste');
   const [storedEnterprisesCount, setStoredEnterprisesCount] = useState(0);
   const [storedContactsCount, setStoredContactsCount] = useState(0);
+  const [allowedNames, setAllowedNames] = useState<string[] | null>(null);
+  const [importedLists, setImportedLists] = useState<any[]>([]); // À adapter selon ta source
+
+  // Exemple de récupération des listes importées (à adapter selon ton flux)
+  // useEffect(() => {
+  //   axios.get('/api/list/import').then(res => setImportedLists(res.data));
+  // }, []);
+
+  const handleListClick = async (listId: string) => {
+    console.log('Bouton liste cliqué, id utilisé pour API:', listId);
+    try {
+      const res = await axios.get(`/api/list/${listId}/first-column`);
+      console.log('Réponse API first-column:', res.data);
+      setAllowedNames(res.data);
+    } catch (err) {
+      setAllowedNames(null);
+      console.error('Erreur lors de la récupération des noms d\'entreprise:', err);
+      alert("Erreur lors de la récupération des noms d'entreprise !");
+    }
+  };
 
   // Si showCheckbox passe à true, on force le layout à 'list'
   React.useEffect(() => {
@@ -167,6 +188,27 @@ export const MainContent: React.FC<MainContentProps> = ({
           storedContactsCount={storedContactsCount}
         />
         
+        {/* Boutons de listes importées */}
+        {importedLists.length > 0 && (
+          <div className="mb-4 flex flex-wrap gap-2">
+            {importedLists.map((list) => {
+              console.log('Affichage bouton liste, id:', list.id, 'nom:', list.nom);
+              return (
+                <button
+                  key={list.id}
+                  className="text-white text-sm font-normal py-1 px-3 rounded-full transition hover:opacity-90 truncate max-w-full"
+                  type="button"
+                  title={list.nom}
+                  style={{ background: 'linear-gradient(to right, #141838, #2a2f5a)' }}
+                  onClick={() => handleListClick(list.id)}
+                >
+                  {list.nom}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* États de chargement et d'erreur */}
         {loading && (
           <div className="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-sm border border-gray-200">
@@ -247,13 +289,14 @@ export const MainContent: React.FC<MainContentProps> = ({
                 ? 'divide-y bg-white rounded-lg border border-gray-200 max-h-[calc(100vh-12rem)] overflow-y-auto'
                 : 'grid grid-cols-1 md:grid-cols-2 gap-6 max-h-[calc(100vh-12rem)] overflow-y-auto'
             }>
-              {businesses.map((business, index) => {
+              {/* Affichage filtré des BusinessCard */}
+              {(allowedNames ? businesses.filter(b => allowedNames.includes(b.name)) : businesses).map((business, idx) => {
                 const numId = Number(business.id);
                 // Si showCheckbox est true, toujours afficher avec checkbox
                 if (showCheckbox) {
                   return (
                     <BusinessCard
-                      key={`${business.id}-${index}`}
+                      key={`${business.id}-${idx}`}
                       company={business}
                       id={numId}
                       showCheckbox
@@ -267,7 +310,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                 // Sinon, comportement normal
                 return layout === 'list' ? (
                   <BusinessCard
-                    key={`${business.id}-${index}`}
+                    key={`${business.id}-${idx}`}
                     company={business}
                     id={numId}
                     showCheckbox
@@ -277,7 +320,7 @@ export const MainContent: React.FC<MainContentProps> = ({
                     loading={loading}
                   />
                 ) : (
-                  <BusinessCard key={`${business.id}-${index}`} company={business} isProntoData={true} loading={loading} />
+                  <BusinessCard key={`${business.id}-${idx}`} company={business} isProntoData={true} loading={loading} />
                 );
               })}
             </div>
