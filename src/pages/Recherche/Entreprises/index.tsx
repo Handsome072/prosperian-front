@@ -7,6 +7,7 @@ export const Entreprises = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCheckbox, setShowCheckbox] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [allowedNames, setAllowedNames] = useState<string[] | null>(null);
   
   // Hook pour les données Pronto avec pagination intelligente
   const { 
@@ -89,6 +90,13 @@ export const Entreprises = () => {
     };
   });
 
+  // Effet pour écouter l'événement updateBusinessList et mettre à jour allowedNames
+  useEffect(() => {
+    const handler = (e: any) => setAllowedNames(e.detail);
+    window.addEventListener("updateBusinessList", handler);
+    return () => window.removeEventListener("updateBusinessList", handler);
+  }, []);
+
   // Gérer les événements de mise à jour de la liste
   useEffect(() => {
     const handler = (e) => {
@@ -121,11 +129,18 @@ export const Entreprises = () => {
     setItemsPerPage(newItemsPerPage);
   }, [setItemsPerPage]);
 
+  const normalize = (str: string) => str.trim().toLowerCase();
+  const filteredBusinesses = allowedNames
+    ? businesses.filter(b => allowedNames.map(normalize).includes(normalize(b.name)))
+    : businesses;
+  console.log('allowedNames:', allowedNames);
+  console.log('businesses names:', businesses.map(b => b.name));
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Contenu principal */}
       <MainContent
-        businesses={businesses}
+        businesses={filteredBusinesses}
         leads={leads}
         totalBusinesses={totalLeads}
         searchTerm={searchTerm}
