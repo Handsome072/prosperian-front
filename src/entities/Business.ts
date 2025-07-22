@@ -113,3 +113,101 @@ export interface BusinessWithProntoData extends Business {
     company?: ProntoCompany;
   };
 }
+
+// Interfaces pour la nouvelle API recherche-entreprises
+export interface EntrepriseApiSiege {
+  activite_principale: string;
+  activite_principale_registre_metier: string | null;
+  annee_tranche_effectif_salarie: string;
+  adresse: string;
+  caractere_employeur: string;
+  cedex: string | null;
+  code_pays_etranger: string | null;
+  code_postal: string;
+  commune: string;
+  complement_adresse: string | null;
+  coordonnees: string;
+  date_creation: string;
+  date_debut_activite: string;
+  date_fermeture: string | null;
+  date_mise_a_jour: string | null;
+  date_mise_a_jour_insee: string;
+  departement: string;
+  distribution_speciale: string | null;
+  epci: string;
+  est_siege: boolean;
+  etat_administratif: string;
+  geo_adresse: string;
+  geo_id: string;
+  indice_repetition: string | null;
+  latitude: string;
+  libelle_cedex: string | null;
+  libelle_commune: string;
+  libelle_commune_etranger: string | null;
+  libelle_pays_etranger: string | null;
+  libelle_voie: string;
+  liste_enseignes: string[] | null;
+  liste_finess: string[] | null;
+  liste_id_bio: string[] | null;
+  liste_idcc: string[] | null;
+  liste_id_organisme_formation: string[] | null;
+  liste_rge: string[] | null;
+  liste_uai: string[] | null;
+  longitude: string;
+  nom_commercial: string | null;
+  numero_voie: string;
+  region: string;
+  siret: string;
+  statut_diffusion_etablissement: string;
+  tranche_effectif_salarie: string;
+  type_voie: string;
+}
+
+export interface EntrepriseApiDirigeant {
+  nom?: string;
+  prenoms?: string;
+  annee_de_naissance?: string;
+  date_de_naissance?: string;
+  qualite?: string;
+  nationalite?: string;
+  type_dirigeant: string;
+  siren?: string;
+  denomination?: string;
+}
+
+export interface EntrepriseApiResult {
+  siren: string;
+  nom_complet: string;
+  nom_raison_sociale: string;
+  sigle: string | null;
+  nombre_etablissements: number;
+  nombre_etablissements_ouverts: number;
+  siege: EntrepriseApiSiege;
+  activite_principale: string;
+  categorie_entreprise: string;
+  caractere_employeur: string | null;
+  annee_categorie_entreprise: string;
+  date_creation: string;
+  date_fermeture: string | null;
+  date_mise_a_jour: string;
+  date_mise_a_jour_insee: string;
+  date_mise_a_jour_rne: string;
+  dirigeants: EntrepriseApiDirigeant[];
+  etat_administratif: string;
+  nature_juridique: string;
+  section_activite_principale: string;
+  tranche_effectif_salarie: string;
+  annee_tranche_effectif_salarie: string;
+  statut_diffusion: string;
+  matching_etablissements: any[];
+  finances: Record<string, { ca: number; resultat_net: number }>;
+  complements: Record<string, any>;
+}
+
+export interface EntrepriseApiResponse {
+  results: EntrepriseApiResult[];
+  total_results: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}

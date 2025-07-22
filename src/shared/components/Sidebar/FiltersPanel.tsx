@@ -6,6 +6,9 @@ import { FilterState } from "@entities/Business";
 import { useFilterContext } from "@contexts/FilterContext";
 import { ListService, List } from "@services/listService";
 import axios from 'axios';
+import nafCodes from '@data/naf_codes.json';
+import naturesJuridiques from '@data/natures_juridiques.json';
+import ReactDOM from 'react-dom';
 
 interface RangeSliderProps {
   min: number;
@@ -112,27 +115,28 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 export interface FiltersPanelProps extends FilterState {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
-  availableActivities: string[];
   availableCities: string[];
   availableLegalForms: string[];
   availableRoles: string[];
   employeeRange: [number, number];
   revenueRange: [number, number];
   ageRange: [number, number];
+  // onNafCodesChange?: (codes: string[]) => void; // SUPPRIMÉ
 }
 
 export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   filters,
   onFiltersChange,
-  availableActivities,
   availableCities,
   availableLegalForms,
   availableRoles,
   employeeRange,
   revenueRange,
   ageRange,
+  // onNafCodesChange, // SUPPRIMÉ
 }) => {
-  useFilterContext();
+  console.log('FiltersPanel mounted');
+  const { setFilters } = useFilterContext();
   const location = useLocation();
   // Détecter la section par défaut selon la route
   const isContactPage = location.pathname.includes("/recherche/contact");
@@ -145,6 +149,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
   const [activitySearch, setActivitySearch] = useState("");
   const [roleSearch, setRoleSearch] = useState("");
+  const [nafModalOpen, setNafModalOpen] = useState(false);
+  const [selectedNafCodes, setSelectedNafCodes] = useState<string[]>([]);
+
+  // Ajoute un state pour la recherche
+  const [legalFormSearch, setLegalFormSearch] = useState("");
 
   // Gestion de l'ouverture/fermeture des sous-filtres dans chaque section principale
   const [openEntrepriseFilters, setOpenEntrepriseFilters] = useState<{ [key: string]: boolean }>(() => {
@@ -186,37 +195,45 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     onFiltersChange({ ...filters, ...updates });
   };
 
+  const safeFilters = {
+    activities: [],
+    cities: [],
+    legalForms: [],
+    roles: [],
+    ...filters
+  };
+
   const toggleActivity = (activity: string) => {
-    const newActivities = filters.activities.includes(activity)
-      ? filters.activities.filter((a) => a !== activity)
-      : [...filters.activities, activity];
+    const currentActivities = safeFilters.activities;
+    const newActivities = currentActivities.includes(activity)
+      ? currentActivities.filter((a) => a !== activity)
+      : [...currentActivities, activity];
     updateFilters({ activities: newActivities });
   };
 
   const toggleCity = (city: string) => {
-    const newCities = filters.cities.includes(city)
-      ? filters.cities.filter((c) => c !== city)
-      : [...filters.cities, city];
+    const currentCities = safeFilters.cities;
+    const newCities = currentCities.includes(city)
+      ? currentCities.filter((c) => c !== city)
+      : [...currentCities, city];
     updateFilters({ cities: newCities });
   };
 
   const toggleLegalForm = (form: string) => {
-    const newForms = filters.legalForms.includes(form)
-      ? filters.legalForms.filter((f) => f !== form)
-      : [...filters.legalForms, form];
+    const currentLegalForms = safeFilters.legalForms;
+    const newForms = currentLegalForms.includes(form)
+      ? currentLegalForms.filter((f) => f !== form)
+      : [...currentLegalForms, form];
     updateFilters({ legalForms: newForms });
   };
 
   const toggleRole = (role: string) => {
-    const newRoles = filters.roles.includes(role)
-      ? filters.roles.filter((r) => r !== role)
-      : [...filters.roles, role];
+    const currentRoles = safeFilters.roles;
+    const newRoles = currentRoles.includes(role)
+      ? currentRoles.filter((r) => r !== role)
+      : [...currentRoles, role];
     updateFilters({ roles: newRoles });
   };
-
-  const filteredActivities = availableActivities.filter((activity) =>
-    activity.toLowerCase().includes(activitySearch.toLowerCase())
-  );
 
   const filteredRoles = availableRoles.filter((role) =>
     role.toLowerCase().includes(roleSearch.toLowerCase())
@@ -232,6 +249,16 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       .catch(() => setImportedLists([]))
       .finally(() => setLoadingLists(false));
   }, []);
+
+  const handleNafCheckbox = (code: string) => {
+    setSelectedNafCodes((prev) => {
+      const newCodes = prev.includes(code)
+        ? prev.filter((c) => c !== code)
+        : [...prev, code];
+      setFilters({ ...filters, activities: newCodes });
+      return newCodes;
+    });
+  };
 
   // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
@@ -320,78 +347,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
       <div>
         {/* Affichage dynamique de l'ordre des sections selon la page */}
-        {isContactPage ? (
+        {/* Toujours afficher la section Entreprise en premier si on est sur la page entreprise */}
+        {isEntreprisePage ? (
           <>
-            <MainSection title="Contact" id="contact">
-              {/* Rôles */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('roles')}
-                >
-                  <span className="font-semibold">Rôles</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openContactFilters.roles && (
-                  <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher un rôle..."
-                      value={roleSearch}
-                      onChange={(e) => setRoleSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredRoles.map((role) => (
-                        <label key={role} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={filters.roles.includes(role)}
-                            onChange={() => toggleRole(role)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{role}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* Localisation */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('localisation')}
-                >
-                  <span className="font-semibold">Localisation</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
-                    {availableCities.map((city) => (
-                      <label key={city} className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={filters.cities.includes(city)}
-                          onChange={() => toggleCity(city)}
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span className="text-gray-700 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {city}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </MainSection>
             <MainSection title="Entreprise" id="entreprise">
-              {/* Activités */}
+              {/* Activités (UI inspirée de l'image fournie) */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
@@ -403,27 +363,61 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openEntrepriseFilters.activites && (
-                  <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher une activité..."
-                      value={activitySearch}
-                      onChange={(e) => setActivitySearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredActivities.map((activity) => (
-                        <label key={activity} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={filters.activities.includes(activity)}
-                            onChange={() => toggleActivity(activity)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{activity}</span>
-                        </label>
+                  <div className="pt-2 pb-4 space-y-4">
+                    {/* Onglets de recherche */}
+                    <div className="flex flex-wrap gap-2">
+                      {['Code NAF', 'Activité Google (GMB)', 'Sémantique', 'Enseigne/Franchise'].map((label, index) => (
+                        <button
+                          key={index}
+                          className={`px-3 py-1 rounded text-sm font-medium border ${
+                            label === 'Code NAF' ? 'bg-orange-600 text-white border-orange-600' : 'text-orange-600 border-orange-300'
+                          } hover:bg-orange-50 transition`}
+                          type="button"
+                        >
+                          {label}
+                        </button>
                       ))}
                     </div>
+
+                    {/* Zone de recherche */}
+                    <input
+                      type="text"
+                      placeholder="Mots-clés, code NAF"
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                    />
+
+                    {/* Boutons de code et chargement */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+                        onClick={() => { console.log('NAF modal click'); setNafModalOpen(true); }}
+                      >
+                        📘 Codes NAF
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+                      >
+                        ⬆️ Charger
+                      </button>
+                    </div>
+
+                    {/* Checkbox d'exclusion */}
+                    <label className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-600 rounded"
+                        onChange={(e) =>
+                          updateFilters({
+                            excludeSelectedActivities: e.target.checked,
+                          } as any) // ajuster selon ton type exact
+                        }
+                      />
+                      <span className="text-gray-700">Exclure les éléments sélectionnés</span>
+                    </label>
                   </div>
                 )}
               </div>
@@ -459,7 +453,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       min={revenueRange[0]}
                       max={revenueRange[1]}
                       value={filters.revenueRange}
-                      onChange={(value) => updateFilters({ revenueRange: value })}
+                      onChange={(value) => setFilters({ ...filters, revenueRange: value })}
                       label="Chiffre d'affaires"
                       formatValue={(v) => `${Math.round(v / 1000)}k`}
                       unit="€"
@@ -488,16 +482,99 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openEntrepriseFilters.forme && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
+                    <input
+                      type="text"
+                      placeholder="Rechercher une forme juridique..."
+                      value={legalFormSearch}
+                      onChange={e => setLegalFormSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    {naturesJuridiques
+                      .filter(nature => nature.titre.toLowerCase().includes(legalFormSearch.toLowerCase()))
+                      .map((nature) => (
+                        <label key={nature.id} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={safeFilters.legalForms.includes(nature.id)}
+                            onChange={() => {
+                              const currentIds = safeFilters.legalForms || [];
+                              const newIds = currentIds.includes(nature.id)
+                                ? currentIds.filter((id) => id !== nature.id)
+                                : [...currentIds, nature.id];
+                              setFilters({ ...filters, legalForms: newIds });
+                            }}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{nature.titre}</span>
+                        </label>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </MainSection>
+            <MainSection title="Contact" id="contact">
+              {/* Rôles */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('roles')}
+                >
+                  <span className="font-semibold">Rôles</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.roles && (
+                  <div className="pt-2 pb-4">
+                    <input
+                      type="text"
+                      placeholder="Rechercher un rôle..."
+                      value={roleSearch}
+                      onChange={(e) => setRoleSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {filteredRoles.map((role) => (
+                        <label key={role} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={safeFilters.roles.includes(role)}
+                            onChange={() => toggleRole(role)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{role}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Localisation */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('localisation')}
+                >
+                  <span className="font-semibold">Localisation</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.localisation && (
                   <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
-                    {availableLegalForms.map((form) => (
-                      <label key={form} className="flex items-center space-x-2 text-sm">
+                    {availableCities.map((city) => (
+                      <label key={city} className="flex items-center space-x-2 text-sm">
                         <input
                           type="checkbox"
-                          checked={filters.legalForms.includes(form)}
-                          onChange={() => toggleLegalForm(form)}
+                          checked={safeFilters.cities.includes(city)}
+                          onChange={() => toggleCity(city)}
                           className="w-4 h-4 text-orange-600 rounded"
                         />
-                        <span className="text-gray-700">{form}</span>
+                        <span className="text-gray-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {city}
+                        </span>
                       </label>
                     ))}
                   </div>
@@ -507,6 +584,74 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           </>
         ) : (
           <>
+            <MainSection title="Contact" id="contact">
+              {/* Rôles */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('roles')}
+                >
+                  <span className="font-semibold">Rôles</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.roles && (
+                  <div className="pt-2 pb-4">
+                    <input
+                      type="text"
+                      placeholder="Rechercher un rôle..."
+                      value={roleSearch}
+                      onChange={(e) => setRoleSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                    <div className="max-h-32 overflow-y-auto space-y-2">
+                      {filteredRoles.map((role) => (
+                        <label key={role} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={safeFilters.roles.includes(role)}
+                            onChange={() => toggleRole(role)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{role}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              {/* Localisation */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('localisation')}
+                >
+                  <span className="font-semibold">Localisation</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.localisation && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                    {availableCities.map((city) => (
+                      <label key={city} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={safeFilters.cities.includes(city)}
+                          onChange={() => toggleCity(city)}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span className="text-gray-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {city}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </MainSection>
             <MainSection title="Entreprise" id="entreprise">
               {/* Activités */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
@@ -520,27 +665,61 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openEntrepriseFilters.activites && (
-                  <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher une activité..."
-                      value={activitySearch}
-                      onChange={(e) => setActivitySearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredActivities.map((activity) => (
-                        <label key={activity} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={filters.activities.includes(activity)}
-                            onChange={() => toggleActivity(activity)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{activity}</span>
-                        </label>
+                  <div className="pt-2 pb-4 space-y-4">
+                    {/* Onglets de recherche */}
+                    <div className="flex flex-wrap gap-2">
+                      {['Code NAF', 'Activité Google (GMB)', 'Sémantique', 'Enseigne/Franchise'].map((label, index) => (
+                        <button
+                          key={index}
+                          className={`px-3 py-1 rounded text-sm font-medium border ${
+                            label === 'Code NAF' ? 'bg-orange-600 text-white border-orange-600' : 'text-orange-600 border-orange-300'
+                          } hover:bg-orange-50 transition`}
+                          type="button"
+                        >
+                          {label}
+                        </button>
                       ))}
                     </div>
+
+                    {/* Zone de recherche */}
+                    <input
+                      type="text"
+                      placeholder="Mots-clés, code NAF"
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
+                    />
+
+                    {/* Boutons de code et chargement */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+                        onClick={() => setNafModalOpen(true)}
+                      >
+                        📘 Codes NAF
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+                      >
+                        ⬆️ Charger
+                      </button>
+                    </div>
+
+                    {/* Checkbox d'exclusion */}
+                    <label className="flex items-center space-x-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-orange-600 rounded"
+                        onChange={(e) =>
+                          updateFilters({
+                            excludeSelectedActivities: e.target.checked,
+                          } as any) // ajuster selon ton type exact
+                        }
+                      />
+                      <span className="text-gray-700">Exclure les éléments sélectionnés</span>
+                    </label>
                   </div>
                 )}
               </div>
@@ -606,83 +785,15 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 </button>
                 {openEntrepriseFilters.forme && (
                   <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
-                    {availableLegalForms.map((form) => (
+                    {(availableLegalForms || []).map((form) => (
                       <label key={form} className="flex items-center space-x-2 text-sm">
                         <input
                           type="checkbox"
-                          checked={filters.legalForms.includes(form)}
+                          checked={safeFilters.legalForms.includes(form)}
                           onChange={() => toggleLegalForm(form)}
                           className="w-4 h-4 text-orange-600 rounded"
                         />
                         <span className="text-gray-700">{form}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </MainSection>
-            <MainSection title="Contact" id="contact">
-              {/* Rôles */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('roles')}
-                >
-                  <span className="font-semibold">Rôles</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openContactFilters.roles && (
-                  <div className="pt-2 pb-4">
-                    <input
-                      type="text"
-                      placeholder="Rechercher un rôle..."
-                      value={roleSearch}
-                      onChange={(e) => setRoleSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
-                      {filteredRoles.map((role) => (
-                        <label key={role} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={filters.roles.includes(role)}
-                            onChange={() => toggleRole(role)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{role}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-              {/* Localisation */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('localisation')}
-                >
-                  <span className="font-semibold">Localisation</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
-                    {availableCities.map((city) => (
-                      <label key={city} className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={filters.cities.includes(city)}
-                          onChange={() => toggleCity(city)}
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span className="text-gray-700 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {city}
-                        </span>
                       </label>
                     ))}
                   </div>
@@ -693,16 +804,58 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         )}
       </div>
 
-      {(filters.activities.length > 0 || filters.cities.length > 0 || filters.legalForms.length > 0 || filters.roles.length > 0) && (
+      {(safeFilters.activities.length > 0 || safeFilters.cities.length > 0 || safeFilters.legalForms.length > 0 || safeFilters.roles.length > 0) && (
         <div className="p-4 bg-orange-50 border-t border-orange-200">
           <div className="text-sm font-medium text-orange-800 mb-2">Filtres actifs:</div>
           <div className="space-y-1 text-xs text-orange-700">
-            {filters.activities.length > 0 && <div>• {filters.activities.length} activité(s)</div>}
-            {filters.cities.length > 0 && <div>• {filters.cities.length} ville(s)</div>}
-            {filters.legalForms.length > 0 && <div>• {filters.legalForms.length} forme(s) juridique(s)</div>}
-            {filters.roles.length > 0 && <div>• {filters.roles.length} rôle(s)</div>}
+            {safeFilters.activities.length > 0 && <div>• {safeFilters.activities.length} activité(s)</div>}
+            {safeFilters.cities.length > 0 && <div>• {safeFilters.cities.length} ville(s)</div>}
+            {safeFilters.legalForms.length > 0 && <div>• {safeFilters.legalForms.length} forme(s) juridique(s)</div>}
+            {safeFilters.roles.length > 0 && <div>• {safeFilters.roles.length} rôle(s)</div>}
           </div>
         </div>
+      )}
+      {/* Modal NAF Codes */}
+      {nafModalOpen && ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-2xl max-h-[80vh] w-full max-w-xl mx-4 sm:mx-0 p-4 sm:p-8 relative flex flex-col">
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+              onClick={() => setNafModalOpen(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            <h2 className="text-lg font-semibold mb-4 text-center">Codes NAF</h2>
+            <div className="divide-y divide-gray-200 border rounded overflow-y-auto max-h-[60vh] bg-white">
+              {Object.entries(nafCodes).map(([code, label], idx) => (
+                <label
+                  key={code}
+                  className={`flex items-center space-x-2 text-sm px-2 py-2 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-orange-50 transition`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedNafCodes.includes(code)}
+                    onChange={() => handleNafCheckbox(code)}
+                    className="w-4 h-4 text-orange-600 rounded"
+                  />
+                  <span className="font-mono text-gray-800 min-w-[5.5rem]">{code}</span>
+                  <span className="text-gray-700 flex-1">{label as string}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-4 flex justify-end">
+              <button
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                onClick={() => setNafModalOpen(false)}
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </>
   );

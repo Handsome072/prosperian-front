@@ -13,6 +13,39 @@ interface BusinessCardProps {
   loading?: boolean;
 }
 
+// Nouvelle version pour EntrepriseApiResult (API recherche-entreprises)
+function mapEntrepriseApiResultToCardData(company: any): any {
+  // Trouver l'année la plus récente dans finances
+  let ca = undefined;
+  if (company.finances && typeof company.finances === 'object') {
+    const years = Object.keys(company.finances).filter(y => company.finances[y] && company.finances[y].ca != null);
+    if (years.length > 0) {
+      const latestYear = years.sort((a, b) => Number(b) - Number(a))[0];
+      ca = company.finances[latestYear]?.ca;
+    }
+  }
+  return {
+    id: company.siren,
+    name: company.nom_complet,
+    address: company.siege?.geo_adresse || '',
+    city: company.siege?.libelle_commune || '',
+    postalCode: company.siege?.code_postal || '',
+    phone: '',
+    employees: company.tranche_effectif_salarie || '',
+    activity: company.activite_principale || '',
+    description: '',
+    website: '',
+    logo: '',
+    employeeCount: undefined,
+    revenue: ca,
+    legalForm: '',
+    contactsCount: undefined,
+    email: '',
+    linkedin: '',
+    foundedYear: undefined
+  };
+}
+
 export const BusinessCard: React.FC<BusinessCardProps> = ({ 
   company, 
   id, 
@@ -27,6 +60,16 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
 
   // Fonction pour extraire les données selon le type
   const getCompanyData = () => {
+    if (!isProntoData && company && 'nom_complet' in company) {
+      // Mapping pour EntrepriseApiResult enrichi
+      const mapped = mapEntrepriseApiResultToCardData(company);
+      // Prendre le logo/description Pronto si présents
+      return {
+        ...mapped,
+        logo: (company as any).prontoLogo || mapped.logo,
+        description: (company as any).prontoDescription || mapped.description,
+      };
+    }
     if (isProntoData && 'company' in company) {
       // Données Pronto
       const prontoCompany = company.company;
@@ -133,70 +176,54 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({
   if (showCheckbox) {
     // Mode liste avec checkbox (lignes)
     return (
-      <div className="p-3 hover:bg-gray-50 flex items-center gap-2 border-b overflow-x-auto">
-        <input
-          type="checkbox"
-          checked={!!checked}
-          onChange={e => {
-            console.log('Checkbox click', { id, checked: e.target.checked });
-            if (onCheckboxChange && typeof id === 'number') {
-              onCheckboxChange(id);
-            }
-          }}
-          aria-label={`Sélectionner l'entreprise ${companyData.name}`}
-        />
-        {/* Logo */}
-        {companyData.logo ? (
-          <img
-            src={companyData.logo}
-            alt={`${companyData.name} logo`}
-            className="w-8 h-8 rounded-lg object-cover border border-gray-200"
-            onError={(e) => {
-              // En cas d'erreur de chargement, remplacer par l'icône par défaut
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              const fallback = target.nextElementSibling as HTMLElement;
-              if (fallback) fallback.style.display = 'flex';
+      <tr className="hover:bg-gray-50 border-b">
+        <td className="px-2 py-2">
+          <input
+            type="checkbox"
+            checked={!!checked}
+            onChange={e => {
+              if (onCheckboxChange && typeof id === 'number') {
+                onCheckboxChange(id);
+              }
             }}
+            aria-label={`Sélectionner l'entreprise ${companyData.name}`}
           />
-        ) : null}
-        <div className={`w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center ${companyData.logo ? 'hidden' : ''}`}>
-          <Building className="w-4 h-4 text-white" />
-        </div>
-        {/* Nom + icônes */}
-        <div className="flex-1 min-w-0">
-          <div 
-            className="font-semibold text-blue-800 text-sm hover:underline cursor-pointer truncate"
-            onClick={handleCompanyClick}
-          >
-            {companyData.name}
-          </div>
-          <div className="flex items-center gap-2 mt-1 text-gray-400 text-xs">
-            {companyData.website && <Globe className="w-4 h-4" />}
-            {companyData.phone && <Phone className="w-4 h-4" />}
-            {companyData.email && <Mail className="w-4 h-4" />}
-            {companyData.linkedin && <Linkedin className="w-4 h-4" />}
-            <User className="w-4 h-4" />
-            <Facebook className="w-4 h-4" />
-          </div>
-        </div>
-        {/* # Contacts */}
-        <div className="w-20 text-center text-sm text-gray-800 font-medium">
+        </td>
+        <td className="px-2 py-2">
+          {companyData.logo ? (
+            <img
+              src={companyData.logo}
+              alt={`${companyData.name} logo`}
+              className="w-8 h-8 rounded-lg object-cover border border-gray-200"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+                const fallback = target.nextElementSibling as HTMLElement;
+                if (fallback) fallback.style.display = 'flex';
+              }}
+            />
+          ) : (
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <Building className="w-4 h-4 text-white" />
+            </div>
+          )}
+        </td>
+        <td className="px-2 py-2 font-semibold text-blue-800 text-sm hover:underline cursor-pointer truncate" onClick={handleCompanyClick}>
+          {companyData.name}
+        </td>
+        <td className="px-2 py-2 text-center text-sm text-gray-800 font-medium">
           {companyData.contactsCount ?? '-'}
-        </div>
-        {/* # Employés */}
-        <div className="w-20 text-center text-sm text-gray-800 font-medium">
+        </td>
+        <td className="px-2 py-2 text-center text-sm text-gray-800 font-medium">
           {companyData.employeeCount || String(companyData.employees || '') || '-'}
-        </div>
-        {/* CA */}
-        <div className="w-24 text-center text-sm text-gray-800 font-medium">
+        </td>
+        <td className="px-2 py-2 text-center text-sm text-gray-800 font-medium">
           {companyData.revenue ? `${(companyData.revenue / 1_000_000).toLocaleString()} M €` : '-'}
-        </div>
-        {/* Adresse */}
-        <div className="w-32 text-right text-sm text-gray-700 truncate">
+        </td>
+        <td className="px-2 py-2 text-right text-sm text-gray-700 truncate">
           {companyData.postalCode} {String(companyData.city || '')}
-        </div>
-      </div>
+        </td>
+      </tr>
     );
   }
 

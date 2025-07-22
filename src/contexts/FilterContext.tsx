@@ -15,7 +15,6 @@ import {
 
 interface FilterContextType {
   filters: FilterState;
-  availableActivities: string[];
   availableCities: string[];
   availableLegalForms: string[];
   availableRoles: string[];
@@ -52,7 +51,6 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]); // Manage state separately
 
-  const availableActivities = useMemo(() => getUniqueActivities(mockBusinesses), []);
   const availableCities = useMemo(() => getUniqueCities(mockBusinesses), []);
   const availableLegalForms = useMemo(() => getUniqueLegalForms(mockBusinesses), []);
   const availableRoles = useMemo(() => {
@@ -105,7 +103,6 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     <FilterContext.Provider
       value={{
         filters,
-        availableActivities,
         availableCities,
         availableLegalForms,
         availableRoles,

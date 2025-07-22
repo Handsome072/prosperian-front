@@ -31,31 +31,49 @@ export const useProntoData = (): UseProntoDataReturn => {
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [totalLeads, setTotalLeads] = useState(0);
   const [failedCategories, setFailedCategories] = useState(0);
-  
+
   // Référence pour éviter les appels multiples simultanés
   const loadingRef = useRef(false);
-  
   // Cache pour stocker les leads par catégorie
   const leadsCache = useRef<Map<string, ProntoLeadWithCompany[]>>(new Map());
-  
-  // Calculer le nombre total de pages basé sur toutes les entreprises
-  const totalPages = Math.ceil(totalLeads / itemsPerPage);
 
+  // Chargement global via workflow (en plus du reste)
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const completeData = await ProntoService.getAllSearchesComplete(true, 100);
+        // Agréger tous les leads de toutes les recherches
+        const allLeads: ProntoLeadWithCompany[] = [];
+        if (completeData && completeData.data && Array.isArray(completeData.data.searches)) {
+          completeData.data.searches.forEach((search: any) => {
+            if (Array.isArray(search.leads)) {
+              allLeads.push(...search.leads);
+            }
+          });
+        }
+        setLeads(allLeads);
+      } catch (err: any) {
+        setError(err.message || 'Erreur lors du chargement des données Pronto');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Fonctions d'origine conservées pour la stabilité des hooks React
   const fetchSearches = useCallback(async () => {
     if (loadingRef.current) return;
-    
     loadingRef.current = true;
     setLoading(true);
     setError(null);
-    
     try {
       const searchesData = await ProntoService.getAllSearches();
       setSearches(searchesData);
-      
       // Calculer le total des leads
-      const total = searchesData.reduce((sum, search) => sum + search.leads_count, 0);
+      const total = searchesData.reduce((sum, search) => sum + (search.leads_count || 0), 0);
       setTotalLeads(total);
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors de la récupération des recherches');
     } finally {
@@ -66,11 +84,9 @@ export const useProntoData = (): UseProntoDataReturn => {
 
   const fetchSearchWithLeads = useCallback(async (searchId: string) => {
     if (loadingRef.current) return;
-    
     loadingRef.current = true;
     setLoading(true);
     setError(null);
-    
     try {
       const searchData = await ProntoService.getSearchWithLeads(searchId);
       setCurrentSearch(searchData);
@@ -85,11 +101,9 @@ export const useProntoData = (): UseProntoDataReturn => {
 
   const fetchSearchLeads = useCallback(async (searchId: string, page: number = 1, limit: number = 100) => {
     if (loadingRef.current) return;
-    
     loadingRef.current = true;
     setLoading(true);
     setError(null);
-    
     try {
       const searchData = await ProntoService.getSearchLeads(searchId, page, limit);
       setCurrentSearch(searchData);
@@ -104,11 +118,9 @@ export const useProntoData = (): UseProntoDataReturn => {
 
   const fetchAllSearchesComplete = useCallback(async (includeLeads: boolean = true, leadsPerSearch: number = 50) => {
     if (loadingRef.current) return;
-    
     loadingRef.current = true;
     setLoading(true);
     setError(null);
-    
     try {
       const completeData = await ProntoService.getAllSearchesComplete(includeLeads, leadsPerSearch);
       return completeData;
@@ -124,83 +136,55 @@ export const useProntoData = (): UseProntoDataReturn => {
   // Fonction optimisée pour charger une page spécifique
   const loadPage = useCallback(async (page: number) => {
     if (loadingRef.current) return;
-    
     loadingRef.current = true;
     setLoading(true);
     setError(null);
-    
     try {
       // Calculer quelle catégorie et quelles entreprises nous avons besoin
       const startIndex = (page - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage;
-      
       // Trouver les catégories nécessaires pour cette page
       const neededLeads: ProntoLeadWithCompany[] = [];
       let currentIndex = 0;
       let failedCategories = 0;
-      
       for (const search of searches) {
         // Vérifier si cette catégorie est déjà en cache
         if (!leadsCache.current.has(search.id)) {
-          console.log(`Chargement de la catégorie: ${search.name} (${search.leads_count} entreprises)`);
-          
           try {
             // Charger toutes les entreprises de cette catégorie
             const searchData = await ProntoService.getSearchLeads(search.id);
             const searchLeads = searchData.leads || [];
-            
             // Mettre en cache
             leadsCache.current.set(search.id, searchLeads);
-            
-            console.log(`✓ ${searchLeads.length} entreprises chargées pour ${search.name}`);
-            
           } catch (err) {
-            console.error(`⚠️ Erreur lors du chargement de ${search.name}:`, err);
             failedCategories++;
-            
             // Marquer cette catégorie comme vide pour éviter de réessayer
             leadsCache.current.set(search.id, []);
-            
-            // Continuer avec les autres catégories
             continue;
           }
         }
-        
         const cachedLeads = leadsCache.current.get(search.id) || [];
-        
         // Ajouter les entreprises nécessaires pour cette page
         for (const lead of cachedLeads) {
           if (currentIndex >= startIndex && currentIndex < endIndex) {
             neededLeads.push(lead);
           }
           currentIndex++;
-          
           // Si on a assez d'entreprises, on peut arrêter
           if (neededLeads.length >= itemsPerPage) {
             break;
           }
         }
-        
         // Si on a assez d'entreprises, on peut arrêter
         if (neededLeads.length >= itemsPerPage) {
           break;
         }
       }
-      
       // Afficher les entreprises de cette page
       setLeads(neededLeads);
       setCurrentPage(page);
-      
       // Mettre à jour le nombre de catégories échouées
       setFailedCategories(failedCategories);
-      
-      // Afficher un message d'information si des catégories ont échoué
-      if (failedCategories > 0) {
-        console.warn(`⚠️ ${failedCategories} catégorie(s) n'ont pas pu être chargées (404 ou erreur)`);
-      }
-      
-      console.log(`Page ${page}: Affichage de ${neededLeads.length} entreprises (${startIndex + 1} à ${startIndex + neededLeads.length} sur ${totalLeads} totales)`);
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur lors du chargement de la page');
     } finally {
@@ -225,7 +209,7 @@ export const useProntoData = (): UseProntoDataReturn => {
     loading,
     error,
     currentPage,
-    totalPages,
+    totalPages: Math.ceil(totalLeads / itemsPerPage),
     itemsPerPage,
     totalLeads,
     failedCategories,
@@ -234,6 +218,6 @@ export const useProntoData = (): UseProntoDataReturn => {
     fetchSearchLeads,
     fetchAllSearchesComplete,
     loadPage,
-    setItemsPerPage: handleSetItemsPerPage
+    setItemsPerPage: handleSetItemsPerPage,
   };
 }; 
