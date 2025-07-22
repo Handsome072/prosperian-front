@@ -1,5 +1,5 @@
 // In FiltersPanel.tsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { Filter, MapPin, ChevronDown } from "lucide-react";
 import { FilterState } from "@entities/Business";
@@ -155,6 +155,13 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   // Ajoute un state pour la recherche
   const [legalFormSearch, setLegalFormSearch] = useState("");
 
+  // Ajoute un state pour la recherche de convention collective
+  const [conventionSearch, setConventionSearch] = useState("");
+  const conventionsCollectives = [
+    "BTP", "Syntec", "Commerce de détail", "Métallurgie", "Pharmacie", "Banque", "HCR", "Transport routier", "Immobilier", "Agroalimentaire"
+  ];
+  const [selectedConventions, setSelectedConventions] = useState<string[]>([]);
+
   // Gestion de l'ouverture/fermeture des sous-filtres dans chaque section principale
   const [openEntrepriseFilters, setOpenEntrepriseFilters] = useState<{ [key: string]: boolean }>(() => {
     return {
@@ -260,6 +267,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     });
   };
 
+  const legalFormListRef = useRef<HTMLDivElement>(null);
+  const lastScrollTop = useRef(0);
+
   // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
     title,
@@ -351,76 +361,76 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         {isEntreprisePage ? (
           <>
             <MainSection title="Entreprise" id="entreprise">
-              {/* Activités (UI inspirée de l'image fournie) */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+      {/* Activités (UI inspirée de l'image fournie) */}
+      <div className="mb-2 border-b border-gray-100 last:border-b-0">
+        <button
+          className="w-full flex items-center justify-between py-2 text-left"
+          onClick={() => toggleEntrepriseFilter('activites')}
+        >
+          <span className="font-semibold">Activités</span>
+          <ChevronDown
+            className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {openEntrepriseFilters.activites && (
+          <div className="pt-2 pb-4 space-y-4">
+            {/* Onglets de recherche */}
+            <div className="flex flex-wrap gap-2">
+              {['Code NAF', 'Activité Google (GMB)', 'Sémantique', 'Enseigne/Franchise'].map((label, index) => (
                 <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleEntrepriseFilter('activites')}
+                  key={index}
+                  className={`px-3 py-1 rounded text-sm font-medium border ${
+                    label === 'Code NAF' ? 'bg-orange-600 text-white border-orange-600' : 'text-orange-600 border-orange-300'
+                  } hover:bg-orange-50 transition`}
+                  type="button"
                 >
-                  <span className="font-semibold">Activités</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
-                  />
+                  {label}
                 </button>
-                {openEntrepriseFilters.activites && (
-                  <div className="pt-2 pb-4 space-y-4">
-                    {/* Onglets de recherche */}
-                    <div className="flex flex-wrap gap-2">
-                      {['Code NAF', 'Activité Google (GMB)', 'Sémantique', 'Enseigne/Franchise'].map((label, index) => (
-                        <button
-                          key={index}
-                          className={`px-3 py-1 rounded text-sm font-medium border ${
-                            label === 'Code NAF' ? 'bg-orange-600 text-white border-orange-600' : 'text-orange-600 border-orange-300'
-                          } hover:bg-orange-50 transition`}
-                          type="button"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+              ))}
+            </div>
 
-                    {/* Zone de recherche */}
-                    <input
-                      type="text"
-                      placeholder="Mots-clés, code NAF"
-                      value={activitySearch}
-                      onChange={(e) => setActivitySearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm"
-                    />
+            {/* Zone de recherche */}
+            <input
+              type="text"
+              placeholder="Mots-clés, code NAF"
+              value={activitySearch}
+              onChange={(e) => setActivitySearch(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded text-sm"
+            />
 
-                    {/* Boutons de code et chargement */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+            {/* Boutons de code et chargement */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
                         onClick={() => { console.log('NAF modal click'); setNafModalOpen(true); }}
-                      >
-                        📘 Codes NAF
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
-                      >
-                        ⬆️ Charger
-                      </button>
-                    </div>
+              >
+                📘 Codes NAF
+              </button>
+              <button
+                type="button"
+                className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+              >
+                ⬆️ Charger
+              </button>
+            </div>
 
-                    {/* Checkbox d'exclusion */}
-                    <label className="flex items-center space-x-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-orange-600 rounded"
-                        onChange={(e) =>
-                          updateFilters({
-                            excludeSelectedActivities: e.target.checked,
-                          } as any) // ajuster selon ton type exact
-                        }
-                      />
-                      <span className="text-gray-700">Exclure les éléments sélectionnés</span>
-                    </label>
-                  </div>
-                )}
-              </div>
+            {/* Checkbox d'exclusion */}
+            <label className="flex items-center space-x-2 text-sm">
+              <input
+                type="checkbox"
+                className="w-4 h-4 text-orange-600 rounded"
+                onChange={(e) =>
+                  updateFilters({
+                    excludeSelectedActivities: e.target.checked,
+                  } as any) // ajuster selon ton type exact
+                }
+              />
+              <span className="text-gray-700">Exclure les éléments sélectionnés</span>
+            </label>
+          </div>
+        )}
+      </div>
               {/* Chiffres clés */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
@@ -470,45 +480,84 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   </div>
                 )}
               </div>
-              {/* Forme juridique */}
+              {/* Juridique */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleEntrepriseFilter('forme')}
                 >
-                  <span className="font-semibold">Forme juridique</span>
+                  <span className="font-semibold">Juridique</span>
                   <ChevronDown
                     className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.forme ? 'rotate-180' : ''}`}
                   />
                 </button>
                 {openEntrepriseFilters.forme && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
-                    <input
-                      type="text"
-                      placeholder="Rechercher une forme juridique..."
-                      value={legalFormSearch}
-                      onChange={e => setLegalFormSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                    {naturesJuridiques
-                      .filter(nature => nature.titre.toLowerCase().includes(legalFormSearch.toLowerCase()))
-                      .map((nature) => (
-                        <label key={nature.id} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={safeFilters.legalForms.includes(nature.id)}
-                            onChange={() => {
-                              const currentIds = safeFilters.legalForms || [];
-                              const newIds = currentIds.includes(nature.id)
-                                ? currentIds.filter((id) => id !== nature.id)
-                                : [...currentIds, nature.id];
-                              setFilters({ ...filters, legalForms: newIds });
-                            }}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{nature.titre}</span>
-                        </label>
-                      ))}
+                  <div className="pt-2 pb-4 space-y-6">
+                    {/* Section Forme juridique avec scroll dédié */}
+                    <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Forme juridique</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher une forme juridique..."
+                        value={legalFormSearch}
+                        onChange={e => setLegalFormSearch(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      {naturesJuridiques
+                        .filter(nature => nature.titre.toLowerCase().includes(legalFormSearch.toLowerCase()))
+                        .map((nature) => (
+                          <label key={nature.id} className="flex items-center space-x-2 text-base">
+                            <input
+                              type="checkbox"
+                              checked={safeFilters.legalForms.includes(nature.id)}
+                              onChange={() => {
+                                if (legalFormListRef.current) {
+                                  lastScrollTop.current = legalFormListRef.current.scrollTop;
+                                }
+                                const currentIds = safeFilters.legalForms || [];
+                                const newIds = currentIds.includes(nature.id)
+                                  ? currentIds.filter((id) => id !== nature.id)
+                                  : [...currentIds, nature.id];
+                                setFilters({ ...filters, legalForms: newIds });
+                              }}
+                              className="w-4 h-4 text-orange-600 rounded"
+                            />
+                            <span className="text-gray-700">{nature.titre}</span>
+                          </label>
+                        ))}
+                    </div>
+                    {/* Séparateur */}
+                    <div className="border-t border-gray-200 my-2"></div>
+                    {/* Section Convention Collective avec scroll dédié */}
+                    <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
+                      <div className="font-semibold text-base text-gray-700 mb-1 mt-0">Convention Collective</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher une convention..."
+                        value={conventionSearch}
+                        onChange={e => setConventionSearch(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      {conventionsCollectives
+                        .filter(label => label.toLowerCase().includes(conventionSearch.toLowerCase()))
+                        .map(label => (
+                          <label key={label} className="flex items-center space-x-2 text-base">
+                            <input
+                              type="checkbox"
+                              checked={selectedConventions.includes(label)}
+                              onChange={() => {
+                                setSelectedConventions(prev =>
+                                  prev.includes(label)
+                                    ? prev.filter(l => l !== label)
+                                    : [...prev, label]
+                                );
+                              }}
+                              className="w-4 h-4 text-orange-600 rounded"
+                            />
+                            <span className="text-gray-700">{label}</span>
+                          </label>
+                        ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -709,17 +758,17 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
                     {/* Checkbox d'exclusion */}
                     <label className="flex items-center space-x-2 text-sm">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-orange-600 rounded"
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-orange-600 rounded"
                         onChange={(e) =>
                           updateFilters({
                             excludeSelectedActivities: e.target.checked,
                           } as any) // ajuster selon ton type exact
                         }
-                      />
+                          />
                       <span className="text-gray-700">Exclure les éléments sélectionnés</span>
-                    </label>
+                        </label>
                   </div>
                 )}
               </div>
@@ -772,30 +821,79 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   </div>
                 )}
               </div>
-              {/* Forme juridique */}
+              {/* Juridique */}
               <div className="mb-2 border-b border-gray-100 last:border-b-0">
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleEntrepriseFilter('forme')}
                 >
-                  <span className="font-semibold">Forme juridique</span>
+                  <span className="font-semibold">Juridique</span>
                   <ChevronDown
                     className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.forme ? 'rotate-180' : ''}`}
                   />
                 </button>
                 {openEntrepriseFilters.forme && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
-                    {(availableLegalForms || []).map((form) => (
-                      <label key={form} className="flex items-center space-x-2 text-sm">
+                  <div className="pt-2 pb-4 space-y-6 max-h-96 overflow-y-auto">
+                    {/* Section Forme juridique */}
+                    <div>
+                      <div className="font-semibold text-xs text-gray-500 mb-1">Forme juridique</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher une forme juridique..."
+                        value={legalFormSearch}
+                        onChange={e => setLegalFormSearch(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      {naturesJuridiques
+                        .filter(nature => nature.titre.toLowerCase().includes(legalFormSearch.toLowerCase()))
+                        .map((nature) => (
+                          <label key={nature.id} className="flex items-center space-x-2 text-sm">
                         <input
                           type="checkbox"
-                          checked={safeFilters.legalForms.includes(form)}
-                          onChange={() => toggleLegalForm(form)}
+                              checked={safeFilters.legalForms.includes(nature.id)}
+                              onChange={() => {
+                                const currentIds = safeFilters.legalForms || [];
+                                const newIds = currentIds.includes(nature.id)
+                                  ? currentIds.filter((id) => id !== nature.id)
+                                  : [...currentIds, nature.id];
+                                setFilters({ ...filters, legalForms: newIds });
+                              }}
                           className="w-4 h-4 text-orange-600 rounded"
                         />
-                        <span className="text-gray-700">{form}</span>
+                            <span className="text-gray-700">{nature.titre}</span>
                       </label>
                     ))}
+                  </div>
+                    {/* Section Convention Collective */}
+                    <div>
+                      <div className="font-semibold text-xs text-gray-500 mb-1 mt-4">Convention Collective</div>
+                    <input
+                      type="text"
+                        placeholder="Rechercher une convention..."
+                        value={conventionSearch}
+                        onChange={e => setConventionSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                    />
+                      {conventionsCollectives
+                        .filter(label => label.toLowerCase().includes(conventionSearch.toLowerCase()))
+                        .map(label => (
+                          <label key={label} className="flex items-center space-x-2 text-sm">
+                          <input
+                            type="checkbox"
+                              checked={selectedConventions.includes(label)}
+                              onChange={() => {
+                                setSelectedConventions(prev =>
+                                  prev.includes(label)
+                                    ? prev.filter(l => l !== label)
+                                    : [...prev, label]
+                                );
+                              }}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                            <span className="text-gray-700">{label}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -819,13 +917,13 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       {nafModalOpen && ReactDOM.createPortal(
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-2xl max-h-[80vh] w-full max-w-xl mx-4 sm:mx-0 p-4 sm:p-8 relative flex flex-col">
-            <button
+                <button
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
               onClick={() => setNafModalOpen(false)}
               aria-label="Fermer"
-            >
+                >
               ×
-            </button>
+                </button>
             <h2 className="text-lg font-semibold mb-4 text-center">Codes NAF</h2>
             <div className="divide-y divide-gray-200 border rounded overflow-y-auto max-h-[60vh] bg-white">
               {Object.entries(nafCodes).map(([code, label], idx) => (
@@ -834,17 +932,17 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   className={`flex items-center space-x-2 text-sm px-2 py-2 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-white'} hover:bg-orange-50 transition`}
                   style={{ cursor: 'pointer' }}
                 >
-                  <input
-                    type="checkbox"
+                        <input
+                          type="checkbox"
                     checked={selectedNafCodes.includes(code)}
                     onChange={() => handleNafCheckbox(code)}
-                    className="w-4 h-4 text-orange-600 rounded"
-                  />
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
                   <span className="font-mono text-gray-800 min-w-[5.5rem]">{code}</span>
                   <span className="text-gray-700 flex-1">{label as string}</span>
-                </label>
-              ))}
-            </div>
+                      </label>
+                    ))}
+                  </div>
             <div className="mt-4 flex justify-end">
               <button
                 className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
@@ -852,11 +950,17 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               >
                 Fermer
               </button>
-            </div>
-          </div>
+              </div>
+      </div>
         </div>,
         document.body
       )}
+      {/* Après le rendu du composant, restaure la position du scroll */}
+      {useLayoutEffect(() => {
+        if (legalFormListRef.current) {
+          legalFormListRef.current.scrollTop = lastScrollTop.current;
+        }
+      })}
     </>
   );
 };
