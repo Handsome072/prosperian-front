@@ -39,7 +39,6 @@ export const SearchLayout: React.FC = () => {
           <ResponsiveSidebar
             filters={filters}
             onFiltersChange={handleFiltersChange}
-            availableActivities={availableActivities}
             availableCities={availableCities}
             availableLegalForms={availableLegalForms}
             availableRoles={availableRoles}

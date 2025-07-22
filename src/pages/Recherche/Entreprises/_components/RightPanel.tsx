@@ -2,6 +2,7 @@ import React from 'react';
 import { MapPin, TrendingUp, Info } from 'lucide-react';
 import { VectorMap } from '@react-jvectormap/core';
 import { frRegions_2016Mill } from '@react-jvectormap/franceregions2016';
+import { FiltersPanel } from '@shared/components/Sidebar/FiltersPanel';
 
 // Mapping ville (MAJUSCULE) → code région France
 const cityToRegion: { [city: string]: string } = {
@@ -26,15 +27,49 @@ const cityColors = [
 interface RightPanelProps {
   businesses: { city: string; activity: string }[];
   totalBusinesses: number;
+  filters: {
+    activities: string[];
+    cities: string[];
+    legalForms: string[];
+    roles: string[];
+    employeeRange: [number, number];
+    revenueRange: [number, number];
+    ageRange: [number, number];
+    searchTerm: string;
+    ratingRange: [number, number];
+    sortBy: string;
+  };
+  onFiltersChange: (filters: RightPanelProps['filters']) => void;
+  availableCities: string[];
+  availableLegalForms: string[];
+  availableRoles: string[];
+  employeeRange: [number, number];
+  revenueRange: [number, number];
+  ageRange: [number, number];
 }
 
-export const RightPanel: React.FC<RightPanelProps> = ({ businesses, totalBusinesses }) => {
+const defaultFilters = {
+  activities: [],
+  cities: [],
+  legalForms: [],
+  roles: [],
+  employeeRange: [0, 0],
+  revenueRange: [0, 0],
+  ageRange: [0, 0],
+  searchTerm: '',
+  ratingRange: [0, 5],
+  sortBy: 'Pertinence'
+};
+
+export const RightPanel: React.FC<RightPanelProps> = ({ businesses, totalBusinesses, filters, onFiltersChange, availableCities, availableLegalForms, availableRoles, employeeRange, revenueRange, ageRange, ...rest }) => {
   // Répartition géographique
   const getGeographicDistribution = () => {
     const cityCount: { [key: string]: number } = {};
     businesses.forEach(business => {
       // On met la ville en majuscule pour le comptage et la correspondance
-      const cityUpper = business.city.toUpperCase();
+      const city = business.city;
+      const cityUpper = typeof city === 'string' ? city.toUpperCase() : '';
+      if (!cityUpper) return;
       cityCount[cityUpper] = (cityCount[cityUpper] || 0) + 1;
     });
     return Object.entries(cityCount)
