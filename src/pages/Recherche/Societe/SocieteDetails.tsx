@@ -1,376 +1,594 @@
 import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Globe, Phone, Mail, Linkedin, Facebook, Twitter, Youtube, ChevronDown, Search, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Search, Download, ArrowLeft, Building2, FileText, Euro, Globe, Calendar } from 'lucide-react';
 
-const COLORS = ['#E95C41', '#F7B267', '#A3A1FB', '#4F8A8B', '#F76E11', '#43BCCD'];
+// Données JSON intégrées directement (simulé pour l'exemple, normalement récupéré via API)
+const societeData = {
+  "siren": "356000000",
+  "nom_complet": "LA POSTE (DIRECTION GENERALE DE LA POSTE)",
+  "nom_raison_sociale": "LA POSTE",
+  "sigle": null,
+  "nombre_etablissements": 13083,
+  "nombre_etablissements_ouverts": 9086,
+  "siege": {
+    "activite_principale": "53.10Z",
+    "activite_principale_registre_metier": null,
+    "annee_tranche_effectif_salarie": "2022",
+    "adresse": "DIRECTION GENERALE DE LA POSTE 9 RUE DU COLONEL PIERRE AVIA 75015 PARIS",
+    "caractere_employeur": "O",
+    "cedex": null,
+    "code_pays_etranger": null,
+    "code_postal": "75015",
+    "commune": "75115",
+    "complement_adresse": "DIRECTION GENERALE DE LA POSTE",
+    "coordonnees": "48.83002,2.275688",
+    "date_creation": "2003-01-01",
+    "date_debut_activite": "2014-04-29",
+    "date_fermeture": null,
+    "date_mise_a_jour": null,
+    "date_mise_a_jour_insee": "2025-04-07T17:38:03",
+    "departement": "75",
+    "distribution_speciale": null,
+    "epci": "200054781",
+    "est_siege": true,
+    "etat_administratif": "A",
+    "geo_adresse": "Rue du Colonel Pierre Avia 75015 Paris",
+    "geo_id": "75115_2214",
+    "indice_repetition": null,
+    "latitude": "48.83002",
+    "libelle_cedex": null,
+    "libelle_commune": "PARIS",
+    "libelle_commune_etranger": null,
+    "libelle_pays_etranger": null,
+    "libelle_voie": "DU COLONEL PIERRE AVIA",
+    "liste_enseignes": ["LA POSTE"],
+    "liste_finess": ["750073637"],
+    "liste_id_bio": null,
+    "liste_idcc": ["5516", "9999"],
+    "liste_id_organisme_formation": null,
+    "liste_rge": null,
+    "liste_uai": null,
+    "longitude": "2.275688",
+    "nom_commercial": null,
+    "numero_voie": "9",
+    "region": "11",
+    "siret": "35600000000048",
+    "statut_diffusion_etablissement": "O",
+    "tranche_effectif_salarie": "51",
+    "type_voie": "RUE"
+  },
+  "activite_principale": "53.10Z",
+  "categorie_entreprise": "GE",
+  "caractere_employeur": null,
+  "annee_categorie_entreprise": "2022",
+  "date_creation": "1991-01-01",
+  "date_fermeture": null,
+  "date_mise_a_jour": "2025-07-23T07:50:20",
+  "date_mise_a_jour_insee": "2025-07-17T16:12:28.956",
+  "date_mise_a_jour_rne": "2024-05-19T16:49:33",
+  "dirigeants": [
+    {
+      "nom": "AJDARI",
+      "prenoms": "MARTIN",
+      "annee_de_naissance": "1968",
+      "date_de_naissance": "1968-12",
+      "qualite": "Administrateur",
+      "nationalite": "Française",
+      "type_dirigeant": "personne physique"
+    }
+  ],
+  "etat_administratif": "A",
+  "nature_juridique": "5510",
+  "section_activite_principale": "H",
+  "tranche_effectif_salarie": "53",
+  "annee_tranche_effectif_salarie": "2022",
+  "statut_diffusion": "O",
+  "matching_etablissements": [
+    {
+      "activite_principale": "53.10Z",
+      "ancien_siege": false,
+      "annee_tranche_effectif_salarie": null,
+      "adresse": "1 PLACE CARNEGIE 02700 TERGNIER",
+      "caractere_employeur": "N",
+      "code_postal": "02700",
+      "commune": "02738",
+      "date_creation": "2012-01-01",
+      "date_debut_activite": "2014-01-10",
+      "date_fermeture": null,
+      "epci": "200071785",
+      "est_siege": false,
+      "etat_administratif": "A",
+      "geo_id": "02738_2235_00001",
+      "latitude": "49.65875",
+      "libelle_commune": "TERGNIER",
+      "liste_enseignes": ["LA POSTE"],
+      "liste_finess": null,
+      "liste_id_bio": null,
+      "liste_idcc": null,
+      "liste_id_organisme_formation": null,
+      "liste_rge": null,
+      "liste_uai": null,
+      "longitude": "3.315011",
+      "nom_commercial": null,
+      "region": "32",
+      "siret": "35600000053166",
+      "statut_diffusion_etablissement": "O",
+      "tranche_effectif_salarie": null
+    },
+    {
+      "activite_principale": "53.10Z",
+      "ancien_siege": false,
+      "annee_tranche_effectif_salarie": null,
+      "adresse": "14 AVENUE DU GENERAL DE GAULLE 02700 TERGNIER",
+      "caractere_employeur": "O",
+      "code_postal": "02700",
+      "commune": "02738",
+      "date_creation": "2012-01-01",
+      "date_debut_activite": "2014-01-10",
+      "date_fermeture": null,
+      "epci": "200071785",
+      "est_siege": false,
+      "etat_administratif": "A",
+      "geo_id": "02738_2567_00014",
+      "latitude": "49.655127",
+      "libelle_commune": "TERGNIER",
+      "liste_enseignes": ["LA POSTE"],
+      "liste_finess": null,
+      "liste_id_bio": null,
+      "liste_idcc": null,
+      "liste_id_organisme_formation": null,
+      "liste_rge": null,
+      "liste_uai": null,
+      "longitude": "3.292756",
+      "nom_commercial": null,
+      "region": "32",
+      "siret": "35600000053170",
+      "statut_diffusion_etablissement": "O",
+      "tranche_effectif_salarie": null
+    },
+    {
+      "activite_principale": "53.10Z",
+      "ancien_siege": false,
+      "annee_tranche_effectif_salarie": "2022",
+      "adresse": "1 RUE DE VERDUN 02600 VILLERS-COTTERETS",
+      "caractere_employeur": "O",
+      "code_postal": "02600",
+      "commune": "02810",
+      "date_creation": "2012-01-01",
+      "date_debut_activite": "2014-01-10",
+      "date_fermeture": null,
+      "epci": "200071991",
+      "est_siege": false,
+      "etat_administratif": "A",
+      "geo_id": "02810_0700_00001",
+      "latitude": "49.254303",
+      "libelle_commune": "VILLERS-COTTERETS",
+      "liste_enseignes": ["LA POSTE"],
+      "liste_finess": null,
+      "liste_id_bio": null,
+      "liste_idcc": ["9999", "5516"],
+      "liste_id_organisme_formation": null,
+      "liste_rge": null,
+      "liste_uai": null,
+      "longitude": "3.09084",
+      "nom_commercial": null,
+      "region": "32",
+      "siret": "35600000053210",
+      "statut_diffusion_etablissement": "O",
+      "tranche_effectif_salarie": "11"
+    },
+    {
+      "activite_principale": "53.10Z",
+      "ancien_siege": false,
+      "annee_tranche_effectif_salarie": "2022",
+      "adresse": "9001 RUE DE LA QUEUE D OIGNY 02600 VILLERS-COTTERETS",
+      "caractere_employeur": "O",
+      "code_postal": "02600",
+      "commune": "02810",
+      "date_creation": "2012-01-01",
+      "date_debut_activite": "2014-01-10",
+      "date_fermeture": null,
+      "epci": "200071991",
+      "est_siege": false,
+      "etat_administratif": "A",
+      "geo_id": "02810_0612",
+      "latitude": "49.238675",
+      "libelle_commune": "VILLERS-COTTERETS",
+      "liste_enseignes": ["LA POSTE"],
+      "liste_finess": null,
+      "liste_id_bio": null,
+      "liste_idcc": ["5516", "9999"],
+      "liste_id_organisme_formation": null,
+      "liste_rge": null,
+      "liste_uai": null,
+      "longitude": "3.102971",
+      "nom_commercial": null,
+      "region": "32",
+      "siret": "35600000053215",
+      "statut_diffusion_etablissement": "O",
+      "tranche_effectif_salarie": "11"
+    }
+  ],
+  "finances": {
+    "2023": {
+      "ca": 26888000000,
+      "resultat_net": 776000000
+    }
+  },
+  "complements": {
+    "collectivite_territoriale": null,
+    "convention_collective_renseignee": true,
+    "liste_idcc": ["9999", "5516"],
+    "egapro_renseignee": true,
+    "est_achats_responsables": true,
+    "est_alim_confiance": true,
+    "est_association": false,
+    "est_bio": false,
+    "est_entrepreneur_individuel": false,
+    "est_entrepreneur_spectacle": false,
+    "est_ess": false,
+    "est_finess": true,
+    "est_organisme_formation": true,
+    "est_qualiopi": true,
+    "liste_id_organisme_formation": ["11755565775", "11755762075"],
+    "est_rge": false,
+    "est_service_public": false,
+    "est_l100_3": false,
+    "est_siae": false,
+    "est_societe_mission": false,
+    "est_uai": false,
+    "est_patrimoine_vivant": false,
+    "bilan_ges_renseigne": true,
+    "identifiant_association": null,
+    "statut_entrepreneur_spectacle": null,
+    "type_siae": null
+  }
+};
 
 const SocieteDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('legal');
   const [activeSubTab, setActiveSubTab] = useState('infos');
-  const [contactsTab, setContactsTab] = useState('directs');
-
-  // Données pour le graphique CA
-  const caData = [
-    { year: '2013', reels: 15.3, estimes: 0 },
-    { year: '2014', reels: 22.0, estimes: 0 },
-    { year: '2015', reels: 21.9, estimes: 0 },
-    { year: '2016', reels: 21.3, estimes: 0 },
-    { year: '2017', reels: 20.1, estimes: 0 },
-    { year: '2018', reels: 0, estimes: 22.1 },
-    { year: '2019', reels: 0, estimes: 21.3 },
-    { year: '2020', reels: 0, estimes: 20.1 },
-    { year: '2021', reels: 0, estimes: 21.5 },
-    { year: '2022', reels: 0, estimes: 21.3 },
-    { year: '2023', reels: 0, estimes: 20.1 },
-    { year: '2024', reels: 0, estimes: 22.1 }
-  ];
-
-  // Données pour les graphiques contacts
-  const domainesData = [
-    { name: 'Commerce', value: 14, color: '#E95C41' },
-    { name: 'Production', value: 3, color: '#F7B267' },
-    { name: 'Marketing', value: 3, color: '#A3A1FB' },
-    { name: 'Magasin', value: 3, color: '#4F8A8B' },
-    { name: 'Direction Gén.', value: 5, color: '#F76E11' },
-    { name: 'Responsable et...', value: 4, color: '#43BCCD' }
-  ];
-
-  const postesData = [
-    { name: 'Assistant', value: 9, color: '#E95C41' },
-    { name: 'Mandataire', value: 6, color: '#F7B267' },
-    { name: 'Responsable', value: 22, color: '#A3A1FB' },
-    { name: 'Collaborateur', value: 23, color: '#4F8A8B' },
-    { name: 'Directeur', value: 6, color: '#F76E11' }
-  ];
-
-  const effectifsData = [
-    { year: '2016', reels: 246, estimes: 0 },
-    { year: '2017', reels: 239, estimes: 0 },
-    { year: '2018', reels: 237, estimes: 0 },
-    { year: '2019', reels: 235, estimes: 0 },
-    { year: '2020', reels: 233, estimes: 0 },
-    { year: '2021', reels: 0, estimes: 275 },
-    { year: '2022', reels: 0, estimes: 300 },
-    { year: '2023', reels: 0, estimes: 261 },
-    { year: '2024', reels: 0, estimes: 275 },
-    { year: '2025', reels: 0, estimes: 261 }
-  ];
 
   return (
-    <div className="bg-[#F8F9FA] min-h-screen">
-      {/* Header avec logo et nom */}
-      <div className="bg-white px-8 py-6">
-        <div className="flex items-center justify-between">
+    <div className="bg-gray-50 min-h-screen font-sans">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-gray-100 shadow-md px-6 py-4 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-lg">T</span>
-            </div>
-            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">TRICOTAGE DES VOSGES</h1>
-          </div>
-          <div className="flex gap-2">
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <span className="text-red-500 text-lg">✕</span>
+            <button 
+              onClick={() => navigate(-1)} 
+              className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+              aria-label="Retour"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <Globe className="w-5 h-5 text-red-500" />
-            </button>
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <Mail className="w-5 h-5 text-red-500" />
-            </button>
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <Linkedin className="w-5 h-5 text-red-500" />
-            </button>
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <Youtube className="w-5 h-5 text-red-500" />
-            </button>
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <Phone className="w-5 h-5 text-red-500" />
-            </button>
-            <button className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-              <Mail className="w-5 h-5 text-red-500" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Section principale avec infos et graphique */}
-      <div className="px-8 py-6">
-        <div className="bg-white rounded-lg p-6 flex gap-8">
-          {/* Colonne gauche - Informations */}
-          <div className="flex-1">
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Globe className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700">Site Web</span>
-              </div>
-              <a href="http://www.tdv.fr/" className="text-red-500 text-sm hover:underline">
-                http://www.tdv.fr/
-              </a>
+            <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center transform hover:scale-105 transition-transform">
+              <span className="text-blue-600 font-bold text-xl">P</span>
             </div>
-
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Linkedin className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-gray-700">LinkedIn</span>
-              </div>
-              <a href="#" className="text-blue-600 text-sm hover:underline">
-                https://www.linkedin.com/company/bleuforet/
-              </a>
-              <p className="text-sm text-gray-600 mt-2">
-                Bleuforêt, marque de Tricotage des Vosges. Bleuforêt est un créateur d'accessoires de mode chaussants. Depuis 1924, Bleuforêt fabrique des chaussettes, collants et leggings au cœur...
-              </p>
-              <button className="text-gray-400 mt-1">
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div>
-              <span className="text-sm font-medium text-gray-700">Objet social</span>
-              <p className="text-sm text-gray-600 mt-2">
-                Fabrication et vente d'articles de bonneterie et plus particulièrement d'articles chaussants ainsi que toute opérations concernant ces articles : Création, acquisition, dépôt de tou...
-              </p>
-              <button className="text-gray-400 mt-1">
-                <ChevronDown className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Colonne droite - Graphique CA */}
-          <div className="flex-1">
-            <div className="text-right mb-4">
-              <span className="text-sm font-medium text-gray-700">Chiffre d'affaires</span>
-              <div className="text-2xl font-bold text-gray-800 mt-1">30 M</div>
-            </div>
-            
-            <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={caData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis 
-                    dataKey="year" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#6B7280' }}
-                    domain={[0, 30]}
-                    tickFormatter={(value) => `${value} M`}
-                  />
-                  <Tooltip 
-                    formatter={(value, name) => [`${value} M€`, name === 'reels' ? 'Chiffres réels' : 'Chiffres estimés']}
-                    labelFormatter={(label) => `Année ${label}`}
-                  />
-                  <Bar dataKey="reels" fill="#1E40AF" radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="estimes" fill="#EF4444" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="flex items-center justify-center gap-4 mt-4 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-blue-700 rounded-full"></div>
-                <span className="text-gray-600">Chiffres réels</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span className="text-gray-600">Chiffres estimés</span>
-              </div>
-            </div>
-
-            <div className="text-center mt-6">
-              <button className="px-6 py-2 border border-gray-300 rounded-full text-sm text-gray-700 hover:bg-gray-50">
-                Ajouter à une liste
-              </button>
-            </div>
+            <h1 className="text-3xl font-semibold text-gray-800 tracking-tight">{societeData.nom_complet}</h1>
           </div>
         </div>
       </div>
 
       {/* Onglets principaux */}
-      <div className="px-8">
-        <div className="flex border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        <div className="flex gap-2 border-b border-gray-200 bg-white rounded-t-xl shadow-sm">
           <button 
-            className={`px-6 py-3 text-sm font-medium border-b-2 ${
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
               activeTab === 'legal' 
-                ? 'text-red-500 border-red-500' 
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
             onClick={() => setActiveTab('legal')}
+            aria-current={activeTab === 'legal' ? 'page' : undefined}
           >
-            Légal
+            <FileText className="w-4 h-4" /> Légal
           </button>
           <button 
-            className={`px-6 py-3 text-sm font-medium border-b-2 ${
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
               activeTab === 'finances' 
-                ? 'text-red-500 border-red-500' 
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
             onClick={() => setActiveTab('finances')}
+            aria-current={activeTab === 'finances' ? 'page' : undefined}
           >
-            € Finances
+            <Euro className="w-4 h-4" /> Finances
           </button>
           <button 
-            className={`px-6 py-3 text-sm font-medium border-b-2 ${
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
               activeTab === 'web' 
-                ? 'text-red-500 border-red-500' 
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
             onClick={() => setActiveTab('web')}
+            aria-current={activeTab === 'web' ? 'page' : undefined}
           >
-            🌐 Web
+            <Globe className="w-4 h-4" /> Web
           </button>
           <button 
-            className={`px-6 py-3 text-sm font-medium border-b-2 ${
+            className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
               activeTab === 'events' 
-                ? 'text-red-500 border-red-500' 
-                : 'text-gray-500 border-transparent hover:text-gray-700'
+                ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                : 'text-gray-600 hover:bg-gray-100'
             }`}
             onClick={() => setActiveTab('events')}
+            aria-current={activeTab === 'events' ? 'page' : undefined}
           >
-            📅 Événements
+            <Calendar className="w-4 h-4" /> Événements
           </button>
         </div>
 
         {/* Sous-onglets pour Légal */}
         {activeTab === 'legal' && (
-          <div className="flex border-b border-gray-200 mt-4">
+          <div className="flex gap-2 border-b border-gray-200 bg-white rounded-t-xl shadow-sm mt-2">
             <button 
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
                 activeSubTab === 'infos' 
-                  ? 'text-red-500 border-red-500' 
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
               onClick={() => setActiveSubTab('infos')}
+              aria-current={activeSubTab === 'infos' ? 'page' : undefined}
             >
-              ⚠️ Informations générales
+              <FileText className="w-4 h-4" /> Informations générales
             </button>
             <button 
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
                 activeSubTab === 'mandataires' 
-                  ? 'text-red-500 border-red-500' 
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
               onClick={() => setActiveSubTab('mandataires')}
+              aria-current={activeSubTab === 'mandataires' ? 'page' : undefined}
             >
-              👥 Mandataires / Bénéficiaires effectifs
+              <Building2 className="w-4 h-4" /> Mandataires
             </button>
             <button 
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                activeSubTab === 'publications' 
-                  ? 'text-red-500 border-red-500' 
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
-              }`}
-              onClick={() => setActiveSubTab('publications')}
-            >
-              📰 Publications
-            </button>
-            <button 
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
+              className={`flex items-center gap-2 px-6 py-3 text-sm font-semibold rounded-t-lg transition-colors ${
                 activeSubTab === 'etablissements' 
-                  ? 'text-red-500 border-red-500' 
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  ? 'text-red-600 border-b-2 border-red-600 bg-red-50' 
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
               onClick={() => setActiveSubTab('etablissements')}
+              aria-current={activeSubTab === 'etablissements' ? 'page' : undefined}
             >
-              🏢 Établissements
+              <Building2 className="w-4 h-4" /> Établissements
             </button>
           </div>
         )}
 
         {/* Contenu des informations générales */}
         {activeTab === 'legal' && activeSubTab === 'infos' && (
-          <div className="bg-white rounded-lg mt-6 p-6">
-            <div className="grid grid-cols-3 gap-8 text-sm">
-              {/* Colonne 1 */}
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Colonne 1 - Informations générales de l'entreprise */}
+            <div className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Informations générales</h2>
               <div className="space-y-4">
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">DÉNOMINATION</div>
-                  <div className="font-medium">TRICOTAGE DES VOSGES</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">SIREN</div>
+                  <div className="text-gray-800">{societeData.siren}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">NOM COMMERCIAL</div>
-                  <div className="font-medium">BLEU FORÊT, OLYMPIA</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Nom complet</div>
+                  <div className="text-gray-800">{societeData.nom_complet}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">SIGLE</div>
-                  <div className="font-medium">TDV</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Raison sociale</div>
+                  <div className="text-gray-800">{societeData.nom_raison_sociale}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">TYPE ÉTABLISSEMENT</div>
-                  <div className="font-medium">Siège</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Sigle</div>
+                  <div className="text-gray-800">{societeData.sigle || '-'}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">STATUT</div>
-                  <div className="font-medium">Active</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Nombre d'établissements</div>
+                  <div className="text-gray-800">{societeData.nombre_etablissements}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">N° SIREN</div>
-                  <div className="font-medium">398356246 📋</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Nombre d'établissements ouverts</div>
+                  <div className="text-gray-800">{societeData.nombre_etablissements_ouverts}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">N° SIRET</div>
-                  <div className="font-medium">39835624600015 📋</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Activité principale</div>
+                  <div className="text-gray-800">{societeData.activite_principale} (Activités de poste dans le cadre du service universel)</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">N° TVA UE</div>
-                  <div className="font-medium">FR398356246 📋</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Catégorie entreprise</div>
+                  <div className="text-gray-800">{societeData.categorie_entreprise}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">FORME JURIDIQUE</div>
-                  <div className="font-medium">SA à directoire</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Année catégorie entreprise</div>
+                  <div className="text-gray-800">{societeData.annee_categorie_entreprise}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">CODE NAF/APE</div>
-                  <div className="font-medium">1431Z (Fabrication d'articles chaussants à mailles) ℹ️</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Date de création</div>
+                  <div className="text-gray-800">{societeData.date_creation}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">État administratif</div>
+                  <div className="text-gray-800">{societeData.etat_administratif === 'A' ? 'Actif' : 'Inactif'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Nature juridique</div>
+                  <div className="text-gray-800">{societeData.nature_juridique} (Établissement public à caractère industriel et commercial)</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Section activité principale</div>
+                  <div className="text-gray-800">{societeData.section_activite_principale}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Tranche effectif salarié</div>
+                  <div className="text-gray-800">{societeData.tranche_effectif_salarie}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Année tranche effectif salarié</div>
+                  <div className="text-gray-800">{societeData.annee_tranche_effectif_salarie}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Statut diffusion</div>
+                  <div className="text-gray-800">{societeData.statut_diffusion}</div>
                 </div>
               </div>
+            </div>
 
-              {/* Colonne 2 */}
+            {/* Colonne 2 - Informations du siège */}
+            <div className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Siège social</h2>
               <div className="space-y-4">
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">ADRESSE</div>
-                  <div className="font-medium">2 RUE DU JUMELAGE 88120 VAGNEY</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Adresse siège</div>
+                  <div className="text-gray-800">{societeData.siege.adresse}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">DATE DE CRÉATION</div>
-                  <div className="font-medium">19/09/1994</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Code postal</div>
+                  <div className="text-gray-800">{societeData.siege.code_postal}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">DATE DE CRÉATION D'ÉTABLISSEMENT</div>
-                  <div className="font-medium">19/09/1994</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Commune</div>
+                  <div className="text-gray-800">{societeData.siege.libelle_commune}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">DERNIÈRE MISE À JOUR LÉGALE</div>
-                  <div className="font-medium">30/06/2025</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Département</div>
+                  <div className="text-gray-800">{societeData.siege.departement}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">CAPITAL SOCIAL</div>
-                  <div className="font-medium">809 250 €</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Région</div>
+                  <div className="text-gray-800">{societeData.siege.region}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">CHIFFRE D'AFFAIRES (2024)</div>
-                  <div className="font-medium">22 154 625 €</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">EPCI</div>
+                  <div className="text-gray-800">{societeData.siege.epci}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">GREFFE</div>
-                  <div className="font-medium">Epinal</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">SIRET siège</div>
+                  <div className="text-gray-800">{societeData.siege.siret}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">N° RCS</div>
-                  <div className="font-medium">398356246 RCS Epinal 📋</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Activité principale siège</div>
+                  <div className="text-gray-800">{societeData.siege.activite_principale}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">CONVENTION COLLECTIVE</div>
-                  <div className="font-medium">0018 - Convention collective nationale des industries textiles</div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Caractère employeur</div>
+                  <div className="text-gray-800">{societeData.siege.caractere_employeur === 'O' ? 'Oui' : 'Non'}</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs uppercase mb-1">TÉLÉCHARGER LES DERNIERS STATUTS</div>
-                  <div className="font-medium text-red-500 cursor-pointer flex items-center gap-1">
-                    <Download className="w-4 h-4" />
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Date création siège</div>
+                  <div className="text-gray-800">{societeData.siege.date_creation}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Date début activité</div>
+                  <div className="text-gray-800">{societeData.siege.date_debut_activite}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Date mise à jour INSEE</div>
+                  <div className="text-gray-800">{societeData.siege.date_mise_a_jour_insee}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Coordonnées</div>
+                  <div className="text-gray-800">{societeData.siege.coordonnees}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Latitude</div>
+                  <div className="text-gray-800">{societeData.siege.latitude}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Longitude</div>
+                  <div className="text-gray-800">{societeData.siege.longitude}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Enseignes</div>
+                  <div className="text-gray-800">{societeData.siege.liste_enseignes.join(', ')}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">FINESS</div>
+                  <div className="text-gray-800">{societeData.siege.liste_finess ? societeData.siege.liste_finess.join(', ') : '-'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Conventions collectives (IDCC)</div>
+                  <div className="text-gray-800">{societeData.siege.liste_idcc ? societeData.siege.liste_idcc.join(', ') : '-'}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Colonne 3 - Finances et Compléments */}
+            <div className="bg-white rounded-xl shadow-sm p-6 transition-all hover:shadow-md">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">Finances et compléments</h2>
+              <div className="space-y-4">
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Chiffre d'affaires (2023)</div>
+                  <div className="text-gray-800">{societeData.finances['2023'].ca.toLocaleString()} €</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Résultat net (2023)</div>
+                  <div className="text-gray-800">{societeData.finances['2023'].resultat_net.toLocaleString()} €</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Convention collective renseignée</div>
+                  <div className="text-gray-800">{societeData.complements.convention_collective_renseignee ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">EGAPRO renseignée</div>
+                  <div className="text-gray-800">{societeData.complements.egapro_renseignee ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Achats responsables</div>
+                  <div className="text-gray-800">{societeData.complements.est_achats_responsables ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Alim confiance</div>
+                  <div className="text-gray-800">{societeData.complements.est_alim_confiance ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Association</div>
+                  <div className="text-gray-800">{societeData.complements.est_association ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Bio</div>
+                  <div className="text-gray-800">{societeData.complements.est_bio ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Entrepreneur individuel</div>
+                  <div className="text-gray-800">{societeData.complements.est_entrepreneur_individuel ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Entrepreneur spectacle</div>
+                  <div className="text-gray-800">{societeData.complements.est_entrepreneur_spectacle ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">ESS</div>
+                  <div className="text-gray-800">{societeData.complements.est_ess ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">FINESS</div>
+                  <div className="text-gray-800">{societeData.complements.est_finess ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Organisme de formation</div>
+                  <div className="text-gray-800">{societeData.complements.est_organisme_formation ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Qualiopi</div>
+                  <div className="text-gray-800">{societeData.complements.est_qualiopi ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">RGE</div>
+                  <div className="text-gray-800">{societeData.complements.est_rge ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Service public</div>
+                  <div className="text-gray-800">{societeData.complements.est_service_public ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Bilan GES</div>
+                  <div className="text-gray-800">{societeData.complements.bilan_ges_renseigne ? 'Oui' : 'Non'}</div>
+                </div>
+                <div>
+                  <div className="text-gray-500 text-xs uppercase font-medium mb-1">Télécharger les derniers statuts</div>
+                  <div className="text-red-600 cursor-pointer flex items-center gap-2 hover:text-red-700 transition-colors">
+                    <Download className="w-4 h-4" /> Télécharger
                   </div>
                 </div>
               </div>
@@ -378,285 +596,106 @@ const SocieteDetails: React.FC = () => {
           </div>
         )}
 
-        {/* Section Contacts */}
-        <div className="bg-white rounded-lg mt-6 p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-lg">👥</span>
-            <h2 className="text-lg font-bold text-gray-800">CONTACTS</h2>
-          </div>
-
-          {/* Graphiques contacts */}
-          <div className="grid grid-cols-3 gap-8 mb-8">
-            {/* Domaines */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Domaines</h3>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={domainesData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      {domainesData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-1 text-xs">
-                {domainesData.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-gray-600">{item.name}</span>
-                    <span className="text-gray-800 font-medium">{item.value}</span>
-                  </div>
-                ))}
-              </div>
+        {/* Contenu des mandataires */}
+        {activeTab === 'legal' && activeSubTab === 'mandataires' && (
+          <div className="bg-white rounded-xl shadow-sm mt-6 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Building2 className="w-5 h-5 text-gray-600" />
+              <h2 className="text-xl font-semibold text-gray-800">Mandataires</h2>
             </div>
 
-            {/* Types de poste */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Types de poste</h3>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={postesData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={40}
-                      outerRadius={80}
-                      dataKey="value"
-                    >
-                      {postesData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="space-y-1 text-xs">
-                {postesData.map((item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                    <span className="text-gray-600">{item.name}</span>
-                    <span className="text-gray-800 font-medium">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Historique des effectifs */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-4">Historique des effectifs</h3>
-              <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={effectifsData}>
-                    <XAxis 
-                      dataKey="year" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fill: '#6B7280' }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10, fill: '#6B7280' }}
-                      domain={[0, 400]}
-                    />
-                    <Tooltip />
-                    <Bar dataKey="reels" fill="#1E40AF" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="estimes" fill="#EF4444" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex items-center justify-center gap-4 mt-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-blue-700 rounded-full"></div>
-                  <span className="text-gray-600">Chiffres réels</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <span className="text-gray-600">Chiffres estimés</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Onglets contacts */}
-          <div className="flex border-b border-gray-200 mb-6">
-            <button 
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                contactsTab === 'directs' 
-                  ? 'text-red-500 border-red-500' 
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
-              }`}
-              onClick={() => setContactsTab('directs')}
-            >
-              Contacts directs
-            </button>
-            <button 
-              className={`px-6 py-3 text-sm font-medium border-b-2 ${
-                contactsTab === 'generiques' 
-                  ? 'text-red-500 border-red-500' 
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
-              }`}
-              onClick={() => setContactsTab('generiques')}
-            >
-              Contacts génériques
-            </button>
-          </div>
-
-          {/* Barre de recherche et pagination */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="relative">
+            {/* Barre de recherche */}
+            <div className="relative mb-6 max-w-md">
               <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input 
                 type="text" 
-                placeholder="Nom, domaine..." 
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder="Rechercher un mandataire..." 
+                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-shadow"
+                aria-label="Rechercher un mandataire"
               />
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
-              <span>1 - 5 sur 50</span>
-              <div className="flex items-center gap-2">
-                <button className="p-1 hover:bg-gray-100 rounded">
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button className="p-1 hover:bg-gray-100 rounded">
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+
+            {/* Tableau des mandataires */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500 text-xs uppercase bg-gray-50">
+                    <th className="text-left py-3 px-4 font-medium">RÔLE</th>
+                    <th className="text-left py-3 px-4 font-medium">NOM</th>
+                    <th className="text-left py-3 px-4 font-medium">NATIONALITÉ</th>
+                    <th className="text-left py-3 px-4 font-medium">ANNÉE DE NAISSANCE</th>
+                    <th className="text-left py-3 px-4 font-medium"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {societeData.dirigeants.map((dirigeant, index) => (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-4">
+                        <div className="font-medium text-gray-800">{dirigeant.qualite || 'Non spécifié'}</div>
+                        <div className="text-xs text-gray-500">{dirigeant.type_dirigeant}</div>
+                      </td>
+                      <td className="py-4 px-4 text-gray-600">{`${dirigeant.nom} ${dirigeant.prenoms}`}</td>
+                      <td className="py-4 px-4 text-gray-600">{dirigeant.nationalite || '-'}</td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-gray-600">{dirigeant.annee_de_naissance || '-'}</span>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs rounded-full font-medium hover:from-orange-500 hover:to-red-600 transition-all">
+                          1 crédit
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+        )}
 
-          {/* Tableau des contacts */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-gray-500 text-xs uppercase">
-                  <th className="text-left py-3 font-medium">RÔLE</th>
-                  <th className="text-left py-3 font-medium">NOM</th>
-                  <th className="text-left py-3 font-medium">LINKEDIN</th>
-                  <th className="text-left py-3 font-medium">EMAIL</th>
-                  <th className="text-left py-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                <tr>
-                  <td className="py-4">
-                    <div className="font-medium text-gray-800">Mandataire / Direction Générale</div>
-                    <div className="text-xs text-gray-500">Président du directoire | Président</div>
-                  </td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-gray-600"></span>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs rounded-full font-medium">
-                      1 crédit
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-4">
-                    <div className="font-medium text-gray-800">Mandataire / Direction Générale</div>
-                    <div className="text-xs text-gray-500">Membre du conseil de direction | Directeur</div>
-                  </td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-gray-600"></span>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs rounded-full font-medium">
-                      1 crédit
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-4">
-                    <div className="font-medium text-gray-800">Mandataire / Direction Générale</div>
-                    <div className="text-xs text-gray-500">Membre du conseil de surveillance | Directeur</div>
-                  </td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-gray-600"></span>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs rounded-full font-medium">
-                      1 crédit
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-4">
-                    <div className="font-medium text-gray-800">Mandataire / Direction Générale</div>
-                    <div className="text-xs text-gray-500">Président du conseil de surveillance | Directeur administratif et financier</div>
-                  </td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-gray-600"></span>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs rounded-full font-medium">
-                      1 crédit
-                    </button>
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-4">
-                    <div className="font-medium text-gray-800">Dirigeant / Direction Générale</div>
-                    <div className="text-xs text-gray-500">Directeur général</div>
-                  </td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4 text-gray-600"></td>
-                  <td className="py-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <span className="text-gray-600"></span>
-                    </div>
-                  </td>
-                  <td className="py-4">
-                    <button className="px-4 py-1 bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs rounded-full font-medium">
-                      1 crédit
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        {/* Contenu des établissements secondaires */}
+        {activeTab === 'legal' && activeSubTab === 'etablissements' && (
+          <div className="bg-white rounded-xl shadow-sm mt-6 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <Building2 className="w-5 h-5 text-gray-600" />
+              <h2 className="text-xl font-semibold text-gray-800">Établissements secondaires</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-gray-500 text-xs uppercase bg-gray-50">
+                    <th className="text-left py-3 px-4 font-medium">SIRET</th>
+                    <th className="text-left py-3 px-4 font-medium">ADRESSE</th>
+                    <th className="text-left py-3 px-4 font-medium">COMMUNE</th>
+                    <th className="text-left py-3 px-4 font-medium">DATE CRÉATION</th>
+                    <th className="text-left py-3 px-4 font-medium">ÉTAT ADMINISTRATIF</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {societeData.matching_etablissements.map((etablissement, index) => (
+                    <tr key={index} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-4 px-4 text-gray-600">{etablissement.siret}</td>
+                      <td className="py-4 px-4 text-gray-600">{etablissement.adresse}</td>
+                      <td className="py-4 px-4 text-gray-600">{etablissement.libelle_commune}</td>
+                      <td className="py-4 px-4 text-gray-600">{etablissement.date_creation}</td>
+                      <td className="py-4 px-4 text-gray-600">{etablissement.etat_administratif === 'A' ? 'Actif' : 'Inactif'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Footer */}
-        <div className="text-center py-8 text-xs text-gray-500">
-          © SMART DATA 2024 • CGV / CGU • Vie privée & Confidentialité • Mentions Légales
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <span>in</span>
-            <Twitter className="w-4 h-4" />
-            <Facebook className="w-4 h-4" />
+        <div className="bg-gray-100 text-center py-8 mt-8 rounded-xl text-xs text-gray-500">
+          <div className="max-w-7xl mx-auto">
+            <span>© SMART DATA 2025 • </span>
+            <a href="#" className="hover:text-red-600 transition-colors">CGV / CGU</a> • 
+            <a href="#" className="hover:text-red-600 transition-colors"> Vie privée & Confidentialité</a> • 
+            <a href="#" className="hover:text-red-600 transition-colors"> Mentions Légales</a>
           </div>
         </div>
       </div>
