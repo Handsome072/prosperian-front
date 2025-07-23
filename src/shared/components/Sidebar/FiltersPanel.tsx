@@ -599,6 +599,37 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   </div>
                 )}
               </div>
+
+                            {/* Localisation */}
+              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+                <button
+                  className="w-full flex items-center justify-between py-2 text-left"
+                  onClick={() => toggleContactFilter('localisation')}
+                >
+                  <span className="font-semibold">Localisation</span>
+                  <ChevronDown
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                {openContactFilters.localisation && (
+                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                    {availableCities.map((city) => (
+                      <label key={city} className="flex items-center space-x-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={safeFilters.cities.includes(city)}
+                          onChange={() => toggleCity(city)}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <span className="text-gray-700 flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {city}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </MainSection>
             <MainSection title="Contact" id="contact">
               {/* Rôles */}
