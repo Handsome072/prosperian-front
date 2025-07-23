@@ -155,21 +155,6 @@ export const Entreprises = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <RightPanel
-        businesses={enrichedBusinesses.map(biz => ({
-          city: biz.siege?.libelle_commune || "Ville inconnue",
-          activity: biz.activite_principale || "Activité inconnue"
-        }))}
-        totalBusinesses={totalResults}
-        filters={filters}
-        onFiltersChange={() => {}}
-        availableCities={[]}
-        availableLegalForms={[]}
-        availableRoles={[]}
-        employeeRange={[0, 5000]}
-        revenueRange={[0, 1000000]}
-        ageRange={[0, 50]}
-      />
       <MainContent
         businesses={enrichedBusinesses}
         totalBusinesses={totalResults}
@@ -189,6 +174,21 @@ export const Entreprises = () => {
         itemsPerPage={perPage}
         onPageChange={handlePageChange}
         onItemsPerPageChange={handleItemsPerPageChange}
+      />
+      <RightPanel
+        businesses={enrichedBusinesses.map(biz => ({
+          city: biz.siege?.libelle_commune || "Ville inconnue",
+          activity: biz.activite_principale || "Activité inconnue"
+        }))}
+        totalBusinesses={totalResults}
+        filters={filters}
+        onFiltersChange={() => {}}
+        availableCities={[]}
+        availableLegalForms={[]}
+        availableRoles={[]}
+        employeeRange={[0, 5000]}
+        revenueRange={[0, 1000000]}
+        ageRange={[0, 50]}
       />
     </div>
   );

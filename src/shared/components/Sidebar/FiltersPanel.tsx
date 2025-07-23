@@ -281,6 +281,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
   const legalFormListRef = useRef<HTMLDivElement>(null);
   const lastScrollTop = useRef(0);
+  const conventionListRef = useRef<HTMLDivElement>(null);
+  const lastConventionScrollTop = useRef(0);
 
   // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
@@ -541,7 +543,10 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                     {/* Séparateur */}
                     <div className="border-t border-gray-200 my-2"></div>
                     {/* Section Convention Collective avec scroll dédié */}
-                    <div className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
+                    <div
+                      ref={conventionListRef}
+                      className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white"
+                    >
                       <div className="font-semibold text-base text-gray-700 mb-1 mt-0">Convention Collective</div>
                       <input
                         type="text"
@@ -570,6 +575,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                                       type="checkbox"
                                       checked={selectedConventionId === c.idcc}
                                       onChange={() => {
+                                        if (conventionListRef.current) {
+                                          lastConventionScrollTop.current = conventionListRef.current.scrollTop;
+                                        }
                                         if (selectedConventionId === c.idcc) {
                                           setSelectedConventionId(null);
                                           setFilters({ ...filters, id_convention_collective: undefined });
@@ -991,6 +999,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       {useLayoutEffect(() => {
         if (legalFormListRef.current) {
           legalFormListRef.current.scrollTop = lastScrollTop.current;
+        }
+      })}
+      {useLayoutEffect(() => {
+        if (conventionListRef.current) {
+          conventionListRef.current.scrollTop = lastConventionScrollTop.current;
         }
       })}
     </>
