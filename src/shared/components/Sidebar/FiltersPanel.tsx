@@ -8,6 +8,7 @@ import { ListService, List } from "@services/listService";
 import axios from 'axios';
 import nafCodes from '@data/naf_codes.json';
 import naturesJuridiques from '@data/natures_juridiques.json';
+import conventionsCollectives from '@data/conventions_collectives.json';
 import ReactDOM from 'react-dom';
 
 interface RangeSliderProps {
@@ -157,10 +158,21 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
 
   // Ajoute un state pour la recherche de convention collective
   const [conventionSearch, setConventionSearch] = useState("");
-  const conventionsCollectives = [
-    "BTP", "Syntec", "Commerce de détail", "Métallurgie", "Pharmacie", "Banque", "HCR", "Transport routier", "Immobilier", "Agroalimentaire"
-  ];
-  const [selectedConventions, setSelectedConventions] = useState<string[]>([]);
+  // Supprime la déclaration de conventionsCollectives (liste statique)
+  // Remplace selectedConventions par selectedConventionId (string|null)
+  const [selectedConventionId, setSelectedConventionId] = useState<string|null>(null);
+
+  // Ajoute un state pour l'ouverture des sections de conventions collectives
+  const [openConventionSections, setOpenConventionSections] = useState<{ [prefix: string]: boolean }>({ '0': true });
+
+  // Fonction utilitaire pour grouper par millier
+  const conventionsGrouped = conventionsCollectives.reduce((acc: Record<string, typeof conventionsCollectives>, c) => {
+    const prefix = c.idcc[0];
+    if (!acc[prefix]) acc[prefix] = [];
+    acc[prefix].push(c);
+    return acc;
+  }, {});
+  const conventionPrefixes = Object.keys(conventionsGrouped).sort();
 
   // Gestion de l'ouverture/fermeture des sous-filtres dans chaque section principale
   const [openEntrepriseFilters, setOpenEntrepriseFilters] = useState<{ [key: string]: boolean }>(() => {
@@ -538,25 +550,43 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                         onChange={e => setConventionSearch(e.target.value)}
                         className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
                       />
-                      {conventionsCollectives
-                        .filter(label => label.toLowerCase().includes(conventionSearch.toLowerCase()))
-                        .map(label => (
-                          <label key={label} className="flex items-center space-x-2 text-base">
-                            <input
-                              type="checkbox"
-                              checked={selectedConventions.includes(label)}
-                              onChange={() => {
-                                setSelectedConventions(prev =>
-                                  prev.includes(label)
-                                    ? prev.filter(l => l !== label)
-                                    : [...prev, label]
-                                );
-                              }}
-                              className="w-4 h-4 text-orange-600 rounded"
-                            />
-                            <span className="text-gray-700">{label}</span>
-                          </label>
-                        ))}
+                      {conventionPrefixes.map(prefix => (
+                        <div key={prefix}>
+                          <button
+                            type="button"
+                            className="w-full flex items-center justify-between py-1 text-left font-semibold text-orange-700 hover:bg-orange-50 rounded"
+                            onClick={() => setOpenConventionSections(s => ({ ...s, [prefix]: !s[prefix] }))}
+                          >
+                            <span>{prefix}XXX</span>
+                            <span className="text-xl font-bold text-gray-500 select-none">{openConventionSections[prefix] ? '-' : '+'}</span>
+                          </button>
+                          {openConventionSections[prefix] && (
+                            <div className="pl-2 space-y-1">
+                              {conventionsGrouped[prefix]
+                                .filter(c => c.titre.toLowerCase().includes(conventionSearch.toLowerCase()))
+                                .map(c => (
+                                  <label key={c.idcc} className="flex items-center space-x-2 text-base">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedConventionId === c.idcc}
+                                      onChange={() => {
+                                        if (selectedConventionId === c.idcc) {
+                                          setSelectedConventionId(null);
+                                          setFilters({ ...filters, id_convention_collective: undefined });
+                                        } else {
+                                          setSelectedConventionId(c.idcc);
+                                          setFilters({ ...filters, id_convention_collective: c.idcc });
+                                        }
+                                      }}
+                                      className="w-4 h-4 text-orange-600 rounded"
+                                    />
+                                    <span className="text-gray-700">{c.titre}</span>
+                                  </label>
+                                ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -875,22 +905,24 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
                     />
                       {conventionsCollectives
-                        .filter(label => label.toLowerCase().includes(conventionSearch.toLowerCase()))
-                        .map(label => (
-                          <label key={label} className="flex items-center space-x-2 text-sm">
+                        .filter(c => c.titre.toLowerCase().includes(conventionSearch.toLowerCase()))
+                        .map(c => (
+                          <label key={c.idcc} className="flex items-center space-x-2 text-sm">
                           <input
                             type="checkbox"
-                              checked={selectedConventions.includes(label)}
+                              checked={selectedConventionId === c.idcc}
                               onChange={() => {
-                                setSelectedConventions(prev =>
-                                  prev.includes(label)
-                                    ? prev.filter(l => l !== label)
-                                    : [...prev, label]
-                                );
+                                if (selectedConventionId === c.idcc) {
+                                  setSelectedConventionId(null);
+                                  setFilters({ ...filters, id_convention_collective: undefined });
+                                } else {
+                                  setSelectedConventionId(c.idcc);
+                                  setFilters({ ...filters, id_convention_collective: c.idcc });
+                                }
                               }}
                             className="w-4 h-4 text-orange-600 rounded"
                           />
-                            <span className="text-gray-700">{label}</span>
+                            <span className="text-gray-700">{c.titre}</span>
                         </label>
                       ))}
                     </div>

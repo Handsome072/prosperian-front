@@ -26,7 +26,7 @@ export const Entreprises = () => {
     if (lead.company && lead.company.name) {
       acc[lead.company.name.trim().toLowerCase()] = {
         logo: lead.company.company_profile_picture,
-        description: lead.company.description
+        description: Winlead.company.description
       };
     }
     return acc;
@@ -41,18 +41,26 @@ export const Entreprises = () => {
   });
 
   const fetchBusinesses = useCallback(
-    async (page: number, perPageValue: number, nafCodes: string[], revenueRange: [number, number], ageRange: [number, number], legalForms: string[]) => {
+    async (
+      page: number,
+      perPageValue: number,
+      nafCodes: string[],
+      revenueRange: [number, number],
+      ageRange: [number, number],
+      legalForms: string[],
+      idConventionCollective?: string
+    ) => {
       setLoading(true);
       setError(null);
       try {
         let url = `${API_URL}&page=${page}&per_page=${perPageValue}`;
-        
+
         // Filtres d'activité (codes NAF)
         if (nafCodes.length > 0) {
           url += `&activite_principale=${nafCodes.join(',')}`;
         }
-        
-        // Filtres de chiffre d'affaires 
+
+        // Filtres de chiffre d'affaires
         if (revenueRange && revenueRange.length === 2 && (revenueRange[0] > 0 || revenueRange[1] < 1000000)) {
           if (revenueRange[0] > 0) {
             url += `&ca_min=${revenueRange[0]}`;
@@ -61,7 +69,7 @@ export const Entreprises = () => {
             url += `&ca_max=${revenueRange[1]}`;
           }
         }
-        
+
         // Filtres d'âge d'entreprise
         if (ageRange && ageRange.length === 2 && (ageRange[0] > 0 || ageRange[1] < 50)) {
           if (ageRange[0] > 0) {
@@ -71,41 +79,46 @@ export const Entreprises = () => {
             url += `&age_max=${ageRange[1]}`;
           }
         }
-        
+
         // Filtres de nature juridique
         if (legalForms && legalForms.length > 0) {
           url += `&nature_juridique=${legalForms.join(',')}`;
         }
-        
+
+        // Filtre de convention collective
+        if (idConventionCollective) {
+          url += `&id_convention_collective=${idConventionCollective}`;
+        }
+
         console.log('🔍 URL de recherche avec filtres complets:', url);
         console.log('📊 Filtres appliqués:', {
           activites: nafCodes,
           chiffreAffaires: revenueRange,
           ageEntreprise: ageRange,
-          naturesJuridiques: legalForms
+          naturesJuridiques: legalForms,
+          conventionCollective: idConventionCollective
         });
-        
+
         const res = await fetch(url, { headers: { accept: "application/json" } });
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || "Erreur lors de la récupération des entreprises");
         }
-        
+
         const data: EntrepriseApiResponse = await res.json();
-        
+
         console.log('✅ Réponse API reçue:', {
           total: data.total_results,
           entreprisesRecues: data.results?.length || 0,
           enrichedWithAge: (data as any).enriched_with_age,
           filtersApplied: (data as any).filters_applied
         });
-        
+
         setBusinesses(data.results || []);
         setTotalResults(data.total_results || 0);
         setCurrentPage(data.page || page);
         setPerPage(data.per_page || perPageValue);
         setTotalPages(data.total_pages || 1);
-        
       } catch (e: any) {
         console.error('❌ Erreur lors de la recherche:', e);
         setError(e.message || "Erreur inconnue");
@@ -120,15 +133,16 @@ export const Entreprises = () => {
 
   useEffect(() => {
     fetchBusinesses(
-      currentPage, 
-      perPage, 
-      filters.activities || [], 
-      filters.revenueRange || [0, 1000000], 
+      currentPage,
+      perPage,
+      filters.activities || [],
+      filters.revenueRange || [0, 1000000],
       filters.ageRange || [0, 50],
-      filters.legalForms || []
+      filters.legalForms || [],
+      filters.id_convention_collective || undefined
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.legalForms]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.legalForms, filters.id_convention_collective]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -141,33 +155,34 @@ export const Entreprises = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-              <RightPanel
-          businesses={enrichedBusinesses.map(biz => ({
-            city: biz.siege?.libelle_commune || "Ville inconnue",
-            activity: biz.activite_principale || "Activité inconnue"
-          }))}
-          totalBusinesses={totalResults}
-          filters={filters}
-          onFiltersChange={() => {}}
-          availableCities={[]}
-          availableLegalForms={[]}
-          availableRoles={[]}
-          employeeRange={[0, 5000]}
-          revenueRange={[0, 1000000]}
-          ageRange={[0, 50]}
-        />
+      <RightPanel
+        businesses={enrichedBusinesses.map(biz => ({
+          city: biz.siege?.libelle_commune || "Ville inconnue",
+          activity: biz.activite_principale || "Activité inconnue"
+        }))}
+        totalBusinesses={totalResults}
+        filters={filters}
+        onFiltersChange={() => {}}
+        availableCities={[]}
+        availableLegalForms={[]}
+        availableRoles={[]}
+        employeeRange={[0, 5000]}
+        revenueRange={[0, 1000000]}
+        ageRange={[0, 50]}
+      />
       <MainContent
         businesses={enrichedBusinesses}
         totalBusinesses={totalResults}
         loading={loading}
         error={error}
         onRetry={() => fetchBusinesses(
-          currentPage, 
-          perPage, 
-          filters.activities || [], 
-          filters.revenueRange || [0, 1000000], 
+          currentPage,
+          perPage,
+          filters.activities || [],
+          filters.revenueRange || [0, 1000000],
           filters.ageRange || [0, 50],
-          filters.legalForms || []
+          filters.legalForms || [],
+          filters.id_convention_collective || undefined
         )}
         currentPage={currentPage}
         totalPages={totalPages}
