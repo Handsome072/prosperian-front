@@ -182,7 +182,14 @@ export const Entreprises = () => {
           // Rechercher pour chaque enseigne
           for (const enseigne of enseignes) {
             try {
-              const apifyResponse = await apifyService.searchEnseigneSimplified(enseigne, location);
+              const apifyResponse = await apifyService.searchEnseigne(enseigne, location);
+              
+              // Afficher clairement le type de données dans la console
+              if ((apifyResponse as any)._dataSource === 'APIFY_REAL_API') {
+                console.log(`🌟 UTILISATION DE DONNÉES RÉELLES pour "${enseigne}" - ${apifyResponse.results.length} résultats`);
+              } else {
+                console.log(`🧪 UTILISATION DE DONNÉES FICTIVES pour "${enseigne}" - ${apifyResponse.results.length} résultats`);
+              }
               
               // Convertir les résultats Apify au format EntrepriseApiResult
               const convertedEnseigneResults: EntrepriseApiResult[] = apifyResponse.results.map(result => ({
