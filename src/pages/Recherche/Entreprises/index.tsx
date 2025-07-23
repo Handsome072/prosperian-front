@@ -5,6 +5,7 @@ import { RightPanel } from "./_components/RightPanel";
 import { useProntoData } from "@hooks/useProntoData";
 import { useFilterContext } from "@contexts/FilterContext";
 import francePostalCodes from '@data/france_postal_codes.json';
+import { googlePlacesService } from "@services/googlePlacesService";
 
 const API_URL =
   "http://localhost:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
@@ -51,11 +52,123 @@ export const Entreprises = () => {
       employeeRange: [number, number],
       legalForms: string[],
       idConventionCollective?: string,
-      selectedCities: string[] = [] // Ajout du paramètre
+      selectedCities: string[] = [], // Ajout du paramètre
+      googleActivities: string[] = [], // Activités Google GMB
+      activitySearchType: string = 'naf' // Type de recherche d'activité
     ) => {
       setLoading(true);
       setError(null);
       try {
+        // Si c'est une recherche Google GMB, utiliser l'API Google Places
+        if (activitySearchType === 'google' && googleActivities.length > 0) {
+          console.log('🔍 Recherche via Google Places pour:', googleActivities);
+          
+          // Rechercher via Google Places
+          const location = selectedCities.length > 0 ? selectedCities.join(', ') : 'France';
+          const googleResponse = await googlePlacesService.searchAdvanced({
+            activities: googleActivities,
+            location: location,
+            limit: perPageValue,
+            combine_results: true
+          });
+
+          // Convertir les résultats Google Places au format EntrepriseApiResult
+          const convertedResults: EntrepriseApiResult[] = googleResponse.results.map(result => ({
+            siren: result.google_place_id,
+            nom_complet: result.nom_complet,
+            nom_raison_sociale: result.raison_sociale,
+            sigle: null,
+            nombre_etablissements: 1,
+            nombre_etablissements_ouverts: 1,
+            siege: {
+              activite_principale: result.activite_principale,
+              activite_principale_registre_metier: null,
+              annee_tranche_effectif_salarie: '',
+              adresse: result.adresse_complete || '',
+              caractere_employeur: '',
+              cedex: null,
+              code_pays_etranger: null,
+              code_postal: result.code_postal || '',
+              commune: result.ville || '',
+              complement_adresse: null,
+              coordonnees: '',
+              date_creation: result.date_creation || '',
+              date_debut_activite: result.date_creation || '',
+              date_fermeture: null,
+              date_mise_a_jour: null,
+              date_mise_a_jour_insee: result.date_extraction,
+              departement: result.departement || '',
+              distribution_speciale: null,
+              epci: '',
+              est_siege: true,
+              etat_administratif: 'A',
+              geo_adresse: result.adresse_complete || '',
+              geo_id: '',
+              indice_repetition: null,
+              latitude: result.latitude?.toString() || '',
+              libelle_cedex: null,
+              libelle_commune: result.ville || '',
+              libelle_commune_etranger: null,
+              libelle_pays_etranger: null,
+              libelle_voie: '',
+              liste_enseignes: null,
+              liste_finess: null,
+              liste_id_bio: null,
+              liste_idcc: null,
+              liste_id_organisme_formation: null,
+              liste_rge: null,
+              liste_uai: null,
+              longitude: result.longitude?.toString() || '',
+              nom_commercial: null,
+              numero_voie: '',
+              region: '',
+              siret: result.google_place_id,
+              statut_diffusion_etablissement: 'O',
+              tranche_effectif_salarie: '',
+              type_voie: ''
+            },
+            activite_principale: result.activite_principale,
+            categorie_entreprise: '',
+            caractere_employeur: null,
+            annee_categorie_entreprise: '',
+            date_creation: result.date_creation || '',
+            date_fermeture: null,
+            date_mise_a_jour: result.date_extraction,
+            date_mise_a_jour_insee: result.date_extraction,
+            date_mise_a_jour_rne: '',
+            dirigeants: [],
+            etat_administratif: 'A',
+            nature_juridique: '',
+            section_activite_principale: '',
+            tranche_effectif_salarie: '',
+            annee_tranche_effectif_salarie: '',
+            statut_diffusion: 'O',
+            matching_etablissements: [],
+            finances: {},
+            complements: {
+              // Données spécifiques Google Places
+              google_place_id: result.google_place_id,
+              google_rating: result.google_rating,
+              google_reviews_count: result.google_reviews_count,
+              google_categories: result.google_categories,
+              google_photos: result.google_photos,
+              telephone: result.telephone,
+              site_web: result.site_web,
+              source: 'google_places'
+            }
+          }));
+
+          setBusinesses(convertedResults);
+          setTotalResults(googleResponse.total_results);
+          setCurrentPage(page);
+          setPerPage(perPageValue);
+          setTotalPages(Math.ceil(googleResponse.total_results / perPageValue));
+          
+          console.log(`✅ ${convertedResults.length} entreprises trouvées via Google Places`);
+          return;
+        }
+
+        // Recherche classique via l'API INSEE/NAF
         let url = `${API_URL}&page=${page}&per_page=${perPageValue}`;
 
         // Filtres d'activité (codes NAF)
@@ -167,10 +280,12 @@ export const Entreprises = () => {
       filters.employeeRange || [0, 5000],
       filters.legalForms || [],
       filters.id_convention_collective || undefined,
-      filters.cities || [] // Ajout du filtre villes
+      filters.cities || [], // Filtre villes
+      filters.googleActivities || [], // Activités Google GMB
+      filters.activitySearchType || 'naf' // Type de recherche d'activité
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.activitySearchType]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

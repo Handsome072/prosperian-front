@@ -29,6 +29,9 @@ export interface Business {
     roles: string[];
     sortBy: string;
     id_convention_collective?: string;
+    // Filtres spécifiques Google GMB
+    googleActivities?: string[];
+    activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne';
   }
 
   export interface FiltersPanelProps extends FilterState {

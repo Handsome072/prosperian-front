@@ -10,6 +10,7 @@ import nafCodes from '@data/naf_codes.json';
 import naturesJuridiques from '@data/natures_juridiques.json';
 import conventionsCollectives from '@data/conventions_collectives.json';
 import ReactDOM from 'react-dom';
+import { googlePlacesService, GooglePlacesCategory } from '../../../services/googlePlacesService';
 
 interface RangeSliderProps {
   min: number;
@@ -165,6 +166,12 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   // Ajoute un state pour l'ouverture des sections de conventions collectives
   const [openConventionSections, setOpenConventionSections] = useState<{ [prefix: string]: boolean }>({ '0': true });
 
+  // Ajouter de nouveaux states pour Google GMB
+  const [activitySearchType, setActivitySearchType] = useState<'naf' | 'google' | 'semantic' | 'enseigne'>('naf');
+  const [googleCategories, setGoogleCategories] = useState<GooglePlacesCategory[]>([]);
+  const [loadingGoogleCategories, setLoadingGoogleCategories] = useState(false);
+  const [selectedGoogleActivities, setSelectedGoogleActivities] = useState<string[]>([]);
+
   // Fonction utilitaire pour grouper par millier
   const conventionsGrouped = conventionsCollectives.reduce((acc: Record<string, typeof conventionsCollectives>, c) => {
     const prefix = c.idcc[0];
@@ -216,15 +223,20 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   };
 
   const updateFilters = (updates: Partial<FilterState>) => {
-    onFiltersChange({ ...filters, ...updates });
+    onFiltersChange({ 
+      ...filters, 
+      ...updates,
+      sortBy: filters.sortBy || 'Pertinence' // Assurer que sortBy est toujours défini
+    });
   };
 
   const safeFilters = {
-    activities: [],
-    cities: [],
-    legalForms: [],
-    roles: [],
-    ...filters
+    ...filters,
+    activities: filters.activities || [],
+    cities: filters.cities || [],
+    legalForms: filters.legalForms || [],
+    roles: filters.roles || [],
+    sortBy: filters.sortBy || 'Pertinence'
   };
 
   const toggleActivity = (activity: string) => {
@@ -288,6 +300,41 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const lastScrollTop = useRef(0);
   const conventionListRef = useRef<HTMLDivElement>(null);
   const lastConventionScrollTop = useRef(0);
+
+  // Ajouter useEffect pour charger les catégories Google au montage
+  useEffect(() => {
+    if (activitySearchType === 'google') {
+      loadGoogleCategories();
+    }
+  }, [activitySearchType]);
+
+  const loadGoogleCategories = async () => {
+    setLoadingGoogleCategories(true);
+    try {
+      const response = await googlePlacesService.getCategories();
+      const allCategories: GooglePlacesCategory[] = [];
+      Object.values(response.categories).forEach(group => {
+        allCategories.push(...group);
+      });
+      setGoogleCategories(allCategories);
+    } catch (error) {
+      console.error('Erreur lors du chargement des catégories Google:', error);
+    } finally {
+      setLoadingGoogleCategories(false);
+    }
+  };
+
+  const handleGoogleActivityToggle = (activity: string) => {
+    const newSelected = selectedGoogleActivities.includes(activity)
+      ? selectedGoogleActivities.filter(a => a !== activity)
+      : [...selectedGoogleActivities, activity];
+    
+    setSelectedGoogleActivities(newSelected);
+    updateFilters({ 
+      googleActivities: newSelected,
+      activitySearchType: 'google'
+    });
+  };
 
   // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
@@ -365,6 +412,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 legalForms: [],
                 ratingRange: [0, 5],
                 roles: [],
+                sortBy: "Pertinence",
+                googleActivities: [],
+                activitySearchType: 'naf'
               })
             }
             className="ml-auto text-xs text-orange-600 hover:text-orange-700 transition-colors"
@@ -395,44 +445,153 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <div className="pt-2 pb-4 space-y-4">
             {/* Onglets de recherche */}
             <div className="flex flex-wrap gap-2">
-              {['Code NAF', 'Activité Google (GMB)', 'Sémantique', 'Enseigne/Franchise'].map((label, index) => (
+              {[
+                { key: 'naf', label: 'Code NAF' }, 
+                { key: 'google', label: 'Activité Google (GMB)' }, 
+                { key: 'semantic', label: 'Sémantique' }, 
+                { key: 'enseigne', label: 'Enseigne/Franchise' }
+              ].map((tab) => (
                 <button
-                  key={index}
-                  className={`px-3 py-1 rounded text-sm font-medium border ${
-                    label === 'Code NAF' ? 'bg-orange-600 text-white border-orange-600' : 'text-orange-600 border-orange-300'
-                  } hover:bg-orange-50 transition`}
+                  key={tab.key}
+                  className={`px-3 py-1 rounded text-sm font-medium border transition ${
+                    activitySearchType === tab.key 
+                      ? 'bg-orange-600 text-white border-orange-600' 
+                      : 'text-orange-600 border-orange-300 hover:bg-orange-50'
+                  }`}
                   type="button"
+                  onClick={() => setActivitySearchType(tab.key as any)}
                 >
-                  {label}
+                  {tab.label}
                 </button>
               ))}
             </div>
 
-            {/* Zone de recherche */}
-            <input
-              type="text"
-              placeholder="Mots-clés, code NAF"
-              value={activitySearch}
-              onChange={(e) => setActivitySearch(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded text-sm"
-            />
+            {/* Zone de recherche conditionnelle selon le type */}
+            {activitySearchType === 'naf' && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Mots-clés, code NAF"
+                  value={activitySearch}
+                  onChange={(e) => setActivitySearch(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded text-sm"
+                />
 
-            {/* Boutons de code et chargement */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
-                        onClick={() => { console.log('NAF modal click'); setNafModalOpen(true); }}
-              >
-                📘 Codes NAF
-              </button>
-              <button
-                type="button"
-                className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
-              >
-                ⬆️ Charger
-              </button>
-            </div>
+                {/* Boutons de code et chargement */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+                    onClick={() => { console.log('NAF modal click'); setNafModalOpen(true); }}
+                  >
+                    📘 Codes NAF
+                  </button>
+                  <button
+                    type="button"
+                    className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
+                  >
+                    ⬆️ Charger
+                  </button>
+                </div>
+              </>
+            )}
+
+            {activitySearchType === 'google' && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Ex: restaurant, boulangerie, coiffeur..."
+                  value={activitySearch}
+                  onChange={(e) => setActivitySearch(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded text-sm"
+                />
+
+                {/* Liste des catégories Google pré-définies */}
+                {loadingGoogleCategories ? (
+                  <div className="text-center py-4">
+                    <span className="text-sm text-gray-500">Chargement des catégories...</span>
+                  </div>
+                ) : (
+                  <div className="max-h-40 overflow-y-auto border border-gray-200 rounded p-2 space-y-1">
+                    {googleCategories
+                      .filter(cat => 
+                        !activitySearch || 
+                        cat.name.toLowerCase().includes(activitySearch.toLowerCase())
+                      )
+                      .slice(0, 20) // Limiter à 20 résultats
+                      .map(category => (
+                        <label key={category.value} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                          <input
+                            type="checkbox"
+                            checked={selectedGoogleActivities.includes(category.value)}
+                            onChange={() => handleGoogleActivityToggle(category.value)}
+                            className="w-4 h-4 text-orange-600 rounded"
+                          />
+                          <span className="text-gray-700">{category.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                )}
+
+                {/* Bouton pour rechercher directement */}
+                <button
+                  type="button"
+                  className="w-full py-1.5 px-3 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded"
+                  onClick={() => {
+                    if (activitySearch.trim()) {
+                      handleGoogleActivityToggle(activitySearch.trim());
+                    }
+                  }}
+                  disabled={!activitySearch.trim()}
+                >
+                  ✓ Ajouter cette activité
+                </button>
+
+                {/* Activités sélectionnées */}
+                {selectedGoogleActivities.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-700">Activités sélectionnées:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedGoogleActivities.map(activity => (
+                        <span 
+                          key={activity}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                        >
+                          {activity}
+                          <button
+                            type="button"
+                            onClick={() => handleGoogleActivityToggle(activity)}
+                            className="ml-1 text-orange-600 hover:text-orange-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {activitySearchType === 'semantic' && (
+              <input
+                type="text"
+                placeholder="Recherche sémantique (ex: services de beauté, commerce alimentaire...)"
+                value={activitySearch}
+                onChange={(e) => setActivitySearch(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded text-sm"
+              />
+            )}
+
+            {activitySearchType === 'enseigne' && (
+              <input
+                type="text"
+                placeholder="Nom d'enseigne ou franchise (ex: McDonald's, Carrefour...)"
+                value={activitySearch}
+                onChange={(e) => setActivitySearch(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded text-sm"
+              />
+            )}
 
             {/* Checkbox d'exclusion */}
             <label className="flex items-center space-x-2 text-sm">
@@ -442,7 +601,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 onChange={(e) =>
                   updateFilters({
                     excludeSelectedActivities: e.target.checked,
-                  } as any) // ajuster selon ton type exact
+                  } as any)
                 }
               />
               <span className="text-gray-700">Exclure les éléments sélectionnés</span>
