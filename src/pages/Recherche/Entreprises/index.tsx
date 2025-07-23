@@ -6,6 +6,7 @@ import { useProntoData } from "@hooks/useProntoData";
 import { useFilterContext } from "@contexts/FilterContext";
 import francePostalCodes from '@data/france_postal_codes.json';
 import { googlePlacesService } from "@services/googlePlacesService";
+import { semanticService } from "@services/semanticService";
 
 const API_URL =
   "http://localhost:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
@@ -54,6 +55,7 @@ export const Entreprises = () => {
       idConventionCollective?: string,
       selectedCities: string[] = [], // Ajout du paramètre
       googleActivities: string[] = [], // Activités Google GMB
+      semanticTerms: string[] = [], // Termes sémantiques
       activitySearchType: string = 'naf' // Type de recherche d'activité
     ) => {
       setLoading(true);
@@ -282,10 +284,11 @@ export const Entreprises = () => {
       filters.id_convention_collective || undefined,
       filters.cities || [], // Filtre villes
       filters.googleActivities || [], // Activités Google GMB
+      filters.semanticTerms || [], // Termes sémantiques
       filters.activitySearchType || 'naf' // Type de recherche d'activité
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.activitySearchType]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.activitySearchType]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

@@ -31,6 +31,8 @@ export interface Business {
     id_convention_collective?: string;
     // Filtres spécifiques Google GMB
     googleActivities?: string[];
+    // Filtres sémantiques
+    semanticTerms?: string[];
     activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne';
   }
 

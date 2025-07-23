@@ -11,6 +11,7 @@ import naturesJuridiques from '@data/natures_juridiques.json';
 import conventionsCollectives from '@data/conventions_collectives.json';
 import ReactDOM from 'react-dom';
 import { googlePlacesService, GooglePlacesCategory } from '../../../services/googlePlacesService';
+import { semanticService, PopularConcept, SemanticSuggestion } from '../../../services/semanticService';
 
 interface RangeSliderProps {
   min: number;
@@ -172,6 +173,13 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [loadingGoogleCategories, setLoadingGoogleCategories] = useState(false);
   const [selectedGoogleActivities, setSelectedGoogleActivities] = useState<string[]>([]);
 
+  // States pour la recherche sémantique
+  const [popularConcepts, setPopularConcepts] = useState<PopularConcept[]>([]);
+  const [semanticSuggestions, setSemanticSuggestions] = useState<SemanticSuggestion[]>([]);
+  const [loadingSemanticConcepts, setLoadingSemanticConcepts] = useState(false);
+  const [selectedSemanticTerms, setSelectedSemanticTerms] = useState<string[]>([]);
+  const [semanticSearchTerm, setSemanticSearchTerm] = useState('');
+
   // Fonction utilitaire pour grouper par millier
   const conventionsGrouped = conventionsCollectives.reduce((acc: Record<string, typeof conventionsCollectives>, c) => {
     const prefix = c.idcc[0];
@@ -305,6 +313,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   useEffect(() => {
     if (activitySearchType === 'google') {
       loadGoogleCategories();
+    } else if (activitySearchType === 'semantic') {
+      loadSemanticConcepts();
     }
   }, [activitySearchType]);
 
@@ -334,6 +344,44 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       googleActivities: newSelected,
       activitySearchType: 'google'
     });
+  };
+
+  const loadSemanticConcepts = async () => {
+    setLoadingSemanticConcepts(true);
+    try {
+      const concepts = await semanticService.getPopularConcepts();
+      setPopularConcepts(concepts);
+    } catch (error) {
+      console.error('Erreur lors du chargement des concepts sémantiques:', error);
+    } finally {
+      setLoadingSemanticConcepts(false);
+    }
+  };
+
+  const handleSemanticSearch = async (term: string) => {
+    if (term.length < 2) {
+      setSemanticSuggestions([]);
+      return;
+    }
+
+    try {
+      const suggestions = await semanticService.getSuggestions(term);
+      setSemanticSuggestions(suggestions);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des suggestions sémantiques:', error);
+    }
+  };
+
+  const handleSemanticTermToggle = (term: string) => {
+    const newSelected = selectedSemanticTerms.includes(term)
+      ? selectedSemanticTerms.filter(t => t !== term)
+      : [...selectedSemanticTerms, term];
+    
+    setSelectedSemanticTerms(newSelected);
+    updateFilters({ 
+      semanticTerms: newSelected,
+      activitySearchType: 'semantic'
+    } as any);
   };
 
   // Adapte MainSection pour accepter 'listes'
@@ -414,6 +462,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 roles: [],
                 sortBy: "Pertinence",
                 googleActivities: [],
+                semanticTerms: [],
                 activitySearchType: 'naf'
               })
             }
@@ -574,13 +623,113 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             )}
 
             {activitySearchType === 'semantic' && (
-              <input
-                type="text"
-                placeholder="Recherche sémantique (ex: services de beauté, commerce alimentaire...)"
-                value={activitySearch}
-                onChange={(e) => setActivitySearch(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-sm"
-              />
+              <>
+                <input
+                  type="text"
+                  placeholder="Ex: services de beauté, commerce alimentaire, restauration..."
+                  value={semanticSearchTerm}
+                  onChange={(e) => {
+                    setSemanticSearchTerm(e.target.value);
+                    handleSemanticSearch(e.target.value);
+                  }}
+                  className="w-full p-2 border border-gray-300 rounded text-sm"
+                />
+
+                {/* Concepts populaires */}
+                {loadingSemanticConcepts ? (
+                  <div className="text-center py-4">
+                    <span className="text-sm text-gray-500">Chargement des concepts...</span>
+                  </div>
+                ) : popularConcepts.length > 0 && (
+                  <div className="space-y-2">
+                    <span className="text-xs font-medium text-gray-700">Concepts populaires:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {popularConcepts.slice(0, 6).map(concept => (
+                        <button
+                          key={concept.term}
+                          type="button"
+                          onClick={() => {
+                            setSemanticSearchTerm(concept.term);
+                            handleSemanticTermToggle(concept.term);
+                          }}
+                          className={`px-2 py-1 rounded text-xs border transition ${
+                            selectedSemanticTerms.includes(concept.term)
+                              ? 'bg-orange-100 text-orange-800 border-orange-300'
+                              : 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200'
+                          }`}
+                          title={concept.description}
+                        >
+                          {concept.term}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggestions en temps réel */}
+                {semanticSuggestions.length > 0 && semanticSearchTerm.length >= 2 && (
+                  <div className="max-h-32 overflow-y-auto border border-gray-200 rounded p-2 bg-gray-50">
+                    <span className="text-xs font-medium text-gray-700 block mb-1">Suggestions:</span>
+                    {semanticSuggestions.slice(0, 8).map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          setSemanticSearchTerm(suggestion.term);
+                          handleSemanticTermToggle(suggestion.term);
+                        }}
+                        className="block w-full text-left px-2 py-1 text-sm hover:bg-white rounded mb-1 text-gray-700"
+                      >
+                        <span className="font-medium">{suggestion.term}</span>
+                        {suggestion.type === 'synonym' && suggestion.originalTerm && (
+                          <span className="text-xs text-gray-500 ml-1">→ {suggestion.originalTerm}</span>
+                        )}
+                        <span className="text-xs text-gray-500 block">
+                          {suggestion.nafCodes.length} code{suggestion.nafCodes.length > 1 ? 's' : ''} NAF
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Bouton d'ajout de terme personnalisé */}
+                <button
+                  type="button"
+                  className="w-full py-1.5 px-3 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded"
+                  onClick={() => {
+                    if (semanticSearchTerm.trim()) {
+                      handleSemanticTermToggle(semanticSearchTerm.trim());
+                    }
+                  }}
+                  disabled={!semanticSearchTerm.trim()}
+                >
+                  ✓ Rechercher "{semanticSearchTerm}"
+                </button>
+
+                {/* Termes sélectionnés */}
+                {selectedSemanticTerms.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-xs font-medium text-gray-700">Termes sélectionnés:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedSemanticTerms.map(term => (
+                        <span 
+                          key={term}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                        >
+                          {term}
+                          <button
+                            type="button"
+                            onClick={() => handleSemanticTermToggle(term)}
+                            className="ml-1 text-orange-600 hover:text-orange-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {activitySearchType === 'enseigne' && (
