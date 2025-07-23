@@ -4,6 +4,7 @@ import { MainContent } from "./_components/MainContent";
 import { RightPanel } from "./_components/RightPanel";
 import { useProntoData } from "@hooks/useProntoData";
 import { useFilterContext } from "@contexts/FilterContext";
+import francePostalCodes from '@data/france_postal_codes.json';
 
 const API_URL =
   "http://localhost:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
@@ -49,7 +50,8 @@ export const Entreprises = () => {
       ageRange: [number, number],
       employeeRange: [number, number],
       legalForms: string[],
-      idConventionCollective?: string
+      idConventionCollective?: string,
+      selectedCities: string[] = [] // Ajout du paramètre
     ) => {
       setLoading(true);
       setError(null);
@@ -99,6 +101,17 @@ export const Entreprises = () => {
         // Filtre de convention collective
         if (idConventionCollective) {
           url += `&id_convention_collective=${idConventionCollective}`;
+        }
+
+        // Filtre code_postal (mapping villes -> codes postaux)
+        if (selectedCities && selectedCities.length > 0) {
+          // On récupère tous les codes postaux correspondant aux villes sélectionnées
+          const postalCodes = francePostalCodes
+            .filter(entry => selectedCities.includes(entry.titre))
+            .map(entry => entry.code);
+          if (postalCodes.length > 0) {
+            url += `&code_postal=${encodeURIComponent(postalCodes.join(','))}`;
+          }
         }
 
         console.log('🔍 URL de recherche avec filtres complets:', url);
@@ -153,10 +166,11 @@ export const Entreprises = () => {
       filters.ageRange || [0, 50],
       filters.employeeRange || [0, 5000],
       filters.legalForms || [],
-      filters.id_convention_collective || undefined
+      filters.id_convention_collective || undefined,
+      filters.cities || [] // Ajout du filtre villes
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -182,7 +196,8 @@ export const Entreprises = () => {
           filters.ageRange || [0, 50],
           filters.employeeRange || [0, 5000],
           filters.legalForms || [],
-          filters.id_convention_collective || undefined
+          filters.id_convention_collective || undefined,
+          filters.cities || []
         )}
         currentPage={currentPage}
         totalPages={totalPages}

@@ -12,6 +12,7 @@ import {
   getRevenueRanges,
   getAgeRanges,
 } from '@shared/utils/filterUtils';
+import francePostalCodes from '@data/france_postal_codes.json';
 
 interface FilterContextType {
   filters: FilterState;
@@ -51,7 +52,12 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [filters, setFilters] = useState<FilterState>(defaultFilters);
   const [filteredContacts, setFilteredContacts] = useState<any[]>([]); // Manage state separately
 
-  const availableCities = useMemo(() => getUniqueCities(mockBusinesses), []);
+  // Remplacer availableCities par les villes uniques du fichier postal
+  const availableCities = useMemo(() => {
+    // On extrait tous les titres uniques
+    const citySet = new Set(francePostalCodes.map((entry: { titre: string }) => entry.titre));
+    return Array.from(citySet).sort((a, b) => a.localeCompare(b, 'fr'));
+  }, []);
   const availableLegalForms = useMemo(() => getUniqueLegalForms(mockBusinesses), []);
   const availableRoles = useMemo(() => {
     return Array.from(new Set(mockContacts.contacts.map((contact) => contact.role)));
