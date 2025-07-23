@@ -81,7 +81,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between text-sm text-gray-600">
+      <div className="flex justify-between text-sm text-gray-600 mb-8">
         <span>{label}</span>
         <span>
           {formatValue ? formatValue(localValue[0]) : localValue[0]}
@@ -90,7 +90,7 @@ const RangeSlider: React.FC<RangeSliderProps> = ({
           {unit && ` ${unit}`}
         </span>
       </div>
-      <div className="relative h-2 bg-gray-200 rounded" ref={trackRef}>
+      <div className="relative h-2 bg-gray-200 rounded max-w-[90%] mx-auto" ref={trackRef}>
         <div
           className="absolute h-2 bg-orange-500 rounded"
           style={{
@@ -178,8 +178,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [openEntrepriseFilters, setOpenEntrepriseFilters] = useState<{ [key: string]: boolean }>(() => {
     return {
       activites: isEntreprisePage,
-      chiffres: isEntreprisePage,
-      forme: isEntreprisePage,
+      chiffres: false,
+      forme: false,
     };
   });
   const [openContactFilters, setOpenContactFilters] = useState<{ [key: string]: boolean }>(() => {
@@ -192,10 +192,15 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   // Synchroniser l'ouverture par défaut lors du changement de route
   useEffect(() => {
     setExpandedMainSection(isContactPage ? 'contact' : 'entreprise');
-    setOpenEntrepriseFilters({
-      activites: isEntreprisePage,
-      chiffres: isEntreprisePage,
-      forme: isEntreprisePage,
+    setOpenEntrepriseFilters((prev) => {
+      // Si au moins un filtre est déjà ouvert, on ne change rien
+      if (Object.values(prev).some(Boolean)) return prev;
+      // Sinon, on applique le comportement par défaut
+      return {
+        activites: isEntreprisePage,
+        chiffres: false,
+        forme: false,
+      };
     });
     setOpenContactFilters({
       roles: isContactPage,
@@ -376,7 +381,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <>
             <MainSection title="Entreprise" id="entreprise">
       {/* Activités (UI inspirée de l'image fournie) */}
-      <div className="mb-2 border-b border-gray-100 last:border-b-0">
+      <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openEntrepriseFilters.activites ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
         <button
           className="w-full flex items-center justify-between py-2 text-left"
           onClick={() => toggleEntrepriseFilter('activites')}
@@ -446,7 +451,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         )}
       </div>
               {/* Chiffres clés */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openEntrepriseFilters.chiffres ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleEntrepriseFilter('chiffres')}
@@ -457,7 +462,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openEntrepriseFilters.chiffres && (
-                  <div className="pt-2 pb-4 space-y-4">
+                  <div className="pt-2 pb-4 space-y-14 max-h-96 overflow-y-auto overflow-x-hidden">
                     <RangeSlider
                       min={ageRange[0]}
                       max={ageRange[1]}
@@ -482,20 +487,11 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       formatValue={(v) => `${Math.round(v / 1000)}k`}
                       unit="€"
                     />
-                    <RangeSlider
-                      min={0}
-                      max={5}
-                      value={filters.ratingRange}
-                      onChange={(value) => updateFilters({ ratingRange: value })}
-                      label="Note minimum"
-                      formatValue={(v) => v.toFixed(1)}
-                      unit="⭐"
-                    />
                   </div>
                 )}
               </div>
               {/* Juridique */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openEntrepriseFilters.forme ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleEntrepriseFilter('forme')}
@@ -508,7 +504,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 {openEntrepriseFilters.forme && (
                   <div className="pt-2 pb-4 space-y-6">
                     {/* Section Forme juridique avec scroll dédié */}
-                    <div className="space-y-2 max-h-60 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
+                    <div className="space-y-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white">
                       <div className="font-semibold text-base text-gray-700 mb-1">Forme juridique</div>
                       <input
                         type="text"
@@ -545,7 +541,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                     {/* Section Convention Collective avec scroll dédié */}
                     <div
                       ref={conventionListRef}
-                      className="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white"
+                      className="space-y-2 max-h-96 overflow-y-auto border border-gray-200 rounded-md p-2 bg-white"
                     >
                       <div className="font-semibold text-base text-gray-700 mb-1 mt-0">Convention Collective</div>
                       <input
@@ -601,7 +597,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               </div>
 
                             {/* Localisation */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleContactFilter('localisation')}
@@ -612,7 +608,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 text-sm">
                         <input
@@ -633,7 +629,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             </MainSection>
             <MainSection title="Contact" id="contact">
               {/* Rôles */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.roles ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleContactFilter('roles')}
@@ -644,7 +640,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openContactFilters.roles && (
-                  <div className="pt-2 pb-4">
+                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
                     <input
                       type="text"
                       placeholder="Rechercher un rôle..."
@@ -652,7 +648,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       onChange={(e) => setRoleSearch(e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
                     />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
+                    <div className="max-h-96 overflow-y-auto space-y-2">
                       {filteredRoles.map((role) => (
                         <label key={role} className="flex items-center space-x-2 text-sm">
                           <input
@@ -669,7 +665,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 )}
               </div>
               {/* Localisation */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleContactFilter('localisation')}
@@ -680,7 +676,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 text-sm">
                         <input
@@ -704,7 +700,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
           <>
             <MainSection title="Contact" id="contact">
               {/* Rôles */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.roles ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleContactFilter('roles')}
@@ -715,7 +711,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openContactFilters.roles && (
-                  <div className="pt-2 pb-4">
+                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
                     <input
                       type="text"
                       placeholder="Rechercher un rôle..."
@@ -723,7 +719,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       onChange={(e) => setRoleSearch(e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
                     />
-                    <div className="max-h-32 overflow-y-auto space-y-2">
+                    <div className="max-h-96 overflow-y-auto space-y-2">
                       {filteredRoles.map((role) => (
                         <label key={role} className="flex items-center space-x-2 text-sm">
                           <input
@@ -740,7 +736,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 )}
               </div>
               {/* Localisation */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
                   onClick={() => toggleContactFilter('localisation')}
@@ -751,7 +747,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-32 overflow-y-auto">
+                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
                     {availableCities.map((city) => (
                       <label key={city} className="flex items-center space-x-2 text-sm">
                         <input
@@ -853,7 +849,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openEntrepriseFilters.chiffres && (
-                  <div className="pt-2 pb-4 space-y-4">
+                  <div className="pt-2 pb-4 space-y-4 max-h-96 overflow-y-auto">
                     <RangeSlider
                       min={ageRange[0]}
                       max={ageRange[1]}
@@ -877,15 +873,6 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       label="Chiffre d'affaires"
                       formatValue={(v) => `${Math.round(v / 1000)}k`}
                       unit="€"
-                    />
-                    <RangeSlider
-                      min={0}
-                      max={5}
-                      value={filters.ratingRange}
-                      onChange={(value) => updateFilters({ ratingRange: value })}
-                      label="Note minimum"
-                      formatValue={(v) => v.toFixed(1)}
-                      unit="⭐"
                     />
                   </div>
                 )}
