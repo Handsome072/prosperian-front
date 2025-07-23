@@ -1,255 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Search, Download, ArrowLeft, Building2, FileText, Euro, Globe, Calendar } from 'lucide-react';
 
-// Données JSON intégrées directement (simulé pour l'exemple, normalement récupéré via API)
-const societeData = {
-  "siren": "356000000",
-  "nom_complet": "LA POSTE (DIRECTION GENERALE DE LA POSTE)",
-  "nom_raison_sociale": "LA POSTE",
-  "sigle": null,
-  "nombre_etablissements": 13083,
-  "nombre_etablissements_ouverts": 9086,
-  "siege": {
-    "activite_principale": "53.10Z",
-    "activite_principale_registre_metier": null,
-    "annee_tranche_effectif_salarie": "2022",
-    "adresse": "DIRECTION GENERALE DE LA POSTE 9 RUE DU COLONEL PIERRE AVIA 75015 PARIS",
-    "caractere_employeur": "O",
-    "cedex": null,
-    "code_pays_etranger": null,
-    "code_postal": "75015",
-    "commune": "75115",
-    "complement_adresse": "DIRECTION GENERALE DE LA POSTE",
-    "coordonnees": "48.83002,2.275688",
-    "date_creation": "2003-01-01",
-    "date_debut_activite": "2014-04-29",
-    "date_fermeture": null,
-    "date_mise_a_jour": null,
-    "date_mise_a_jour_insee": "2025-04-07T17:38:03",
-    "departement": "75",
-    "distribution_speciale": null,
-    "epci": "200054781",
-    "est_siege": true,
-    "etat_administratif": "A",
-    "geo_adresse": "Rue du Colonel Pierre Avia 75015 Paris",
-    "geo_id": "75115_2214",
-    "indice_repetition": null,
-    "latitude": "48.83002",
-    "libelle_cedex": null,
-    "libelle_commune": "PARIS",
-    "libelle_commune_etranger": null,
-    "libelle_pays_etranger": null,
-    "libelle_voie": "DU COLONEL PIERRE AVIA",
-    "liste_enseignes": ["LA POSTE"],
-    "liste_finess": ["750073637"],
-    "liste_id_bio": null,
-    "liste_idcc": ["5516", "9999"],
-    "liste_id_organisme_formation": null,
-    "liste_rge": null,
-    "liste_uai": null,
-    "longitude": "2.275688",
-    "nom_commercial": null,
-    "numero_voie": "9",
-    "region": "11",
-    "siret": "35600000000048",
-    "statut_diffusion_etablissement": "O",
-    "tranche_effectif_salarie": "51",
-    "type_voie": "RUE"
-  },
-  "activite_principale": "53.10Z",
-  "categorie_entreprise": "GE",
-  "caractere_employeur": null,
-  "annee_categorie_entreprise": "2022",
-  "date_creation": "1991-01-01",
-  "date_fermeture": null,
-  "date_mise_a_jour": "2025-07-23T07:50:20",
-  "date_mise_a_jour_insee": "2025-07-17T16:12:28.956",
-  "date_mise_a_jour_rne": "2024-05-19T16:49:33",
-  "dirigeants": [
-    {
-      "nom": "AJDARI",
-      "prenoms": "MARTIN",
-      "annee_de_naissance": "1968",
-      "date_de_naissance": "1968-12",
-      "qualite": "Administrateur",
-      "nationalite": "Française",
-      "type_dirigeant": "personne physique"
-    }
-  ],
-  "etat_administratif": "A",
-  "nature_juridique": "5510",
-  "section_activite_principale": "H",
-  "tranche_effectif_salarie": "53",
-  "annee_tranche_effectif_salarie": "2022",
-  "statut_diffusion": "O",
-  "matching_etablissements": [
-    {
-      "activite_principale": "53.10Z",
-      "ancien_siege": false,
-      "annee_tranche_effectif_salarie": null,
-      "adresse": "1 PLACE CARNEGIE 02700 TERGNIER",
-      "caractere_employeur": "N",
-      "code_postal": "02700",
-      "commune": "02738",
-      "date_creation": "2012-01-01",
-      "date_debut_activite": "2014-01-10",
-      "date_fermeture": null,
-      "epci": "200071785",
-      "est_siege": false,
-      "etat_administratif": "A",
-      "geo_id": "02738_2235_00001",
-      "latitude": "49.65875",
-      "libelle_commune": "TERGNIER",
-      "liste_enseignes": ["LA POSTE"],
-      "liste_finess": null,
-      "liste_id_bio": null,
-      "liste_idcc": null,
-      "liste_id_organisme_formation": null,
-      "liste_rge": null,
-      "liste_uai": null,
-      "longitude": "3.315011",
-      "nom_commercial": null,
-      "region": "32",
-      "siret": "35600000053166",
-      "statut_diffusion_etablissement": "O",
-      "tranche_effectif_salarie": null
-    },
-    {
-      "activite_principale": "53.10Z",
-      "ancien_siege": false,
-      "annee_tranche_effectif_salarie": null,
-      "adresse": "14 AVENUE DU GENERAL DE GAULLE 02700 TERGNIER",
-      "caractere_employeur": "O",
-      "code_postal": "02700",
-      "commune": "02738",
-      "date_creation": "2012-01-01",
-      "date_debut_activite": "2014-01-10",
-      "date_fermeture": null,
-      "epci": "200071785",
-      "est_siege": false,
-      "etat_administratif": "A",
-      "geo_id": "02738_2567_00014",
-      "latitude": "49.655127",
-      "libelle_commune": "TERGNIER",
-      "liste_enseignes": ["LA POSTE"],
-      "liste_finess": null,
-      "liste_id_bio": null,
-      "liste_idcc": null,
-      "liste_id_organisme_formation": null,
-      "liste_rge": null,
-      "liste_uai": null,
-      "longitude": "3.292756",
-      "nom_commercial": null,
-      "region": "32",
-      "siret": "35600000053170",
-      "statut_diffusion_etablissement": "O",
-      "tranche_effectif_salarie": null
-    },
-    {
-      "activite_principale": "53.10Z",
-      "ancien_siege": false,
-      "annee_tranche_effectif_salarie": "2022",
-      "adresse": "1 RUE DE VERDUN 02600 VILLERS-COTTERETS",
-      "caractere_employeur": "O",
-      "code_postal": "02600",
-      "commune": "02810",
-      "date_creation": "2012-01-01",
-      "date_debut_activite": "2014-01-10",
-      "date_fermeture": null,
-      "epci": "200071991",
-      "est_siege": false,
-      "etat_administratif": "A",
-      "geo_id": "02810_0700_00001",
-      "latitude": "49.254303",
-      "libelle_commune": "VILLERS-COTTERETS",
-      "liste_enseignes": ["LA POSTE"],
-      "liste_finess": null,
-      "liste_id_bio": null,
-      "liste_idcc": ["9999", "5516"],
-      "liste_id_organisme_formation": null,
-      "liste_rge": null,
-      "liste_uai": null,
-      "longitude": "3.09084",
-      "nom_commercial": null,
-      "region": "32",
-      "siret": "35600000053210",
-      "statut_diffusion_etablissement": "O",
-      "tranche_effectif_salarie": "11"
-    },
-    {
-      "activite_principale": "53.10Z",
-      "ancien_siege": false,
-      "annee_tranche_effectif_salarie": "2022",
-      "adresse": "9001 RUE DE LA QUEUE D OIGNY 02600 VILLERS-COTTERETS",
-      "caractere_employeur": "O",
-      "code_postal": "02600",
-      "commune": "02810",
-      "date_creation": "2012-01-01",
-      "date_debut_activite": "2014-01-10",
-      "date_fermeture": null,
-      "epci": "200071991",
-      "est_siege": false,
-      "etat_administratif": "A",
-      "geo_id": "02810_0612",
-      "latitude": "49.238675",
-      "libelle_commune": "VILLERS-COTTERETS",
-      "liste_enseignes": ["LA POSTE"],
-      "liste_finess": null,
-      "liste_id_bio": null,
-      "liste_idcc": ["5516", "9999"],
-      "liste_id_organisme_formation": null,
-      "liste_rge": null,
-      "liste_uai": null,
-      "longitude": "3.102971",
-      "nom_commercial": null,
-      "region": "32",
-      "siret": "35600000053215",
-      "statut_diffusion_etablissement": "O",
-      "tranche_effectif_salarie": "11"
-    }
-  ],
-  "finances": {
-    "2023": {
-      "ca": 26888000000,
-      "resultat_net": 776000000
-    }
-  },
-  "complements": {
-    "collectivite_territoriale": null,
-    "convention_collective_renseignee": true,
-    "liste_idcc": ["9999", "5516"],
-    "egapro_renseignee": true,
-    "est_achats_responsables": true,
-    "est_alim_confiance": true,
-    "est_association": false,
-    "est_bio": false,
-    "est_entrepreneur_individuel": false,
-    "est_entrepreneur_spectacle": false,
-    "est_ess": false,
-    "est_finess": true,
-    "est_organisme_formation": true,
-    "est_qualiopi": true,
-    "liste_id_organisme_formation": ["11755565775", "11755762075"],
-    "est_rge": false,
-    "est_service_public": false,
-    "est_l100_3": false,
-    "est_siae": false,
-    "est_societe_mission": false,
-    "est_uai": false,
-    "est_patrimoine_vivant": false,
-    "bilan_ges_renseigne": true,
-    "identifiant_association": null,
-    "statut_entrepreneur_spectacle": null,
-    "type_siae": null
-  }
-};
+const API_URL = 'http://localhost:4000/api/search';
 
 const SocieteDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('legal');
   const [activeSubTab, setActiveSubTab] = useState('infos');
+  const [societeData, setSocieteData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${API_URL}?q=${id}&limite_matching_etablissements=10&page=1&per_page=10`, {
+      headers: { accept: 'application/json' }
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Erreur lors de la récupération des données société');
+        const data = await res.json();
+        if (data.results && data.results.length > 0) {
+          setSocieteData(data.results[0]);
+        } else {
+          setError('Aucune société trouvée pour ce SIREN');
+        }
+      })
+      .catch((e) => setError(e.message || 'Erreur inconnue'))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen w-full mx-auto">
+        <style>{`
+          @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+          .animate-spin-reverse { animation: spin-reverse 1s linear infinite; }
+        `}</style>
+        <div className="relative w-12 h-12 mb-2">
+          <div className="absolute inset-0 rounded-full border-4 border-orange-400 border-t-transparent animate-spin"></div>
+          <div className="absolute inset-2 rounded-full border-4 border-[#E95C41] border-b-transparent animate-spin-reverse"></div>
+        </div>
+        <span className="ml-2 text-gray-600 text-lg">Chargement des données société...</span>
+      </div>
+    );
+  }
+  if (error || !societeData) {
+    return <div className="flex items-center justify-center min-h-screen text-lg text-red-600">{error || 'Erreur inconnue'}</div>;
+  }
 
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
@@ -500,7 +301,7 @@ const SocieteDetails: React.FC = () => {
                 </div>
                 <div>
                   <div className="text-gray-500 text-xs uppercase font-medium mb-1">Enseignes</div>
-                  <div className="text-gray-800">{societeData.siege.liste_enseignes.join(', ')}</div>
+                  <div className="text-gray-800">{Array.isArray(societeData.siege.liste_enseignes) ? societeData.siege.liste_enseignes.join(', ') : '-'}</div>
                 </div>
                 <div>
                   <div className="text-gray-500 text-xs uppercase font-medium mb-1">FINESS</div>
