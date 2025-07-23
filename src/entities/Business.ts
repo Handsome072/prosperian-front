@@ -27,6 +27,7 @@ export interface Business {
     legalForms: string[];
     ratingRange: [number, number];
     roles: string[];
+    sortBy: string;
   }
 
   export interface FiltersPanelProps extends FilterState {
