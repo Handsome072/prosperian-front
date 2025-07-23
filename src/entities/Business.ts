@@ -28,6 +28,7 @@ export interface Business {
     ratingRange: [number, number];
     roles: string[];
     sortBy: string;
+    id_convention_collective?: string;
   }
 
   export interface FiltersPanelProps extends FilterState {

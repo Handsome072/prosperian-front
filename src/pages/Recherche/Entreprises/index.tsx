@@ -24,10 +24,10 @@ export const Entreprises = () => {
   // Mapping Pronto: nom => { logo, description }
   const prontoMap = prontoLeads.reduce((acc: Record<string, { logo: string; description: string }>, lead: ProntoLeadWithCompany) => {
     if (lead.company && lead.company.name) {
-      acc[lead.company.name.trim().toLowerCase()] = {
-        logo: lead.company.company_profile_picture,
-        description: Winlead.company.description
-      };
+              acc[lead.company.name.trim().toLowerCase()] = {
+          logo: lead.company.company_profile_picture,
+          description: lead.company.description
+        };
     }
     return acc;
   }, {});
@@ -47,6 +47,7 @@ export const Entreprises = () => {
       nafCodes: string[],
       revenueRange: [number, number],
       ageRange: [number, number],
+      employeeRange: [number, number],
       legalForms: string[],
       idConventionCollective?: string
     ) => {
@@ -79,6 +80,16 @@ export const Entreprises = () => {
             url += `&age_max=${ageRange[1]}`;
           }
         }
+        
+        // Filtres de nombre d'employés
+        if (employeeRange && employeeRange.length === 2 && (employeeRange[0] > 0 || employeeRange[1] < 5000)) {
+          if (employeeRange[0] > 0) {
+            url += `&employee_min=${employeeRange[0]}`;
+          }
+          if (employeeRange[1] < 5000) {
+            url += `&employee_max=${employeeRange[1]}`;
+          }
+        }
 
         // Filtres de nature juridique
         if (legalForms && legalForms.length > 0) {
@@ -95,6 +106,7 @@ export const Entreprises = () => {
           activites: nafCodes,
           chiffreAffaires: revenueRange,
           ageEntreprise: ageRange,
+          nombreEmployes: employeeRange,
           naturesJuridiques: legalForms,
           conventionCollective: idConventionCollective
         });
@@ -111,6 +123,7 @@ export const Entreprises = () => {
           total: data.total_results,
           entreprisesRecues: data.results?.length || 0,
           enrichedWithAge: (data as any).enriched_with_age,
+          filteredByEmployees: (data as any).filtered_by_employees,
           filtersApplied: (data as any).filters_applied
         });
 
@@ -131,18 +144,19 @@ export const Entreprises = () => {
     []
   );
 
-  useEffect(() => {
+    useEffect(() => {
     fetchBusinesses(
-      currentPage,
-      perPage,
-      filters.activities || [],
-      filters.revenueRange || [0, 1000000],
+      currentPage, 
+      perPage, 
+      filters.activities || [], 
+      filters.revenueRange || [0, 1000000], 
       filters.ageRange || [0, 50],
+      filters.employeeRange || [0, 5000],
       filters.legalForms || [],
       filters.id_convention_collective || undefined
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.legalForms, filters.id_convention_collective]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -160,12 +174,13 @@ export const Entreprises = () => {
         totalBusinesses={totalResults}
         loading={loading}
         error={error}
-        onRetry={() => fetchBusinesses(
-          currentPage,
-          perPage,
-          filters.activities || [],
-          filters.revenueRange || [0, 1000000],
+                onRetry={() => fetchBusinesses(
+          currentPage, 
+          perPage, 
+          filters.activities || [], 
+          filters.revenueRange || [0, 1000000], 
           filters.ageRange || [0, 50],
+          filters.employeeRange || [0, 5000],
           filters.legalForms || [],
           filters.id_convention_collective || undefined
         )}
