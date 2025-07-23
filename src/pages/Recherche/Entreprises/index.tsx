@@ -41,7 +41,7 @@ export const Entreprises = () => {
   });
 
   const fetchBusinesses = useCallback(
-    async (page: number, perPageValue: number, nafCodes: string[], revenueRange: [number, number], legalForms: string[]) => {
+    async (page: number, perPageValue: number, nafCodes: string[], revenueRange: [number, number], legalForms: string[], idConventionCollective?: string) => {
       setLoading(true);
       setError(null);
       try {
@@ -54,6 +54,9 @@ export const Entreprises = () => {
         }
         if (legalForms && legalForms.length > 0) {
           url += `&nature_juridique=${legalForms.join(',')}`;
+        }
+        if (idConventionCollective) {
+          url += `&id_convention_collective=${idConventionCollective}`;
         }
         console.log('Fetching URL:', url);
         const res = await fetch(url, { headers: { accept: "application/json" } });
@@ -74,9 +77,16 @@ export const Entreprises = () => {
   );
 
   useEffect(() => {
-    fetchBusinesses(currentPage, perPage, filters.activities || [], filters.revenueRange || [0, 0], filters.legalForms || []);
+    fetchBusinesses(
+      currentPage,
+      perPage,
+      filters.activities || [],
+      filters.revenueRange || [0, 0],
+      filters.legalForms || [],
+      filters.id_convention_collective || undefined
+    );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.legalForms]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.legalForms, filters.id_convention_collective]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
