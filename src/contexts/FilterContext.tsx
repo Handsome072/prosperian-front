@@ -44,6 +44,10 @@ const defaultFilters: FilterState = {
   ratingRange: [0, 5],
   roles: [],
   sortBy: 'Pertinence',
+  googleActivities: [],
+  semanticTerms: [],
+  enseignes: [],
+  activitySearchType: 'naf'
 };
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);

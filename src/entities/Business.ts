@@ -33,6 +33,8 @@ export interface Business {
     googleActivities?: string[];
     // Filtres sémantiques
     semanticTerms?: string[];
+    // Filtres enseignes/franchises
+    enseignes?: string[];
     activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne';
   }
 

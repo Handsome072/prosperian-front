@@ -12,6 +12,7 @@ import conventionsCollectives from '@data/conventions_collectives.json';
 import ReactDOM from 'react-dom';
 import { googlePlacesService, GooglePlacesCategory } from '../../../services/googlePlacesService';
 import { semanticService, PopularConcept, SemanticSuggestion } from '../../../services/semanticService';
+import { apifyService } from '../../../services/apifyService';
 
 interface RangeSliderProps {
   min: number;
@@ -179,6 +180,10 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [loadingSemanticConcepts, setLoadingSemanticConcepts] = useState(false);
   const [selectedSemanticTerms, setSelectedSemanticTerms] = useState<string[]>([]);
   const [semanticSearchTerm, setSemanticSearchTerm] = useState('');
+
+  // States pour la recherche par enseigne/franchise
+  const [selectedEnseignes, setSelectedEnseignes] = useState<string[]>([]);
+  const [popularFranchises, setPopularFranchises] = useState<string[]>([]);
 
   // Fonction utilitaire pour grouper par millier
   const conventionsGrouped = conventionsCollectives.reduce((acc: Record<string, typeof conventionsCollectives>, c) => {
@@ -383,6 +388,42 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       activitySearchType: 'semantic'
     } as any);
   };
+
+  // Gestion des enseignes/franchises
+  const handleEnseigneAdd = (enseigne: string) => {
+    if (!selectedEnseignes.includes(enseigne)) {
+      const newSelected = [...selectedEnseignes, enseigne];
+      setSelectedEnseignes(newSelected);
+      updateFilters({ 
+        enseignes: newSelected,
+        activitySearchType: 'enseigne'
+      } as any);
+    }
+    setActivitySearch(''); // Vider le champ de saisie
+  };
+
+  const handleEnseigneToggle = (enseigne: string) => {
+    const newSelected = selectedEnseignes.filter(e => e !== enseigne);
+    setSelectedEnseignes(newSelected);
+    updateFilters({ 
+      enseignes: newSelected,
+      activitySearchType: newSelected.length > 0 ? 'enseigne' : 'naf'
+    } as any);
+  };
+
+  // Charger les franchises populaires au démarrage
+  useEffect(() => {
+    const loadPopularFranchises = async () => {
+      try {
+        const franchises = await apifyService.getPopularFranchises();
+        setPopularFranchises(franchises);
+      } catch (error) {
+        console.error('Erreur lors du chargement des franchises populaires:', error);
+      }
+    };
+    
+    loadPopularFranchises();
+  }, []);
 
   // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
@@ -733,13 +774,72 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             )}
 
             {activitySearchType === 'enseigne' && (
-              <input
-                type="text"
-                placeholder="Nom d'enseigne ou franchise (ex: McDonald's, Carrefour...)"
-                value={activitySearch}
-                onChange={(e) => setActivitySearch(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-sm"
-              />
+              <>
+                <input
+                  type="text"
+                  placeholder="Nom d'enseigne ou franchise (ex: McDonald's, Carrefour...)"
+                  value={activitySearch}
+                  onChange={(e) => setActivitySearch(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded text-sm"
+                />
+                
+                {/* Bouton pour ajouter l'enseigne à la recherche */}
+                {activitySearch.trim() && (
+                  <button
+                    type="button"
+                    onClick={() => handleEnseigneAdd(activitySearch.trim())}
+                    className="mt-2 w-full px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors"
+                    disabled={!activitySearch.trim()}
+                  >
+                    ✓ Ajouter "{activitySearch.trim()}"
+                  </button>
+                )}
+
+                {/* Enseignes sélectionnées */}
+                {selectedEnseignes.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    <span className="text-xs font-medium text-gray-700">Enseignes sélectionnées:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedEnseignes.map(enseigne => (
+                        <span 
+                          key={enseigne}
+                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                        >
+                          {enseigne}
+                          <button
+                            type="button"
+                            onClick={() => handleEnseigneToggle(enseigne)}
+                            className="ml-1 text-orange-600 hover:text-orange-800"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Suggestions d'enseignes populaires */}
+                <div className="mt-3">
+                  <span className="text-xs font-medium text-gray-700">Enseignes populaires:</span>
+                  <div className="mt-1 flex flex-wrap gap-1 max-h-32 overflow-y-auto">
+                    {popularFranchises.slice(0, 20).map(franchise => (
+                      <button
+                        key={franchise}
+                        type="button"
+                        onClick={() => handleEnseigneAdd(franchise)}
+                        className={`text-xs px-2 py-1 rounded border transition-colors ${
+                          selectedEnseignes.includes(franchise)
+                            ? 'bg-orange-100 border-orange-300 text-orange-800'
+                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {franchise}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
 
             {/* Checkbox d'exclusion */}
