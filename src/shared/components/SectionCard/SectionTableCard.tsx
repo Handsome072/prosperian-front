@@ -21,7 +21,7 @@ export const SectionTableCard: React.FC<SectionTableCardProps> = ({
     onExportSelect?.(e.target.value as "csv" | "xlsx");
   };
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-8 max-w-4xl mx-auto w-full my-5">
+    <div className="bg-white rounded-2xl shadow-lg p-8">
       {/* Header: titre + export */}
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold inline-block pb-2 relative">

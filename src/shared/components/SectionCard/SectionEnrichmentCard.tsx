@@ -1,4 +1,5 @@
 import React, { useState, useCallback, ChangeEvent } from "react";
+import { useNavigate } from 'react-router-dom';
 
 export interface SectionEnrichmentCardProps {
   mainTitle: string;
@@ -57,6 +58,7 @@ const SectionEnrichmentCard: React.FC<SectionEnrichmentCardProps> = ({
   onConnectClick,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
+  const navigate = useNavigate();
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -85,9 +87,10 @@ const SectionEnrichmentCard: React.FC<SectionEnrichmentCardProps> = ({
       const files = event.target.files;
       if (files && files.length > 0 && onFileUpload) {
         onFileUpload(files[0]);
+        navigate('/file-upload-result', { state: { file: files[0] } }); // Navigate to new page with file state
       }
     },
-    [onFileUpload]
+    [onFileUpload, navigate]
   );
 
   return (
