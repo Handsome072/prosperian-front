@@ -482,7 +482,7 @@ const SocieteDetails: React.FC = () => {
                       <td className="py-4 px-4 text-gray-600">{etablissement.libelle_commune}</td>
                       <td className="py-4 px-4 text-gray-600">{etablissement.date_creation}</td>
                       <td className="py-4 px-4 text-gray-600">{etablissement.etat_administratif === 'A' ? 'Actif' : 'Inactif'}</td>
-                    </tr>
+                    </tr> 
                   ))}
                 </tbody>
               </table>
