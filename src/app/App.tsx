@@ -13,6 +13,7 @@ import SocieteDetails from "@pages/Recherche/Societe/SocieteDetails";
 
 import Enrichment from "@pages/Enrichissement";
 import FileUploadResult from "@pages/Enrichissement/FileUploadResult";
+import ProntoLeadsForm from "@pages/Enrichissement/ProntoLeadsForm";
 /* import Surveillance   from "@pages/Surveillance";
 import Veille         from "@pages/Veille"; */
 
@@ -34,6 +35,7 @@ export const App = () => {
         <Route path="recherche/societes/:id" element={<SocieteDetails />} />
 
         <Route path="enrichissement" element={<Enrichment />} />
+        <Route path="enrichissement/pronto-leads" element={<ProntoLeadsForm />} />
         <Route path="file-upload-result" element={<FileUploadResult />} />
         {/* <Route path="surveillance"   element={<Surveillance />} />
         <Route path="veille"         element={<Veille />} /> */}
