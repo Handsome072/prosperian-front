@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Sun, BookOpen, MessageCircle, User, Menu, X } from "lucide-react";
+import { Sun, BookOpen, MessageCircle, User, Menu, X, LogOut } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useSearchLayoutContext } from "@contexts/SearchLayoutContext";
+import { useAuth } from "@contexts/AuthContext";
 
 const NAV_ITEMS: { label: string; to: string }[] = [
   { label: "Recherche", to: "/recherche" },
@@ -14,6 +15,7 @@ export const MainTopbar: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const { pathname } = useLocation();
   const { setShowSidebar } = useSearchLayoutContext();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleSidebar = (href: string) => {
     if (href === "/recherche") {
@@ -102,20 +104,45 @@ const MenuNavLinks: React.FC<{ vertical?: boolean; pathname: string; handleSideb
   </div>
 );
 
-const IconButtons: React.FC<{ vertical?: boolean }> = ({ vertical }) => (
-  <div className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-4"}>
-    <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
-      <Sun className="w-5 h-5" />
-    </button>
-    <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
-      <BookOpen className="w-5 h-5" />
-    </button>
-    <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
-      <MessageCircle className="w-5 h-5" />
-    </button>
-    <button className="bg-[#E95C41] hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2">
-      <User className="w-4 h-4" />
-      <span>Se connecter</span>
-    </button>
-  </div>
-);
+const IconButtons: React.FC<{ vertical?: boolean }> = ({ vertical }) => {
+  const { user, isAuthenticated, logout } = useAuth();
+
+  return (
+    <div className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-4"}>
+      <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
+        <Sun className="w-5 h-5" />
+      </button>
+      <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
+        <BookOpen className="w-5 h-5" />
+      </button>
+      <button className="p-2 text-white hover:text-[#E95C41] transition-colors">
+        <MessageCircle className="w-5 h-5" />
+      </button>
+      
+      {isAuthenticated ? (
+        <div className="flex items-center space-x-3">
+          <div className="text-white text-sm">
+            <span className="font-medium">
+              {user?.prenom ? `${user.prenom} ${user.nom || ''}` : user?.email}
+            </span>
+          </div>
+          <button
+            onClick={logout}
+            className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Déconnexion</span>
+          </button>
+        </div>
+      ) : (
+        <Link
+          to="/login"
+          className="bg-[#E95C41] hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+        >
+          <User className="w-4 h-4" />
+          <span>Se connecter</span>
+        </Link>
+      )}
+    </div>
+  );
+};
