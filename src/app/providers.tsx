@@ -1,16 +1,19 @@
-import React, { ReactNode } from "react";
+import React from "react";
 import { BrowserRouter } from "react-router-dom";
-import { FilterProvider } from "@contexts/FilterContext";
 import { SearchLayoutProvider } from "@contexts/SearchLayoutContext";
+import { AuthProvider } from "@contexts/AuthContext";
+import { FilterProvider } from "@contexts/FilterContext";
 
-type Props = { children: ReactNode };
-
-export function Providers({ children }: Props) {
+export const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <BrowserRouter>
-      <SearchLayoutProvider>
-        <FilterProvider>{children}</FilterProvider>
-      </SearchLayoutProvider>
+      <AuthProvider>
+        <SearchLayoutProvider>
+          <FilterProvider>
+            {children}
+          </FilterProvider>
+        </SearchLayoutProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
-}
+};

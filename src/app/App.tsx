@@ -14,12 +14,19 @@ import SocieteDetails from "@pages/Recherche/Societe/SocieteDetails";
 import Enrichment from "@pages/Enrichissement";
 import FileUploadResult from "@pages/Enrichissement/FileUploadResult";
 import ProntoLeadsForm from "@pages/Enrichissement/ProntoLeadsForm";
+
+import Login from "@pages/Auth/Login";
+import Register from "@pages/Auth/Register";
 /* import Surveillance   from "@pages/Surveillance";
 import Veille         from "@pages/Veille"; */
 
 export const App = () => {
   return (
     <Routes>
+      {/* Routes d'authentification (sans layout) */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Navigate to="recherche" replace />} />
 
