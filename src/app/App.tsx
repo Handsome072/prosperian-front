@@ -17,6 +17,9 @@ import ProntoLeadsForm from "@pages/Enrichissement/ProntoLeadsForm";
 
 import Login from "@pages/Auth/Login";
 import Register from "@pages/Auth/Register";
+import UserProfile from "@pages/Profile/UserProfile";
+import SubscriptionPage from "@pages/Subscription/SubscriptionPage";
+import PaymentPage from "@pages/Payment/PaymentPage";
 /* import Surveillance   from "@pages/Surveillance";
 import Veille         from "@pages/Veille"; */
 
@@ -29,6 +32,9 @@ export const App = () => {
 
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Navigate to="recherche" replace />} />
+        <Route path="profile" element={<UserProfile />} />
+        <Route path="subscription" element={<SubscriptionPage />} />
+        <Route path="payment" element={<PaymentPage />} />
 
         <Route path="recherche" element={<SearchLayout />}>
           <Route index element={<Entreprises />} />
