@@ -305,50 +305,7 @@ const FileUploadResult: React.FC = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-lg p-6 mt-8 max-w-6xl mx-auto">
-        <h3 className="text-lg font-semibold text-gray-700 mb-4 border-b pb-2">Mes enrichissements</h3>
-        <div className="flex justify-between items-center text-sm mb-4">
-          <div className="font-medium">Exporter en CSV</div>
-          <select className="border px-2 py-1 rounded">
-            <option>Exporter en CSV</option>
-          </select>
-        </div>
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-gray-600 my-8">
-              <th className="py-16">TYPE</th>
-              <th className="py-16">NOM DE FICHIER</th>
-              <th className="py-16">STATUT</th>
-              <th className="py-16"># LIGNES</th>
-              <th className="py-16">CRÉÉ LE</th>
-            </tr>
-          </thead>
-          <tbody className="text-gray-700">
-            <tr className="my-8">
-              <td className="py-16">📄</td>
-              <td className="py-16">{file.name}</td>
-              <td className="py-16 text-yellow-600 font-semibold">En configuration</td>
-              <td className="py-16">{fileData.length}</td>
-              <td className="py-16">{new Date().toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
 
-      <div className="bg-[#0E0F47] text-white p-6 rounded-2xl mt-8 max-w-6xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between">
-        <div>
-          <p className="text-base font-semibold mb-2">
-            Besoin d'échanger sur vos projets d'enrichissement de données ?
-          </p>
-          <p className="text-sm">
-            Enrichissement complexe, automatisation de l'enrichissement dans votre CRM, mise à jour ou détection
-            automatisée d'opportunité. Tout est possible, parlons-en !
-          </p>
-        </div>
-        <button className="bg-[#E95C41] mt-4 md:mt-0 text-white px-6 py-3 rounded-full font-medium hover:opacity-90">
-          Parler à un expert
-        </button>
-      </div>
 
       {result && (
         <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">

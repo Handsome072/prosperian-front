@@ -73,11 +73,11 @@ const Exports: React.FC = () => {
       </div>
     </div>
   ) : (
-    <div className={`mx-auto p-3 ${!loading && items.length !== 0 ? "w-full max-w-none" : ""}`}>
-      {!loading && items.length === 0 && (
+    <div className="flex flex-col flex-1">
+      <div className="mx-auto p-3">
         <SectionCard
-          mainTitle="Gérez vos exports en toute simplicité !"
-          subTitle="Avec le service d'export, vous pouvez :"
+          mainTitle="Gérez vos exports en toute simplicité !"
+          subTitle="Avec le service d'export, vous pouvez :"
           items={[
             "Exporter les données d'entreprises et/ou de contacts en quelques clics",
             "Appliquer un repoussoir de contacts ou d'entreprises",
@@ -96,14 +96,14 @@ const Exports: React.FC = () => {
           buttonText="Lancer une recherche"
           onButtonClick={() => {}}
         />
-      )}
-      <SectionTableCard
-        title="Mes exports"
-        columns={columns}
-        items={items}
-        emptyMessage={loading ? "Chargement..." : "Vous n'avez pas encore réalisé un export."}
-        onExportSelect={(format) => setSelectedFormat(format)}
-      />
+        <SectionTableCard
+          title="Mes exports"
+          columns={columns}
+          items={items}
+          emptyMessage={loading ? "Chargement..." : "Vous n'avez pas encore réalisé un export."}
+          onExportSelect={(format) => setSelectedFormat(format)}
+        />
+      </div>
     </div>
   );
 };
