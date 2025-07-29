@@ -3,10 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
+import enrichmentService, { CreateEnrichmentData, CreateLeadEnrichData } from '../../services/enrichmentService';
 
 const FileUploadResult: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const file = location.state?.file as File | undefined;
 
   const [columns, setColumns] = useState({
@@ -23,6 +26,13 @@ const FileUploadResult: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
+  // États pour la modal d'enrichment
+  const [showEnrichmentModal, setShowEnrichmentModal] = useState(false);
+  const [enrichmentName, setEnrichmentName] = useState('');
+  const [enrichmentTypeModal, setEnrichmentTypeModal] = useState('');
+  const [enrichmentLoading, setEnrichmentLoading] = useState(false);
+  const [enrichmentError, setEnrichmentError] = useState<string | null>(null);
 
   useEffect(() => {
     if (file) {
@@ -85,39 +95,92 @@ const FileUploadResult: React.FC = () => {
   };
 
   const handleEnrichment = async () => {
-    setLoading(true);
-    setError(null);
-    setResult(null);
+    // Ouvrir la modal d'enrichment au lieu d'exécuter directement
+    setShowEnrichmentModal(true);
+  };
+
+  const handleCreateEnrichment = async () => {
+    if (!user) {
+      setEnrichmentError('Utilisateur non connecté');
+      return;
+    }
+
+    if (!enrichmentName.trim()) {
+      setEnrichmentError('Le nom de l\'enrichment est requis');
+      return;
+    }
+
+    if (!enrichmentTypeModal.trim()) {
+      setEnrichmentError('Le type d\'enrichment est requis');
+      return;
+    }
+
+    setEnrichmentLoading(true);
+    setEnrichmentError(null);
+
     try {
-      // Mapping des données du fichier vers le format API
-      const contacts = fileData.map(row => ({
+      // 1. Créer l'enrichment
+      const enrichmentData: CreateEnrichmentData = {
+        name: enrichmentName,
+        type: enrichmentTypeModal,
+        description: null // null comme demandé
+      };
+
+      console.log('Création de l\'enrichment:', enrichmentData);
+      const enrichmentResponse = await enrichmentService.createEnrichment(enrichmentData);
+      console.log('Enrichment créé:', enrichmentResponse);
+
+      const enrichmentId = enrichmentResponse.enrichment?.id;
+      if (!enrichmentId) {
+        throw new Error('ID de l\'enrichment non reçu');
+      }
+
+      // 2. Préparer les données des leads
+      const leadsData: CreateLeadEnrichData[] = fileData.map(row => ({
         firstname: row[columns.lead_first_name] || '',
         lastname: row[columns.lead_last_name] || '',
         company_name: row[columns.company_name] || '',
-        linkedin_url: row[columns.lead_profile_linkedin_url] || '',
-        domain: row[columns.company_domain] || ''
-      }));
-      // Préparation du type d'enrichissement
-      let enrichment_type: string[] = [];
-      if (enrichmentType === 'email et phone') {
-        enrichment_type = ['email', 'phone'];
-      } else if (enrichmentType) {
-        enrichment_type = [enrichmentType];
+        domain: row[columns.company_domain] || '',
+        linkedin_url: row[columns.lead_profile_linkedin_url] || ''
+      })).filter(lead => lead.firstname && lead.lastname); // Filtrer les leads valides
+
+      console.log('Données des leads à envoyer:', leadsData);
+
+      // 3. Ajouter les leads un par un (pas de bulk pour l'instant)
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const leadData of leadsData) {
+        try {
+          await enrichmentService.addLeadEnrich(enrichmentId, leadData);
+          successCount++;
+        } catch (error) {
+          console.error('Erreur lors de l\'ajout du lead:', leadData, error);
+          errorCount++;
+        }
       }
-      // Log du payload envoyé
-      console.log('POST /api/pronto/enrichments/contacts/bulk', { contacts, enrichment_type });
-      // Appel API
-      const response = await axios.post('/api/pronto/enrichments/contacts/bulk', {
-        contacts,
-        enrichment_type
+
+      // 4. Afficher le résultat
+      setResult({
+        successful: successCount,
+        failed: errorCount,
+        total: leadsData.length,
+        enrichment_id: enrichmentId
       });
-      console.log('Réponse API /api/pronto/enrichments/contacts/bulk', response.data);
-      setResult(response.data);
+
+      // 5. Fermer la modal et afficher le succès
+      setShowEnrichmentModal(false);
       setShowSuccessModal(true);
+
+      // 6. Réinitialiser les champs
+      setEnrichmentName('');
+      setEnrichmentTypeModal('');
+
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Erreur lors de l’enrichissement');
+      console.error('Erreur lors de la création de l\'enrichment:', err);
+      setEnrichmentError(err.message || 'Erreur lors de la création de l\'enrichment');
     } finally {
-      setLoading(false);
+      setEnrichmentLoading(false);
     }
   };
 
@@ -168,7 +231,7 @@ const FileUploadResult: React.FC = () => {
         </button>
         <h2 className="text-xl font-bold text-[#E95C41] mb-4">Société</h2>
         <div className="mb-6">
-          <label className="text-gray-700 text-sm font-medium block mb-2">Type d’enrichissement</label>
+          <label className="text-gray-700 text-sm font-medium block mb-2">Type d'enrichissement</label>
           <select
             name="enrichment_type"
             value={enrichmentType}
@@ -222,7 +285,7 @@ const FileUploadResult: React.FC = () => {
 
         <div className="bg-orange-50 text-sm text-orange-700 p-4 mt-6 rounded-md">
           <span className="font-medium">
-            Pour mieux comprendre notre <strong>service d’enrichissement</strong>
+            Pour mieux comprendre notre <strong>service d'enrichissement</strong>
           </span>
           , nous vous recommandons de jeter un œil à nos{' '}
           <a href="#" className="underline">
@@ -237,7 +300,7 @@ const FileUploadResult: React.FC = () => {
             onClick={handleEnrichment}
             disabled={loading}
           >
-            {loading ? 'Enrichissement en cours...' : 'Lancer l’enrichissement'}
+            {loading ? 'Enrichissement en cours...' : 'Lancer l\'enrichissement'}
           </button>
         </div>
       </div>
@@ -275,23 +338,27 @@ const FileUploadResult: React.FC = () => {
       <div className="bg-[#0E0F47] text-white p-6 rounded-2xl mt-8 max-w-6xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between">
         <div>
           <p className="text-base font-semibold mb-2">
-            Besoin d’échanger sur vos projets d’enrichissement de données ?
+            Besoin d'échanger sur vos projets d'enrichissement de données ?
           </p>
           <p className="text-sm">
-            Enrichissement complexe, automatisation de l’enrichissement dans votre CRM, mise à jour ou détection
-            automatisée d’opportunité. Tout est possible, parlons-en !
+            Enrichissement complexe, automatisation de l'enrichissement dans votre CRM, mise à jour ou détection
+            automatisée d'opportunité. Tout est possible, parlons-en !
           </p>
         </div>
         <button className="bg-[#E95C41] mt-4 md:mt-0 text-white px-6 py-3 rounded-full font-medium hover:opacity-90">
           Parler à un expert
         </button>
       </div>
+
       {result && (
-        <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">Enrichissement terminé ! {result.successful || result.total_processed} contacts enrichis.</div>
+        <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+          Enrichissement terminé ! {result.successful || result.total_processed} contacts enrichis.
+        </div>
       )}
       {error && (
         <div className="mt-4 p-4 bg-red-100 text-red-800 rounded">{error}</div>
       )}
+
       {/* Modal de succès */}
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
@@ -305,15 +372,130 @@ const FileUploadResult: React.FC = () => {
             </button>
             <div className="flex flex-col items-center">
               <div className="bg-green-100 rounded-full p-4 mb-4">
-                <svg width="40" height="40" fill="none"><circle cx="20" cy="20" r="20" fill="#22C55E" fillOpacity="0.15"/><path d="M13 21l5 5 9-9" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                <svg width="40" height="40" fill="none">
+                  <circle cx="20" cy="20" r="20" fill="#22C55E" fillOpacity="0.15"/>
+                  <path d="M13 21l5 5 9-9" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
               </div>
               <h2 className="text-2xl font-bold text-green-600 mb-2">Enrichissement terminé !</h2>
-              <p className="text-gray-700 text-center mb-4">{fileData.length} contacts enrichis avec succès.</p>
+              <p className="text-gray-700 text-center mb-4">
+                {result?.successful || fileData.length} contacts enrichis avec succès.
+              </p>
               <button
                 className="mt-2 px-6 py-2 bg-gradient-to-r from-orange-400 to-[#E95C41] text-white rounded-full font-semibold hover:opacity-90"
                 onClick={() => setShowSuccessModal(false)}
               >
                 Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'enrichment */}
+      {showEnrichmentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 relative">
+            <button
+              className="absolute top-4 right-6 text-gray-400 hover:text-gray-600 text-2xl font-bold"
+              onClick={() => setShowEnrichmentModal(false)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+            
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">Créer un enrichment</h2>
+              <p className="text-gray-600 text-sm">
+                Configurez votre campagne d'enrichment pour {fileData.length} contacts
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              {/* Nom de l'enrichment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom de l'enrichment *
+                </label>
+                <input
+                  type="text"
+                  value={enrichmentName}
+                  onChange={(e) => setEnrichmentName(e.target.value)}
+                  placeholder="Ex: Campagne LinkedIn Q1 2024"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Type d'enrichment */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type d'enrichment *
+                </label>
+                <select
+                  value={enrichmentTypeModal}
+                  onChange={(e) => setEnrichmentTypeModal(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                >
+                  <option value="">Sélectionnez un type</option>
+                  <option value="linkedin_enrichment">Enrichment LinkedIn</option>
+                  <option value="email_enrichment">Enrichment Email</option>
+                  <option value="phone_enrichment">Enrichment Téléphone</option>
+                  <option value="company_enrichment">Enrichment Entreprise</option>
+                  <option value="full_enrichment">Enrichment Complet</option>
+                </select>
+              </div>
+
+              {/* Erreur */}
+              {enrichmentError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{enrichmentError}</p>
+                </div>
+              )}
+
+              {/* Informations */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-blue-800">Informations</h3>
+                    <div className="mt-2 text-sm text-blue-700">
+                      <p>• {fileData.length} contacts seront ajoutés à cette campagne</p>
+                      <p>• L'enrichment sera créé sous votre compte utilisateur</p>
+                      <p>• Vous pourrez suivre le statut dans "Mes enrichissements"</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Boutons */}
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setShowEnrichmentModal(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleCreateEnrichment}
+                disabled={enrichmentLoading}
+                className="px-6 py-2 bg-gradient-to-r from-orange-400 to-[#E95C41] text-white rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              >
+                {enrichmentLoading ? (
+                  <div className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Création en cours...
+                  </div>
+                ) : (
+                  'Créer l\'enrichment'
+                )}
               </button>
             </div>
           </div>
