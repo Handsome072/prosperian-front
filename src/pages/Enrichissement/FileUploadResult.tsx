@@ -437,11 +437,9 @@ const FileUploadResult: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 >
                   <option value="">Sélectionnez un type</option>
-                  <option value="linkedin_enrichment">Enrichment LinkedIn</option>
-                  <option value="email_enrichment">Enrichment Email</option>
-                  <option value="phone_enrichment">Enrichment Téléphone</option>
-                  <option value="company_enrichment">Enrichment Entreprise</option>
-                  <option value="full_enrichment">Enrichment Complet</option>
+                  <option value="email">email</option>
+                  <option value="phone">phone</option>
+                  <option value="tous">tous</option>
                 </select>
               </div>
 
