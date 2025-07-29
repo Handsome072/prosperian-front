@@ -7,6 +7,7 @@ export interface SectionTableCardProps {
   showExport?: boolean;
   emptyMessage?: string;
   onExportSelect?: (format: "csv" | "xlsx") => void;
+  loading?: boolean;
 }
 
 export const SectionTableCard: React.FC<SectionTableCardProps> = ({
@@ -16,6 +17,7 @@ export const SectionTableCard: React.FC<SectionTableCardProps> = ({
   showExport = true,
   emptyMessage = "Aucune donnée disponible.",
   onExportSelect,
+  loading = false,
 }) => {
   const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     onExportSelect?.(e.target.value as "csv" | "xlsx");
@@ -54,7 +56,16 @@ export const SectionTableCard: React.FC<SectionTableCardProps> = ({
             </tr>
           </thead>
           <tbody>
-            {items.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td colSpan={columns.length} className="py-8 text-center text-sm text-gray-600">
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-500 mr-2"></div>
+                    Chargement...
+                  </div>
+                </td>
+              </tr>
+            ) : items.length > 0 ? (
               items.map((row, r) => (
                 <tr key={r} className="border-t">
                   {row.map((cell, c) => (

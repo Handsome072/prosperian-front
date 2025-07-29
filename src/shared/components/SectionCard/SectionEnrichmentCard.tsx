@@ -1,5 +1,6 @@
 import React, { useState, useCallback, ChangeEvent } from "react";
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export interface SectionEnrichmentCardProps {
   mainTitle: string;
@@ -59,6 +60,7 @@ const SectionEnrichmentCard: React.FC<SectionEnrichmentCardProps> = ({
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -112,60 +114,75 @@ const SectionEnrichmentCard: React.FC<SectionEnrichmentCardProps> = ({
         {/* Right Section: File Upload Area */}
         <div className="flex flex-col g-4 items-center justify-center w-full md:w-1/2">
           <div
-            className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 ${
-              isDragOver ? "bg-gray-100" : ""
+            className={`flex flex-col items-center justify-center w-full p-6 border-2 border-dashed rounded-lg ${
+              user 
+                ? `border-gray-300 bg-gray-50 ${isDragOver ? "bg-gray-100" : ""}`
+                : "border-gray-200 bg-gray-100"
             }`}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
+            onDragOver={user ? handleDragOver : undefined}
+            onDragLeave={user ? handleDragLeave : undefined}
+            onDrop={user ? handleDrop : undefined}
           >
             <div className="text-center p-4 w-full">
               {uploadIcon}
-              <p className="text-gray-500 mt-2">Déposez votre fichier ici</p>
-              <p className="text-gray-500 text-sm mb-4">ou</p>
-              <input type="file" id="file-upload" className="hidden" onChange={handleFileSelect} accept=".csv,.xlsx" />
+              <p className={`mt-2 ${user ? "text-gray-500" : "text-gray-400"}`}>Déposez votre fichier ici</p>
+              <p className={`text-sm mb-4 ${user ? "text-gray-500" : "text-gray-400"}`}>ou</p>
+              <input 
+                type="file" 
+                id="file-upload" 
+                className="hidden" 
+                onChange={user ? handleFileSelect : undefined} 
+                accept=".csv,.xlsx"
+                disabled={!user}
+              />
               <label
-                htmlFor="file-upload"
-                className="inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full cursor-pointer"
+                htmlFor={user ? "file-upload" : ""}
+                className={`inline-flex items-center font-medium py-3 px-6 rounded-full ${
+                  user 
+                    ? 'bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white cursor-pointer' 
+                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
               >
                 Sélectionnez votre fichier
               </label>
             </div>
           </div>
-          <p className="text-sm text-gray-500 mt-4">Formats supportés: CSV et XLSX</p>
+          <p className={`text-sm mt-4 ${user ? "text-gray-500" : "text-gray-400"}`}>Formats supportés: CSV et XLSX</p>
         </div>
       </div>
 
       {/* Bottom Section: Buttons for Sign Up and Connect */}
-      <div className="flex flex-col sm:flex-row justify-start items-center gap-4 mt-8 pt-4">
-        <button
-          onClick={onSignUpClick}
-          className="inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full"
-        >
-          <span className="mr-2 flex-shrink-0">
-            <svg
-              className="w-4 h-4"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M5 12h14" />
-              <path d="M12 5l7 7-7 7" />
-            </svg>
-          </span>
-          S'inscire gratuitement
-        </button>
-        <button
-          onClick={onConnectClick}
-          className="text-[#E95C41] font-medium py-3 px-6 rounded-full hover:bg-gray-100"
-        >
-          Se connecter
-        </button>
-      </div>
+      {!user && (
+        <div className="flex flex-col sm:flex-row justify-start items-center gap-4 mt-8 pt-4">
+          <button
+            onClick={onSignUpClick}
+            className="inline-flex items-center bg-gradient-to-r from-orange-400 to-[#E95C41] hover:opacity-90 text-white font-medium py-3 px-6 rounded-full"
+          >
+            <span className="mr-2 flex-shrink-0">
+              <svg
+                className="w-4 h-4"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5l7 7-7 7" />
+              </svg>
+            </span>
+            S'inscire gratuitement
+          </button>
+          <button
+            onClick={onConnectClick}
+            className="text-[#E95C41] font-medium py-3 px-6 rounded-full hover:bg-gray-100"
+          >
+            Se connecter
+          </button>
+        </div>
+      )}
 
       {/* Optional Remark Section */}
       {remark && (

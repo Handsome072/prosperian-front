@@ -155,7 +155,8 @@ const Lists: React.FC = () => {
       </div>
     </div>
   ) : (
-    <div className={`mx-auto p-3${lists.length !== 0 ? ' w-full max-w-none' : ''}`}>
+    <div className="flex flex-col flex-1">
+      <div className="mx-auto p-3">
       {/* Modal Nouvelle Liste */}
       {showNewListModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
@@ -215,33 +216,31 @@ const Lists: React.FC = () => {
         </div>
       )}
       {/* Fin Modal */}
-      {lists.length === 0 && (
-        <SectionCard
-          mainTitle="Créez et gérez vos listes en toute simplicité !"
-          subTitle="Pourquoi utiliser notre service de liste ?"
-          items={[
-            "Sélectionnez précisément les entreprises qui vous intéressent",
-            "Visualisez directement les contacts de votre liste d’entreprise",
-            "Créez une surveillance à partir d’une liste de sociétés",
-            "Accédez à des listes exclusives partagées par l’équipe SocieteInfo",
-          ]}
-          remark={
-            <>
-              Pour mieux comprendre notre <strong>service de liste</strong>, nous vous recommandons
-              de jeter un œil à nos <a href="#" className="text-[#E95C41] underline">tutoriels</a> !
-            </>
-          }
-          buttonText="Créer ma première liste"
-          onButtonClick={() => console.log("Créer une liste")}
-        />
-      )}
+      <SectionCard
+        mainTitle="Créez et gérez vos listes en toute simplicité !"
+        subTitle="Pourquoi utiliser notre service de liste ?"
+        items={[
+          "Sélectionnez précisément les entreprises qui vous intéressent",
+          "Visualisez directement les contacts de votre liste d'entreprise",
+          "Créez une surveillance à partir d'une liste de sociétés",
+          "Accédez à des listes exclusives partagées par l'équipe SocieteInfo",
+        ]}
+        remark={
+          <>
+            Pour mieux comprendre notre <strong>service de liste</strong>, nous vous recommandons
+            de jeter un œil à nos <a href="#" className="text-[#E95C41] underline">tutoriels</a> !
+          </>
+        }
+        buttonText="Créer ma première liste"
+        onButtonClick={() => console.log("Créer une liste")}
+      />
       <div className="relative">
         <SectionTableCard
-          title={<span>Mes listes</span>}
+          title="Mes listes"
           columns={myListColumns}
           items={myListItems}
           showExport={false}
-          emptyMessage={loading ? "Chargement..." : "Vous n’avez créé aucune liste."}
+          emptyMessage={loading ? "Chargement..." : "Vous n'avez créé aucune liste."}
           onExportSelect={() => {}}
         />
         <button
@@ -262,6 +261,7 @@ const Lists: React.FC = () => {
       <p className="text-center text-xs text-gray-500 my-6">
         © SMART DATA 2024 · <a href="#" className="underline">CGV / CGU</a> · <a href="#" className="underline">Vie privée & Confidentialité</a> · <a href="#" className="underline">Mentions Légales</a>
       </p>
+      </div>
     </div>
   );
 };
