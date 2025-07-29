@@ -20,6 +20,12 @@ import Register from "@pages/Auth/Register";
 import UserProfile from "@pages/Profile/UserProfile";
 import SubscriptionPage from "@pages/Subscription/SubscriptionPage";
 import PaymentPage from "@pages/Payment/PaymentPage";
+
+// Admin components
+import AdminDashboard from "@pages/Admin";
+import AdminDashboardHome from "@pages/Admin/Dashboard";
+import AdminEnrichments from "@pages/Admin/Enrichments";
+import AdminRoute from "@components/AdminRoute";
 /* import Surveillance   from "@pages/Surveillance";
 import Veille         from "@pages/Veille"; */
 
@@ -50,6 +56,17 @@ export const App = () => {
         <Route path="enrichissement" element={<Enrichment />} />
         <Route path="enrichissement/pronto-leads" element={<ProntoLeadsForm />} />
         <Route path="file-upload-result" element={<FileUploadResult />} />
+        
+        {/* Admin Routes */}
+        <Route path="admin" element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }>
+          <Route index element={<AdminDashboardHome />} />
+          <Route path="enrichments" element={<AdminEnrichments />} />
+        </Route>
+        
         {/* <Route path="surveillance"   element={<Surveillance />} />
         <Route path="veille"         element={<Veille />} /> */}
       </Route>

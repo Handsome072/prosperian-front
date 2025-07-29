@@ -17,6 +17,7 @@
       "@services/*": ["src/services/*"],
       "@hooks/*": ["src/hooks/*"],
       "@config/*": ["src/config/*"],
+      "@components/*": ["src/components/*"],
     },
     "types": ["vite/client", "node"],
 

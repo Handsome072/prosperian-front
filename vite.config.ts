@@ -33,6 +33,7 @@ export default defineConfig({
       "@services": path.resolve(__dirname, "./src/services"),
       "@hooks": path.resolve(__dirname, "./src/hooks"),
       "@config": path.resolve(__dirname, "./src/config"),
+      "@components": path.resolve(__dirname, "./src/components"),
     },
   },
 });
