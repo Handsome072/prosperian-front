@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Sun, BookOpen, MessageCircle, User, Menu, X, LogOut } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useSearchLayoutContext } from "@contexts/SearchLayoutContext";
 import { useAuth } from "@contexts/AuthContext";
 
@@ -106,6 +106,7 @@ const MenuNavLinks: React.FC<{ vertical?: boolean; pathname: string; handleSideb
 
 const IconButtons: React.FC<{ vertical?: boolean }> = ({ vertical }) => {
   const { user, isAuthenticated, logout } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <div className={vertical ? "flex flex-col items-center space-y-4" : "flex items-center space-x-4"}>
@@ -121,11 +122,14 @@ const IconButtons: React.FC<{ vertical?: boolean }> = ({ vertical }) => {
       
       {isAuthenticated ? (
         <div className="flex items-center space-x-3">
-          <div className="text-white text-sm">
+          <button
+            onClick={() => navigate('/profile')}
+            className="text-white text-sm hover:text-[#E95C41] transition-colors cursor-pointer"
+          >
             <span className="font-medium">
               {user?.prenom ? `${user.prenom} ${user.nom || ''}` : user?.email}
             </span>
-          </div>
+          </button>
           <button
             onClick={logout}
             className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
