@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import enrichmentService, { Enrichment, LeadEnrich } from '../../services/enrichmentService';
+import { sendEnrichmentToPronto, ProntoEnrichmentContact } from '../../services/prontoService';
 
 const AdminEnrichments: React.FC = () => {
   const { user } = useAuth();
@@ -12,7 +13,6 @@ const AdminEnrichments: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [showValidationModal, setShowValidationModal] = useState(false);
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
@@ -50,29 +50,82 @@ const AdminEnrichments: React.FC = () => {
   };
 
   const handleValidateEnrichment = async (enrichment: Enrichment) => {
-    setSelectedEnrichment(enrichment);
-    setShowValidationModal(true);
-  };
-
-  const confirmValidation = async () => {
-    if (!selectedEnrichment) return;
+    if (!enrichment) return;
 
     try {
       setValidating(true);
-      await enrichmentService.updateEnrichment(selectedEnrichment.id, {
+      console.log('🚀 Début de la validation pour l\'enrichment:', enrichment.name);
+      
+      // Récupérer les leads de l'enrichment
+      console.log('📋 Récupération des leads...');
+      const leadsResponse = await enrichmentService.getLeadsEnrich(enrichment.id, 1, 1000);
+      const leads = leadsResponse.leads || [];
+      console.log('✅ Leads récupérés:', leads.length, 'contacts');
+      
+      // Convertir les leads au format Pronto
+      const contacts: ProntoEnrichmentContact[] = leads.map(lead => ({
+        firstname: lead.firstname,
+        lastname: lead.lastname,
+        company_name: lead.company_name || undefined,
+        linkedin_url: lead.linkedin_url || undefined,
+        domain: lead.domain || undefined,
+      }));
+      
+      // Déterminer le type d'enrichment pour Pronto
+      let enrichmentTypes: string[] = [];
+      if (enrichment.type === 'email') {
+        enrichmentTypes = ['email'];
+      } else if (enrichment.type === 'phone') {
+        enrichmentTypes = ['phone'];
+      } else if (enrichment.type === 'tous') {
+        enrichmentTypes = ['email', 'phone'];
+      }
+      
+      const prontoData = {
+        contacts,
+        enrichment_type: enrichmentTypes
+      };
+      
+      console.log('📤 Envoi vers Pronto API:', prontoData);
+      console.log('🔗 URL:', 'http://localhost:4000/api/pronto/enrichments/contacts/bulk');
+      
+      // Envoyer vers l'API Pronto
+      const prontoResponse = await sendEnrichmentToPronto(prontoData);
+      console.log('✅ Réponse de Pronto API:', prontoResponse);
+      
+      console.log('💾 Mise à jour du statut dans la base de données...');
+      
+      // Mettre à jour le statut de l'enrichment
+      await enrichmentService.updateEnrichment(enrichment.id, {
         status: 'Terminé'
       });
       
+      console.log('✅ Statut mis à jour: Terminé');
+      
       // Rafraîchir la liste
       await fetchEnrichments();
-      setShowValidationModal(false);
-      setSelectedEnrichment(null);
+      console.log('🔄 Liste des enrichments rafraîchie');
+      
     } catch (error) {
-      console.error('Erreur lors de la validation:', error);
+      console.error('❌ Erreur lors de la validation:', error);
+      
+      // En cas d'erreur, mettre le statut à "Échec"
+      try {
+        console.log('💾 Mise à jour du statut à "Échec"...');
+        await enrichmentService.updateEnrichment(enrichment.id, {
+          status: 'Échec'
+        });
+        await fetchEnrichments();
+        console.log('✅ Statut mis à jour: Échec');
+      } catch (updateError) {
+        console.error('❌ Erreur lors de la mise à jour du statut:', updateError);
+      }
     } finally {
       setValidating(false);
     }
   };
+
+
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
@@ -189,9 +242,19 @@ const AdminEnrichments: React.FC = () => {
                         {enrichment.status === 'En cours' && (
                           <button
                             onClick={() => handleValidateEnrichment(enrichment)}
-                            className="text-green-600 hover:text-green-900"
+                            disabled={validating}
+                            className={`text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed ${
+                              validating ? 'cursor-not-allowed' : ''
+                            }`}
                           >
-                            Valider
+                            {validating ? (
+                              <div className="flex items-center">
+                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-600 mr-1"></div>
+                                Validation...
+                              </div>
+                            ) : (
+                              'Valider'
+                            )}
                           </button>
                         )}
                       </div>
@@ -229,35 +292,7 @@ const AdminEnrichments: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de validation */}
-      {showValidationModal && selectedEnrichment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-30">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Valider l'enrichment
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Êtes-vous sûr de vouloir valider l'enrichment "{selectedEnrichment.name}" ?
-              Cette action changera le statut à "Terminé".
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowValidationModal(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Annuler
-              </button>
-              <button
-                onClick={confirmValidation}
-                disabled={validating}
-                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-              >
-                {validating ? 'Validation...' : 'Valider'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Modal des leads */}
       {selectedEnrichment && (

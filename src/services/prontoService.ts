@@ -1,5 +1,40 @@
 import { ProntoSearchResponse, ProntoSearch } from '@entities/Business';
 import { API_CONFIG, buildApiUrl } from '@config/api';
+import axios from 'axios';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+export interface ProntoEnrichmentContact {
+  firstname: string;
+  lastname: string;
+  company_name?: string;
+  linkedin_url?: string;
+  domain?: string;
+}
+
+export interface ProntoEnrichmentRequest {
+  contacts: ProntoEnrichmentContact[];
+  enrichment_type: string[];
+}
+
+export const sendEnrichmentToPronto = async (data: ProntoEnrichmentRequest) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/api/pronto/enrichments/contacts/bulk`,
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi vers Pronto:', error);
+    throw error;
+  }
+};
 
 export class ProntoService {
   // Récupérer toutes les recherches
