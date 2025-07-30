@@ -25,6 +25,7 @@ import PaymentPage from "@pages/Payment/PaymentPage";
 import AdminDashboard from "@pages/Admin";
 import AdminDashboardHome from "@pages/Admin/Dashboard";
 import AdminEnrichments from "@pages/Admin/Enrichments";
+import AdminUsers from "@pages/Admin/Users";
 import AdminRoute from "@components/AdminRoute";
 /* import Surveillance   from "@pages/Surveillance";
 import Veille         from "@pages/Veille"; */
@@ -65,6 +66,7 @@ export const App = () => {
         }>
           <Route index element={<AdminDashboardHome />} />
           <Route path="enrichments" element={<AdminEnrichments />} />
+          <Route path="users" element={<AdminUsers />} />
         </Route>
         
         {/* <Route path="surveillance"   element={<Surveillance />} />
