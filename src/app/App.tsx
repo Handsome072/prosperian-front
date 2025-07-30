@@ -20,12 +20,15 @@ import Register from "@pages/Auth/Register";
 import UserProfile from "@pages/Profile/UserProfile";
 import SubscriptionPage from "@pages/Subscription/SubscriptionPage";
 import PaymentPage from "@pages/Payment/PaymentPage";
+import SuccessPage from "@pages/Payment/SuccessPage";
+import PricingPage from "@pages/Pricing/PricingPage";
 
 // Admin components
 import AdminDashboard from "@pages/Admin";
 import AdminDashboardHome from "@pages/Admin/Dashboard";
 import AdminEnrichments from "@pages/Admin/Enrichments";
 import AdminUsers from "@pages/Admin/Users";
+import AdminSubscriptions from "@pages/Admin/Subscriptions";
 import AdminRoute from "@components/AdminRoute";
 /* import Surveillance   from "@pages/Surveillance";
 import Veille         from "@pages/Veille"; */
@@ -41,7 +44,9 @@ export const App = () => {
         <Route index element={<Navigate to="recherche" replace />} />
         <Route path="profile" element={<UserProfile />} />
         <Route path="subscription" element={<SubscriptionPage />} />
+        <Route path="pricing" element={<PricingPage />} />
         <Route path="payment" element={<PaymentPage />} />
+        <Route path="payment/success" element={<SuccessPage />} />
 
         <Route path="recherche" element={<SearchLayout />}>
           <Route index element={<Entreprises />} />
@@ -67,6 +72,7 @@ export const App = () => {
           <Route index element={<AdminDashboardHome />} />
           <Route path="enrichments" element={<AdminEnrichments />} />
           <Route path="users" element={<AdminUsers />} />
+          <Route path="subscriptions" element={<AdminSubscriptions />} />
         </Route>
         
         {/* <Route path="surveillance"   element={<Surveillance />} />
