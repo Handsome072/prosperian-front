@@ -1,20 +1,31 @@
-import React, { useState } from 'react';
-import { ArrowLeft, CreditCard, Info, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, CreditCard, Info, Lock, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 
 export const PaymentPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const planName = searchParams.get('plan') || 'Starter';
-  const planPrice = searchParams.get('price') || '39';
-  const planCredits = searchParams.get('credits') || '3 600';
+  const { user } = useAuth();
+  
+  // Récupérer les paramètres de l'URL
+  const subscriptionId = searchParams.get('subscription_id');
+  const packId = searchParams.get('pack_id');
+  const type = searchParams.get('type'); // 'subscription' ou 'credit_pack'
+  
+  // États pour les données
+  const [subscription, setSubscription] = useState<any>(null);
+  const [creditPack, setCreditPack] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    email: '',
+    email: user?.email || '',
     cardNumber: '',
     expiryDate: '',
     cvc: '',
-    cardholderName: '',
+    cardholderName: `${user?.prenom || ''} ${user?.nom || ''}`.trim(),
     country: 'France',
     addressLine1: '',
     addressLine2: '',
@@ -23,6 +34,57 @@ export const PaymentPage: React.FC = () => {
     saveInfo: false,
     acceptTerms: false
   });
+
+  // Charger les données de l'abonnement ou du pack de crédits
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        if (type === 'subscription' && subscriptionId) {
+          const response = await fetch(`http://localhost:4000/api/payment/subscriptions/${subscriptionId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('Erreur lors du chargement de l\'abonnement');
+          }
+          
+          const data = await response.json();
+          setSubscription(data.subscription);
+        } else if (type === 'credit_pack' && packId) {
+          const response = await fetch(`http://localhost:4000/api/payment/credit-packs/${packId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error('Erreur lors du chargement du pack de crédits');
+          }
+          
+          const data = await response.json();
+          setCreditPack(data.credit_pack);
+        } else {
+          throw new Error('Type de paiement non reconnu');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erreur lors du chargement');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (type && (subscriptionId || packId)) {
+      loadData();
+    } else {
+      setError('Cette page nécessite des paramètres de paiement. Veuillez sélectionner un abonnement ou un pack de crédits depuis la page de tarification.');
+      setLoading(false);
+    }
+  }, [type, subscriptionId, packId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -34,11 +96,76 @@ export const PaymentPage: React.FC = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Ici vous pouvez ajouter la logique de traitement du paiement
-    console.log('Paiement soumis:', formData);
-    alert('Paiement traité avec succès !');
+    
+    if (!formData.acceptTerms) {
+      alert('Veuillez accepter les conditions générales');
+      return;
+    }
+
+    try {
+      setProcessing(true);
+      setError(null);
+
+      if (type === 'subscription' && subscriptionId) {
+        // Créer une session de paiement pour l'abonnement
+        const response = await fetch('http://localhost:4000/api/payment/create-subscription', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            subscription_id: subscriptionId
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erreur lors de la création de la session de paiement');
+        }
+
+        const data = await response.json();
+        
+        // Rediriger vers Stripe Checkout
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          throw new Error('URL de paiement non reçue');
+        }
+
+      } else if (type === 'credit_pack' && packId) {
+        // Créer une intention de paiement pour le pack de crédits
+        const response = await fetch('http://localhost:4000/api/payment/create-payment-intent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            pack_id: packId
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Erreur lors de la création de l\'intention de paiement');
+        }
+
+        const data = await response.json();
+        
+        // Ici vous pouvez intégrer Stripe Elements pour le paiement par carte
+        // Pour l'instant, on simule un succès
+        alert('Paiement traité avec succès ! Redirection vers la page de succès...');
+        navigate('/payment/success?session_id=' + data.payment_intent.id);
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur lors du traitement du paiement');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const formatCardNumber = (value: string) => {
@@ -64,6 +191,83 @@ export const PaymentPage: React.FC = () => {
     return v;
   };
 
+  // Afficher l'état de chargement
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[#E95C41] mx-auto mb-4" />
+          <p className="text-gray-600">Chargement des informations de paiement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher l'erreur
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <button
+              onClick={() => navigate('/pricing')}
+              className="flex items-center space-x-2 text-[#E95C41] hover:text-orange-600 transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              <span>Retour à la tarification</span>
+            </button>
+          </div>
+          
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+            <div className="text-orange-600 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Paramètres de paiement manquants</h2>
+            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+              Cette page nécessite des paramètres de paiement. Veuillez sélectionner un abonnement ou un pack de crédits depuis la page de tarification.
+            </p>
+            
+            <div className="space-y-4">
+                              <button
+                  onClick={() => navigate('/pricing')}
+                  className="bg-[#E95C41] text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium"
+                >
+                  Voir les tarifs
+                </button>
+              
+              <div className="text-sm text-gray-500">
+                Ou utilisez ces liens directs pour tester :
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <button
+                  onClick={() => navigate('/payment?type=subscription&subscription_id=test-subscription')}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                >
+                  Test Abonnement
+                </button>
+                <button
+                  onClick={() => navigate('/payment?type=credit_pack&pack_id=test-pack')}
+                  className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors text-sm"
+                >
+                  Test Pack Crédits
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Récupérer les données selon le type
+  const item = type === 'subscription' ? subscription : creditPack;
+  const itemName = item?.name || 'Plan';
+  const itemPrice = item?.price || 0;
+  const itemCredits = type === 'subscription' ? item?.monthly_credits : item?.credits;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -83,10 +287,10 @@ export const PaymentPage: React.FC = () => {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                S'abonner à {planName}
+                {type === 'subscription' ? 'S\'abonner à' : 'Acheter'} {itemName}
               </h1>
               <div className="text-3xl font-bold text-[#E95C41] mb-4">
-                €{planPrice} par mois
+                €{itemPrice}{type === 'subscription' ? ' par mois' : ''}
               </div>
             </div>
 
@@ -94,15 +298,17 @@ export const PaymentPage: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center py-3 border-b border-gray-200">
                 <div>
-                  <div className="font-medium text-gray-900">{planName}</div>
-                  <div className="text-sm text-gray-500">Facturé tous les mois</div>
+                  <div className="font-medium text-gray-900">{itemName}</div>
+                  <div className="text-sm text-gray-500">
+                    {type === 'subscription' ? 'Facturé tous les mois' : 'Paiement unique'}
+                  </div>
                 </div>
-                <div className="font-medium text-gray-900">€{planPrice}</div>
+                <div className="font-medium text-gray-900">€{itemPrice}</div>
               </div>
 
               <div className="flex justify-between items-center py-3 border-b border-gray-200">
                 <div className="font-medium text-gray-900">Sous-total</div>
-                <div className="font-medium text-gray-900">€{planPrice}</div>
+                <div className="font-medium text-gray-900">€{itemPrice}</div>
               </div>
 
               <div className="flex justify-between items-center py-3 border-b border-gray-200">
@@ -115,17 +321,22 @@ export const PaymentPage: React.FC = () => {
 
               <div className="flex justify-between items-center py-3">
                 <div className="text-lg font-bold text-gray-900">Total dû aujourd'hui</div>
-                <div className="text-lg font-bold text-[#E95C41]">€{planPrice}</div>
+                <div className="text-lg font-bold text-[#E95C41]">€{itemPrice}</div>
               </div>
             </div>
 
             {/* Plan Details */}
             <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-gray-900 mb-2">Détails du plan</h3>
+              <h3 className="font-medium text-gray-900 mb-2">
+                Détails du {type === 'subscription' ? 'plan' : 'pack'}
+              </h3>
               <div className="text-sm text-gray-600">
-                <div>• {planCredits} crédits par an</div>
+                <div>• {itemCredits} crédits{type === 'subscription' ? ' par mois' : ''}</div>
                 <div>• Accès complet à toutes les fonctionnalités</div>
                 <div>• Support client inclus</div>
+                {item?.description && (
+                  <div>• {item.description}</div>
+                )}
               </div>
             </div>
           </div>
@@ -354,13 +565,39 @@ export const PaymentPage: React.FC = () => {
                 </label>
               </div>
 
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-[#E95C41] hover:bg-orange-600 text-white py-4 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
+                disabled={processing}
+                className="w-full bg-[#E95C41] hover:bg-orange-600 disabled:bg-gray-400 text-white py-4 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
               >
-                <Lock className="w-5 h-5" />
-                <span>S'abonner</span>
+                {processing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Traitement en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-5 h-5" />
+                    <span>{type === 'subscription' ? 'S\'abonner' : 'Acheter'}</span>
+                  </>
+                )}
               </button>
 
               {/* Footer */}
