@@ -14,7 +14,7 @@ const getProductIcon = (productName: string) => {
   return Building;
 };
 
-// Mapping des couleurs par nom de produit
+// Mapping des couleurs par nom de produit et tout
 const getProductColor = (productName: string, index: number) => {
   const name = productName.toLowerCase();
   if (name.includes('starter') || name.includes('basic')) return 'from-gray-500 to-gray-600';
