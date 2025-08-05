@@ -9,6 +9,7 @@ import axios from 'axios';
 import nafCodes from '@data/naf_codes.json';
 import naturesJuridiques from '@data/natures_juridiques.json';
 import conventionsCollectives from '@data/conventions_collectives.json';
+import linkedinSectors from '@data/linkedin_sectors_with_naf.json';
 import ReactDOM from 'react-dom';
 import { googlePlacesService, GooglePlacesCategory } from '../../../services/googlePlacesService';
 import { semanticService, PopularConcept, SemanticSuggestion } from '../../../services/semanticService';
@@ -171,7 +172,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [openConventionSections, setOpenConventionSections] = useState<{ [prefix: string]: boolean }>({ '0': true });
 
   // Ajouter de nouveaux states pour Google GMB
-  const [activitySearchType, setActivitySearchType] = useState<'naf' | 'google' | 'semantic' | 'enseigne'>('naf');
+  const [activitySearchType, setActivitySearchType] = useState<'naf' | 'google' | 'semantic' | 'secteur'>('naf');
   const [googleCategories, setGoogleCategories] = useState<GooglePlacesCategory[]>([]);
   const [loadingGoogleCategories, setLoadingGoogleCategories] = useState(false);
   const [selectedGoogleActivities, setSelectedGoogleActivities] = useState<string[]>([]);
@@ -183,9 +184,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [selectedSemanticTerms, setSelectedSemanticTerms] = useState<string[]>([]);
   const [semanticSearchTerm, setSemanticSearchTerm] = useState('');
 
-  // States pour la recherche par enseigne/franchise
-  const [selectedEnseignes, setSelectedEnseignes] = useState<string[]>([]);
-  const [popularFranchises, setPopularFranchises] = useState<string[]>([]);
+  // States pour la recherche par secteur (remplace enseigne/franchise)
+  const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
+  const [sectorSearchTerm, setSectorSearchTerm] = useState('');
 
   // States pour la liste des entreprises (page contact)
   const [companies, setCompanies] = useState<CompanyListItem[]>([]);
@@ -256,11 +257,21 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   };
 
   const updateFilters = (updates: Partial<FilterState>) => {
-    onFiltersChange({ 
+    console.log('🔍 [FILTRES] updateFilters appelé avec:', updates);
+    console.log('🔍 [FILTRES] filters actuels:', filters);
+    
+    const newFilters = { 
       ...filters, 
       ...updates,
       sortBy: filters.sortBy || 'Pertinence' // Assurer que sortBy est toujours défini
-    });
+    };
+    
+    console.log('🔍 [FILTRES] Nouveaux filtres:', newFilters);
+    console.log('🔍 [FILTRES] Appel de onFiltersChange...');
+    
+    onFiltersChange(newFilters);
+    
+    console.log('🔍 [FILTRES] onFiltersChange appelé avec succès');
   };
 
   const safeFilters = {
@@ -409,40 +420,74 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     } as any);
   };
 
-  // Gestion des enseignes/franchises
-  const handleEnseigneAdd = (enseigne: string) => {
-    if (!selectedEnseignes.includes(enseigne)) {
-      const newSelected = [...selectedEnseignes, enseigne];
-      setSelectedEnseignes(newSelected);
-      updateFilters({ 
-        enseignes: newSelected,
-        activitySearchType: 'enseigne'
-      } as any);
-    }
-    setActivitySearch(''); // Vider le champ de saisie
-  };
-
-  const handleEnseigneToggle = (enseigne: string) => {
-    const newSelected = selectedEnseignes.filter(e => e !== enseigne);
-    setSelectedEnseignes(newSelected);
-    updateFilters({ 
-      enseignes: newSelected,
-      activitySearchType: newSelected.length > 0 ? 'enseigne' : 'naf'
-    } as any);
-  };
-
-  // Charger les franchises populaires au démarrage
-  useEffect(() => {
-    const loadPopularFranchises = async () => {
-      try {
-        const franchises = await apifyService.getPopularFranchises();
-        setPopularFranchises(franchises);
-      } catch (error) {
-        console.error('Erreur lors du chargement des franchises populaires:', error);
-      }
-    };
+  // Gestion des secteurs (remplace enseigne/franchise)
+  const handleSectorAdd = (sector: string) => {
+    console.log('🔍 [SECTEUR] handleSectorAdd appelé avec:', sector);
+    console.log('🔍 [SECTEUR] selectedSectors actuels:', selectedSectors);
+    console.log('🔍 [SECTEUR] filters actuels:', filters);
     
-    loadPopularFranchises();
+    if (!selectedSectors.includes(sector)) {
+      const newSelected = [...selectedSectors, sector];
+      setSelectedSectors(newSelected);
+      console.log('🔍 [SECTEUR] Nouveaux secteurs sélectionnés:', newSelected);
+      
+      // Trouver le code NAF correspondant au secteur
+      const sectorData = linkedinSectors.find(s => s.secteur === sector);
+      console.log('🔍 [SECTEUR] Données du secteur trouvées:', sectorData);
+      
+      if (sectorData) {
+        const newNafCodes = [...(filters.sectorNafCodes || []), sectorData.code];
+        console.log('🔍 [SECTEUR] Nouveaux codes NAF:', newNafCodes);
+        
+        const updates = { 
+          sectors: newSelected,
+          sectorNafCodes: newNafCodes,
+          activitySearchType: 'secteur'
+        };
+        console.log('🔍 [SECTEUR] Mise à jour des filtres:', updates);
+        
+        updateFilters(updates as any);
+      } else {
+        console.error('❌ [SECTEUR] Secteur non trouvé dans linkedinSectors:', sector);
+        console.log('🔍 [SECTEUR] linkedinSectors disponibles:', linkedinSectors.slice(0, 5));
+      }
+    } else {
+      console.log('🔍 [SECTEUR] Secteur déjà sélectionné:', sector);
+    }
+    setSectorSearchTerm(''); // Vider le champ de saisie
+  };
+
+  const handleSectorToggle = (sector: string) => {
+    console.log('🔍 [SECTEUR] handleSectorToggle appelé avec:', sector);
+    console.log('🔍 [SECTEUR] selectedSectors actuels:', selectedSectors);
+    
+    const newSelected = selectedSectors.filter(s => s !== sector);
+    setSelectedSectors(newSelected);
+    console.log('🔍 [SECTEUR] Nouveaux secteurs après suppression:', newSelected);
+    
+    // Retirer le code NAF correspondant au secteur
+    const sectorData = linkedinSectors.find(s => s.secteur === sector);
+    console.log('🔍 [SECTEUR] Données du secteur à supprimer:', sectorData);
+    
+    if (sectorData) {
+      const newNafCodes = (filters.sectorNafCodes || []).filter(code => code !== sectorData.code);
+      console.log('🔍 [SECTEUR] Nouveaux codes NAF après suppression:', newNafCodes);
+      
+      const updates = { 
+        sectors: newSelected,
+        sectorNafCodes: newNafCodes,
+        activitySearchType: newSelected.length > 0 ? 'secteur' : 'naf'
+      };
+      console.log('🔍 [SECTEUR] Mise à jour des filtres après suppression:', updates);
+      
+      updateFilters(updates as any);
+    }
+  };
+
+  // Charger les secteurs populaires au démarrage
+  useEffect(() => {
+    // Les secteurs populaires sont déjà dans le fichier JSON
+    // On peut les charger directement
   }, []);
 
   // Fonctions pour la gestion des entreprises (page contact)
@@ -646,7 +691,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 { key: 'naf', label: 'Code NAF' }, 
                 { key: 'google', label: 'Activité Google (GMB)' }, 
                 { key: 'semantic', label: 'Sémantique' }, 
-                { key: 'enseigne', label: 'Enseigne/Franchise' }
+                { key: 'secteur', label: 'Secteur' }
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -880,72 +925,91 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               </>
             )}
 
-            {activitySearchType === 'enseigne' && (
+            {activitySearchType === 'secteur' && (
               <>
                 <input
                   type="text"
-                  placeholder="Nom d'enseigne ou franchise (ex: McDonald's, Carrefour...)"
-                  value={activitySearch}
-                  onChange={(e) => setActivitySearch(e.target.value)}
+                  placeholder="Rechercher un secteur..."
+                  value={sectorSearchTerm}
+                  onChange={(e) => setSectorSearchTerm(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded text-sm"
                 />
                 
-                {/* Bouton pour ajouter l'enseigne à la recherche */}
-                {activitySearch.trim() && (
-                  <button
-                    type="button"
-                    onClick={() => handleEnseigneAdd(activitySearch.trim())}
-                    className="mt-2 w-full px-3 py-1 bg-orange-600 text-white text-sm rounded hover:bg-orange-700 transition-colors"
-                    disabled={!activitySearch.trim()}
-                  >
-                    ✓ Ajouter "{activitySearch.trim()}"
-                  </button>
-                )}
+                {/* Liste des secteurs filtrés */}
+                <div className="max-h-96 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                  {linkedinSectors
+                    .filter(sector => 
+                      !sectorSearchTerm || 
+                      sector.secteur.toLowerCase().includes(sectorSearchTerm.toLowerCase())
+                    )
+                    .map(sector => (
+                      <label key={sector.secteur} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                        <input
+                          type="checkbox"
+                          checked={selectedSectors.includes(sector.secteur)}
+                          onChange={() => {
+                            if (selectedSectors.includes(sector.secteur)) {
+                              handleSectorToggle(sector.secteur);
+                            } else {
+                              handleSectorAdd(sector.secteur);
+                            }
+                          }}
+                          className="w-4 h-4 text-orange-600 rounded"
+                        />
+                        <div className="flex-1">
+                          <span className="text-gray-700 font-medium">{sector.secteur}</span>
+                          {/* <div className="text-xs text-gray-500">
+                            Code NAF: {sector.code}
+                          </div> */}
+                        </div>
+                      </label>
+                    ))}
+                </div>
 
-                {/* Enseignes sélectionnées */}
-                {selectedEnseignes.length > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <span className="text-xs font-medium text-gray-700">Enseignes sélectionnées:</span>
+                {/* Secteurs sélectionnés */}
+                {selectedSectors.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    <span className="text-xs font-medium text-gray-700">Secteurs sélectionnés:</span>
                     <div className="flex flex-wrap gap-1">
-                      {selectedEnseignes.map(enseigne => (
-                        <span 
-                          key={enseigne}
-                          className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
-                        >
-                          {enseigne}
-                          <button
-                            type="button"
-                            onClick={() => handleEnseigneToggle(enseigne)}
-                            className="ml-1 text-orange-600 hover:text-orange-800"
+                      {selectedSectors.map(sector => {
+                        const sectorData = linkedinSectors.find(s => s.secteur === sector);
+                        return (
+                          <span 
+                            key={sector}
+                            className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                            title={sectorData ? `Code NAF: ${sectorData.code}` : ''}
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            {sector}
+                            <button
+                              type="button"
+                              onClick={() => handleSectorToggle(sector)}
+                              className="ml-1 text-orange-600 hover:text-orange-800"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* Suggestions d'enseignes populaires */}
-                <div className="mt-3">
-                  <span className="text-xs font-medium text-gray-700">Enseignes populaires:</span>
-                  <div className="mt-1 flex flex-wrap gap-1 max-h-32 overflow-y-auto">
-                    {popularFranchises.slice(0, 20).map(franchise => (
-                      <button
-                        key={franchise}
-                        type="button"
-                        onClick={() => handleEnseigneAdd(franchise)}
-                        className={`text-xs px-2 py-1 rounded border transition-colors ${
-                          selectedEnseignes.includes(franchise)
-                            ? 'bg-orange-100 border-orange-300 text-orange-800'
-                            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {franchise}
-                      </button>
-                    ))}
+                {/* Informations sur les codes NAF */}
+                {selectedSectors.length > 0 && (
+                  <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+                    <strong>Codes NAF sélectionnés:</strong>
+                    <div className="mt-1">
+                      {selectedSectors.map(sector => {
+                        const sectorData = linkedinSectors.find(s => s.secteur === sector);
+                        return sectorData ? (
+                          <div key={sector} className="text-blue-700">
+                            {sectorData.code} - {sectorData.secteur}
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </>
             )}
 

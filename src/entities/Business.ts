@@ -35,7 +35,10 @@ export interface Business {
     semanticTerms?: string[];
     // Filtres enseignes/franchises
     enseignes?: string[];
-    activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne';
+    // Filtres secteurs (remplace enseignes)
+    sectors?: string[];
+    sectorNafCodes?: string[];
+    activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne' | 'secteur';
     // Filtre de recherche d'entreprise pour la page contact
     selectedCompany?: string;
     // Filtre de recherche de contact pour la page entreprises

@@ -61,6 +61,13 @@ export const Entreprises = () => {
       activitySearchType: string = 'naf', // Type de recherche d'activité
       selectedContact?: string // Contact sélectionné
     ) => {
+      console.log('🔍 [ENTREPRISES] fetchBusinesses appelé avec:');
+      console.log('🔍 [ENTREPRISES] - nafCodes:', nafCodes);
+      console.log('🔍 [ENTREPRISES] - activitySearchType:', activitySearchType);
+      console.log('🔍 [ENTREPRISES] - googleActivities:', googleActivities);
+      console.log('🔍 [ENTREPRISES] - semanticTerms:', semanticTerms);
+      console.log('🔍 [ENTREPRISES] - enseignes:', enseignes);
+      
       setLoading(true);
       setError(null);
       try {
@@ -173,130 +180,15 @@ export const Entreprises = () => {
           return;
         }
 
-        // Si c'est une recherche par enseigne/franchise, utiliser l'API Apify
-        if (activitySearchType === 'enseigne' && enseignes.length > 0) {
-          console.log('🔍 Recherche via Apify pour enseignes:', enseignes);
-          
-          const location = selectedCities.length > 0 ? selectedCities.join(', ') : 'France';
-          const allResults: any[] = [];
-          
-          // Rechercher pour chaque enseigne
-          for (const enseigne of enseignes) {
-            try {
-              const apifyResponse = await apifyService.searchEnseigne(enseigne, location);
-              
-              // Afficher clairement le type de données dans la console
-              if ((apifyResponse as any)._dataSource === 'APIFY_REAL_API') {
-                console.log(`🌟 UTILISATION DE DONNÉES RÉELLES pour "${enseigne}" - ${apifyResponse.results.length} résultats`);
-              } else {
-                console.log(`🧪 UTILISATION DE DONNÉES FICTIVES pour "${enseigne}" - ${apifyResponse.results.length} résultats`);
-              }
-              
-              // Convertir les résultats Apify au format EntrepriseApiResult
-              const convertedEnseigneResults: EntrepriseApiResult[] = apifyResponse.results.map(result => ({
-                siren: result.placeId,
-                nom_complet: result.title,
-                nom_raison_sociale: result.title,
-                sigle: null,
-                nombre_etablissements: 1,
-                nombre_etablissements_ouverts: 1,
-                siege: {
-                  activite_principale: result.category,
-                  activite_principale_registre_metier: null,
-                  annee_tranche_effectif_salarie: '',
-                  adresse: result.address,
-                  caractere_employeur: '',
-                  cedex: null,
-                  code_pays_etranger: null,
-                  code_postal: '',
-                  commune: location.includes(',') ? location.split(',')[0] : location,
-                  complement_adresse: null,
-                  coordonnees: '',
-                  date_creation: '',
-                  date_debut_activite: '',
-                  date_fermeture: null,
-                  date_mise_a_jour: null,
-                  date_mise_a_jour_insee: new Date().toISOString(),
-                  departement: '',
-                  distribution_speciale: null,
-                  epci: '',
-                  est_siege: true,
-                  etat_administratif: 'A',
-                  geo_adresse: result.address,
-                  geo_id: '',
-                  indice_repetition: null,
-                  latitude: result.latitude?.toString() || '',
-                  libelle_cedex: null,
-                  libelle_commune: location.includes(',') ? location.split(',')[0] : location,
-                  libelle_commune_etranger: null,
-                  libelle_pays_etranger: null,
-                  libelle_voie: '',
-                  liste_enseignes: [enseigne],
-                  liste_finess: null,
-                  liste_id_bio: null,
-                  liste_idcc: null,
-                  liste_id_organisme_formation: null,
-                  liste_rge: null,
-                  liste_uai: null,
-                  longitude: result.longitude?.toString() || '',
-                  nom_commercial: enseigne,
-                  numero_voie: '',
-                  region: '',
-                  siret: result.placeId,
-                  statut_diffusion_etablissement: 'O',
-                  tranche_effectif_salarie: '',
-                  type_voie: ''
-                },
-                activite_principale: result.category,
-                categorie_entreprise: '',
-                caractere_employeur: null,
-                annee_categorie_entreprise: '',
-                date_creation: '',
-                date_fermeture: null,
-                date_mise_a_jour: new Date().toISOString(),
-                date_mise_a_jour_insee: new Date().toISOString(),
-                date_mise_a_jour_rne: new Date().toISOString(),
-                dirigeants: [],
-                etat_administratif: 'A',
-                nature_juridique: '',
-                section_activite_principale: '',
-                tranche_effectif_salarie: '',
-                annee_tranche_effectif_salarie: '',
-                statut_diffusion: 'O',
-                matching_etablissements: [],
-                finances: {},
-                complements: {
-                  // Données spécifiques Apify
-                  apify_place_id: result.placeId,
-                  enseigne: enseigne,
-                  rating: result.rating,
-                  reviews_count: result.reviewsCount,
-                  telephone: result.phone,
-                  site_web: result.website,
-                  source: 'apify_enseigne'
-                }
-              }));
-              
-              allResults.push(...convertedEnseigneResults);
-            } catch (error) {
-              console.error(`Erreur lors de la recherche de l'enseigne ${enseigne}:`, error);
-            }
-          }
-
-          setBusinesses(allResults);
-          setTotalResults(allResults.length);
-          setCurrentPage(page);
-          setPerPage(perPageValue);
-          setTotalPages(Math.ceil(allResults.length / perPageValue));
-          
-          console.log(`✅ ${allResults.length} entreprises trouvées via Apify pour les enseignes`);
-          return;
+        // Si c'est une recherche par secteur, utiliser les codes NAF des secteurs sélectionnés
+        if (activitySearchType === 'secteur' && nafCodes.length > 0) {
+          console.log('🔍 Recherche via codes NAF des secteurs:', nafCodes);
         }
 
-        // Recherche classique via l'API INSEE/NAF
+        // Recherche classique via l'API INSEE/NAF (pour NAF et Secteur)
         let url = `${API_URL}&page=${page}&per_page=${perPageValue}`;
 
-        // Filtres d'activité (codes NAF)
+        // Filtres d'activité (codes NAF ou codes NAF des secteurs)
         if (nafCodes.length > 0) {
           url += `&activite_principale=${nafCodes.join(',')}`;
         }
@@ -359,6 +251,7 @@ export const Entreprises = () => {
 
         console.log('🔍 URL de recherche avec filtres complets:', url);
         console.log('📊 Filtres appliqués:', {
+          type: activitySearchType,
           activites: nafCodes,
           chiffreAffaires: revenueRange,
           ageEntreprise: ageRange,
@@ -401,10 +294,26 @@ export const Entreprises = () => {
   );
 
     useEffect(() => {
+    console.log('🔍 [ENTREPRISES] useEffect déclenché');
+    console.log('🔍 [ENTREPRISES] filters reçus:', filters);
+    console.log('🔍 [ENTREPRISES] filters.sectorNafCodes:', filters.sectorNafCodes);
+    console.log('🔍 [ENTREPRISES] filters.activitySearchType:', filters.activitySearchType);
+    console.log('🔍 [ENTREPRISES] filters.sectors:', filters.sectors);
+    
+    // Déterminer quels codes NAF utiliser selon le type de recherche
+    let nafCodesToUse: string[] = [];
+    if (filters.activitySearchType === 'secteur' && filters.sectorNafCodes && filters.sectorNafCodes.length > 0) {
+      nafCodesToUse = filters.sectorNafCodes;
+      console.log('🔍 [ENTREPRISES] Utilisation des codes NAF des secteurs:', nafCodesToUse);
+    } else {
+      nafCodesToUse = filters.activities || [];
+      console.log('🔍 [ENTREPRISES] Utilisation des codes NAF classiques:', nafCodesToUse);
+    }
+    
     fetchBusinesses(
       currentPage, 
       perPage, 
-      filters.activities || [], 
+      nafCodesToUse, // Utiliser les codes NAF appropriés selon le type de recherche
       filters.revenueRange || [0, 1000000], 
       filters.ageRange || [0, 50],
       filters.employeeRange || [0, 5000],
@@ -413,12 +322,12 @@ export const Entreprises = () => {
       filters.cities || [], // Filtre villes
       filters.googleActivities || [], // Activités Google GMB
       filters.semanticTerms || [], // Termes sémantiques
-      filters.enseignes || [], // Enseignes/franchises
+      filters.enseignes || [], // Enseignes (garder pour compatibilité)
       filters.activitySearchType || 'naf', // Type de recherche d'activité
       filters.selectedContact // Contact sélectionné
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.enseignes, filters.activitySearchType, filters.selectedContact]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.sectorNafCodes, filters.activitySearchType, filters.selectedContact]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -436,22 +345,32 @@ export const Entreprises = () => {
         totalBusinesses={totalResults}
         loading={loading}
         error={error}
-                onRetry={() => fetchBusinesses(
-          currentPage, 
-          perPage, 
-          filters.activities || [], 
-          filters.revenueRange || [0, 1000000], 
-          filters.ageRange || [0, 50],
-          filters.employeeRange || [0, 5000],
-          filters.legalForms || [],
-          filters.id_convention_collective || undefined,
-          filters.cities || [],
-          filters.googleActivities || [],
-          filters.semanticTerms || [],
-          filters.enseignes || [],
-          filters.activitySearchType || 'naf',
-          filters.selectedContact
-        )}
+                onRetry={() => {
+          // Déterminer quels codes NAF utiliser selon le type de recherche
+          let nafCodesToUse: string[] = [];
+          if (filters.activitySearchType === 'secteur' && filters.sectorNafCodes && filters.sectorNafCodes.length > 0) {
+            nafCodesToUse = filters.sectorNafCodes;
+          } else {
+            nafCodesToUse = filters.activities || [];
+          }
+          
+          fetchBusinesses(
+            currentPage, 
+            perPage, 
+            nafCodesToUse,
+            filters.revenueRange || [0, 1000000], 
+            filters.ageRange || [0, 50],
+            filters.employeeRange || [0, 5000],
+            filters.legalForms || [],
+            filters.id_convention_collective || undefined,
+            filters.cities || [],
+            filters.googleActivities || [],
+            filters.semanticTerms || [],
+            filters.enseignes || [],
+            filters.activitySearchType || 'naf',
+            filters.selectedContact
+          );
+        }}
         currentPage={currentPage}
         totalPages={totalPages}
         itemsPerPage={perPage}
