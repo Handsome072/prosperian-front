@@ -58,7 +58,8 @@ export const Entreprises = () => {
       googleActivities: string[] = [], // Activités Google GMB
       semanticTerms: string[] = [], // Termes sémantiques
       enseignes: string[] = [], // Enseignes/franchises
-      activitySearchType: string = 'naf' // Type de recherche d'activité
+      activitySearchType: string = 'naf', // Type de recherche d'activité
+      selectedContact?: string // Contact sélectionné
     ) => {
       setLoading(true);
       setError(null);
@@ -340,6 +341,11 @@ export const Entreprises = () => {
           url += `&id_convention_collective=${idConventionCollective}`;
         }
 
+        // Filtre de recherche de contact
+        if (selectedContact) {
+          url += `&q=${encodeURIComponent(selectedContact)}&limite_matching_etablissements=10`;
+        }
+
         // Filtre code_postal (mapping villes -> codes postaux)
         if (selectedCities && selectedCities.length > 0) {
           // On récupère tous les codes postaux correspondant aux villes sélectionnées
@@ -408,10 +414,11 @@ export const Entreprises = () => {
       filters.googleActivities || [], // Activités Google GMB
       filters.semanticTerms || [], // Termes sémantiques
       filters.enseignes || [], // Enseignes/franchises
-      filters.activitySearchType || 'naf' // Type de recherche d'activité
+      filters.activitySearchType || 'naf', // Type de recherche d'activité
+      filters.selectedContact // Contact sélectionné
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.enseignes, filters.activitySearchType]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.enseignes, filters.activitySearchType, filters.selectedContact]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -438,7 +445,12 @@ export const Entreprises = () => {
           filters.employeeRange || [0, 5000],
           filters.legalForms || [],
           filters.id_convention_collective || undefined,
-          filters.cities || []
+          filters.cities || [],
+          filters.googleActivities || [],
+          filters.semanticTerms || [],
+          filters.enseignes || [],
+          filters.activitySearchType || 'naf',
+          filters.selectedContact
         )}
         currentPage={currentPage}
         totalPages={totalPages}

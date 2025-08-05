@@ -13,6 +13,8 @@ import ReactDOM from 'react-dom';
 import { googlePlacesService, GooglePlacesCategory } from '../../../services/googlePlacesService';
 import { semanticService, PopularConcept, SemanticSuggestion } from '../../../services/semanticService';
 import { apifyService } from '../../../services/apifyService';
+import { companyListService, CompanyListItem } from '../../../services/companyListService';
+import { contactListService, ContactListItem } from '../../../services/contactListService';
 
 interface RangeSliderProps {
   min: number;
@@ -185,6 +187,22 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [selectedEnseignes, setSelectedEnseignes] = useState<string[]>([]);
   const [popularFranchises, setPopularFranchises] = useState<string[]>([]);
 
+  // States pour la liste des entreprises (page contact)
+  const [companies, setCompanies] = useState<CompanyListItem[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
+  const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [companyCurrentPage, setCompanyCurrentPage] = useState(1);
+  const [companyTotalPages, setCompanyTotalPages] = useState(1);
+  const [companyTotalResults, setCompanyTotalResults] = useState(0);
+
+  // States pour la liste des contacts (page entreprises)
+  const [contacts, setContacts] = useState<ContactListItem[]>([]);
+  const [loadingContacts, setLoadingContacts] = useState(false);
+  const [contactSearchTerm, setContactSearchTerm] = useState('');
+  const [contactCurrentPage, setContactCurrentPage] = useState(1);
+  const [contactTotalPages, setContactTotalPages] = useState(1);
+  const [contactTotalResults, setContactTotalResults] = useState(0);
+
   // Fonction utilitaire pour grouper par millier
   const conventionsGrouped = conventionsCollectives.reduce((acc: Record<string, typeof conventionsCollectives>, c) => {
     const prefix = c.idcc[0];
@@ -200,10 +218,12 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       activites: isEntreprisePage,
       chiffres: false,
       forme: false,
+      contact: isEntreprisePage,
     };
   });
   const [openContactFilters, setOpenContactFilters] = useState<{ [key: string]: boolean }>(() => {
     return {
+      entreprise: isContactPage,
       roles: isContactPage,
       localisation: isContactPage,
     };
@@ -425,6 +445,91 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     loadPopularFranchises();
   }, []);
 
+  // Fonctions pour la gestion des entreprises (page contact)
+  const loadCompanies = async (page: number = 1, searchTerm: string = '') => {
+    if (isContactPage) {
+      setLoadingCompanies(true);
+      try {
+        const response = await companyListService.getCompanies(page, 10, searchTerm);
+        setCompanies(response.results);
+        setCompanyCurrentPage(response.page);
+        setCompanyTotalPages(response.total_pages);
+        setCompanyTotalResults(response.total_results);
+      } catch (error) {
+        console.error('Erreur lors du chargement des entreprises:', error);
+        setCompanies([]);
+      } finally {
+        setLoadingCompanies(false);
+      }
+    }
+  };
+
+  const handleCompanySearch = async (searchTerm: string) => {
+    setCompanySearchTerm(searchTerm);
+    setCompanyCurrentPage(1);
+    // Si le terme de recherche est vide, on charge toutes les entreprises (recherche globale)
+    await loadCompanies(1, searchTerm);
+  };
+
+  const handleCompanyPageChange = async (page: number) => {
+    setCompanyCurrentPage(page);
+    await loadCompanies(page, companySearchTerm);
+  };
+
+  const handleCompanySelect = (company: CompanyListItem) => {
+    const companyName = company.nom_raison_sociale || company.nom_complet;
+    updateFilters({ selectedCompany: companyName });
+  };
+
+  // Charger les entreprises au montage si on est sur la page contact
+  useEffect(() => {
+    if (isContactPage) {
+      loadCompanies(1, '');
+    }
+  }, [isContactPage]);
+
+  // Fonctions pour la gestion des contacts (page entreprises)
+  const loadContacts = async (page: number = 1, searchTerm: string = '') => {
+    if (isEntreprisePage) {
+      setLoadingContacts(true);
+      try {
+        const response = await contactListService.getContacts(page, 10, searchTerm);
+        setContacts(response.results);
+        setContactCurrentPage(response.page);
+        setContactTotalPages(response.total_pages);
+        setContactTotalResults(response.total_results);
+      } catch (error) {
+        console.error('Erreur lors du chargement des contacts:', error);
+        setContacts([]);
+      } finally {
+        setLoadingContacts(false);
+      }
+    }
+  };
+
+  const handleContactSearch = async (searchTerm: string) => {
+    setContactSearchTerm(searchTerm);
+    setContactCurrentPage(1);
+    await loadContacts(1, searchTerm);
+  };
+
+  const handleContactPageChange = async (page: number) => {
+    setContactCurrentPage(page);
+    await loadContacts(page, contactSearchTerm);
+  };
+
+  const handleContactSelect = (contact: ContactListItem) => {
+    const companyName = contact.entreprise;
+    updateFilters({ selectedContact: companyName });
+  };
+
+  // Charger les contacts au montage si on est sur la page entreprises
+  useEffect(() => {
+    if (isEntreprisePage) {
+      loadContacts(1, '');
+    }
+  }, [isEntreprisePage]);
+
   // Adapte MainSection pour accepter 'listes'
   const MainSection = ({
     title,
@@ -452,7 +557,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   return (
     <>
       {/* Section Listes importées toujours ouverte, non réductible */}
-      <div className="border-b border-gray-200 p-4 bg-gray-50">
+      {/* <div className="border-b border-gray-200 p-4 bg-gray-50">
         <div className="font-medium text-gray-900 mb-2">Listes importées</div>
         {loadingLists ? (
           <div className="text-xs text-gray-500">Chargement...</div>
@@ -483,7 +588,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             ))}
           </div>
         )}
-      </div>
+      </div> */}
       
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
@@ -504,7 +609,9 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 sortBy: "Pertinence",
                 googleActivities: [],
                 semanticTerms: [],
-                activitySearchType: 'naf'
+                activitySearchType: 'naf',
+                selectedCompany: undefined,
+                selectedContact: undefined
               })
             }
             className="ml-auto text-xs text-orange-600 hover:text-orange-700 transition-colors"
@@ -898,6 +1005,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   </div>
                 )}
               </div>
+
               {/* Juridique */}
               <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openEntrepriseFilters.forme ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
@@ -1004,7 +1112,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 )}
               </div>
 
-                            {/* Localisation */}
+              {/* Localisation */}
               <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
@@ -1035,72 +1143,100 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                 )}
               </div>
             </MainSection>
+
+            
             <MainSection title="Contact" id="contact">
-              {/* Rôles */}
-              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.roles ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('roles')}
-                >
-                  <span className="font-semibold">Rôles</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.roles ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openContactFilters.roles && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
+              {/* Contact */}
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 border-2 border-orange-500 rounded p-3` }>
+
+                  <div className="pt-2 pb-4 space-y-4">
+                    {/* Barre de recherche */}
                     <input
                       type="text"
-                      placeholder="Rechercher un rôle..."
-                      value={roleSearch}
-                      onChange={(e) => setRoleSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      placeholder="Rechercher un contact..."
+                      value={contactSearchTerm}
+                      onChange={(e) => handleContactSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded text-sm"
                     />
-                    <div className="max-h-96 overflow-y-auto space-y-2">
-                      {filteredRoles.map((role) => (
-                        <label key={role} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={safeFilters.roles.includes(role)}
-                            onChange={() => toggleRole(role)}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                          <span className="text-gray-700">{role}</span>
-                        </label>
-                      ))}
-                    </div>
+
+                    {/* Liste des contacts */}
+                    {loadingContacts ? (
+                      <div className="text-center py-4">
+                        <span className="text-sm text-gray-500">Chargement des contacts...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-xs text-gray-600 mb-2">
+                          {contactSearchTerm.trim() 
+                            ? `${contactTotalResults} contacts trouvés pour "${contactSearchTerm}"`
+                            : `${contactTotalResults} contacts disponibles (tous secteurs)`
+                          }
+                        </div>
+                        
+                        <div className="max-h-64 overflow-y-auto space-y-1">
+                          {contacts.map((contact) => (
+                            <button
+                              key={`${contact.nom_complet}-${contact.entreprise}`}
+                              onClick={() => handleContactSelect(contact)}
+                              className={`w-full text-left p-2 rounded text-sm hover:bg-gray-50 transition-colors ${
+                                filters.selectedContact === contact.nom_complet
+                                  ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                  : 'text-gray-700'
+                              }`}
+                            >
+                              <div className="font-medium truncate">
+                                {contact.nom_complet}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                {contact.qualite} • {contact.entreprise}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Pagination */}
+                        {contactTotalPages > 1 && (
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <button
+                              onClick={() => handleContactPageChange(contactCurrentPage - 1)}
+                              disabled={contactCurrentPage <= 1}
+                              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200"
+                            >
+                              Précédent
+                            </button>
+                            <span className="text-xs text-gray-600">
+                              Page {contactCurrentPage} sur {contactTotalPages}
+                            </span>
+                            <button
+                              onClick={() => handleContactPageChange(contactCurrentPage + 1)}
+                              disabled={contactCurrentPage >= contactTotalPages}
+                              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200"
+                            >
+                              Suivant
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Contact sélectionné */}
+                        {filters.selectedContact && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Entreprise sélectionnée:</div>
+                            <div className="flex items-center justify-between p-2 bg-orange-50 rounded border border-orange-200">
+                              <span className="text-sm text-orange-800 truncate flex-1">
+                                {filters.selectedContact}
+                              </span>
+                              <button
+                                onClick={() => updateFilters({ selectedContact: undefined })}
+                                className="ml-2 text-orange-600 hover:text-orange-800 text-sm"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {/* Localisation */}
-              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('localisation')}
-                >
-                  <span className="font-semibold">Localisation</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
-                    {availableCities.map((city) => (
-                      <label key={city} className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={safeFilters.cities.includes(city)}
-                          onChange={() => toggleCity(city)}
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span className="text-gray-700 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {city}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
               </div>
             </MainSection>
           </>
@@ -1175,200 +1311,103 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
               </div>
             </MainSection>
             <MainSection title="Entreprise" id="entreprise">
-              {/* Activités */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleEntrepriseFilter('activites')}
-                >
-                  <span className="font-semibold">Activités</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.activites ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openEntrepriseFilters.activites && (
-                  <div className="pt-2 pb-4 space-y-4">
-                    {/* Onglets de recherche */}
-                    <div className="flex flex-wrap gap-2">
-                      {['Code NAF', 'Activité Google (GMB)', 'Sémantique', 'Enseigne/Franchise'].map((label, index) => (
-                        <button
-                          key={index}
-                          className={`px-3 py-1 rounded text-sm font-medium border ${
-                            label === 'Code NAF' ? 'bg-orange-600 text-white border-orange-600' : 'text-orange-600 border-orange-300'
-                          } hover:bg-orange-50 transition`}
-                          type="button"
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
+              {/* Entreprise */}
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 border-2 border-orange-500 rounded p-3` }>
 
-                    {/* Zone de recherche */}
+                  <div className="pt-2 pb-4 space-y-4">
+                    {/* Barre de recherche */}
                     <input
                       type="text"
-                      placeholder="Mots-clés, code NAF"
-                      value={activitySearch}
-                      onChange={(e) => setActivitySearch(e.target.value)}
+                      placeholder="Rechercher une entreprise..."
+                      value={companySearchTerm}
+                      onChange={(e) => handleCompanySearch(e.target.value)}
                       className="w-full p-2 border border-gray-300 rounded text-sm"
                     />
 
-                    {/* Boutons de code et chargement */}
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
-                        onClick={() => setNafModalOpen(true)}
-                      >
-                        📘 Codes NAF
-                      </button>
-                      <button
-                        type="button"
-                        className="flex-1 py-1.5 px-3 bg-gray-100 hover:bg-gray-200 text-sm text-gray-700 rounded border border-gray-300"
-                      >
-                        ⬆️ Charger
-                      </button>
-                    </div>
+                    {/* Liste des entreprises */}
+                    {loadingCompanies ? (
+                      <div className="text-center py-4">
+                        <span className="text-sm text-gray-500">Chargement des entreprises...</span>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <div className="text-xs text-gray-600 mb-2">
+                          {companyTotalResults > 0 ? `${companyTotalResults} entreprises trouvées` : 'Aucune entreprise trouvée'}
+                        </div>
+                        
+                        <div className="max-h-64 overflow-y-auto space-y-1">
+                          {companies.map((company) => (
+                            <button
+                              key={company.siren}
+                              onClick={() => handleCompanySelect(company)}
+                              className={`w-full text-left p-2 rounded text-sm hover:bg-gray-50 transition-colors ${
+                                filters.selectedCompany === (company.nom_raison_sociale || company.nom_complet)
+                                  ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                                  : 'text-gray-700'
+                              }`}
+                            >
+                              <div className="font-medium truncate">
+                                {company.nom_raison_sociale || company.nom_complet}
+                              </div>
+                              {company.nom_raison_sociale && company.nom_raison_sociale !== company.nom_complet && (
+                                <div className="text-xs text-gray-500 truncate">
+                                  {company.nom_complet}
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
 
-                    {/* Checkbox d'exclusion */}
-                    <label className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-orange-600 rounded"
-                        onChange={(e) =>
-                          updateFilters({
-                            excludeSelectedActivities: e.target.checked,
-                          } as any) // ajuster selon ton type exact
-                        }
-                          />
-                      <span className="text-gray-700">Exclure les éléments sélectionnés</span>
-                        </label>
+                        {/* Pagination */}
+                        {companyTotalPages > 1 && (
+                          <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                            <button
+                              onClick={() => handleCompanyPageChange(companyCurrentPage - 1)}
+                              disabled={companyCurrentPage <= 1}
+                              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200"
+                            >
+                              Précédent
+                            </button>
+                            <span className="text-xs text-gray-600">
+                              Page {companyCurrentPage} sur {companyTotalPages}
+                            </span>
+                            <button
+                              onClick={() => handleCompanyPageChange(companyCurrentPage + 1)}
+                              disabled={companyCurrentPage >= companyTotalPages}
+                              className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-200"
+                            >
+                              Suivant
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Entreprise sélectionnée */}
+                        {filters.selectedCompany && (
+                          <div className="pt-2 border-t border-gray-200">
+                            <div className="text-xs font-medium text-gray-700 mb-1">Entreprise sélectionnée:</div>
+                            <div className="flex items-center justify-between p-2 bg-orange-50 rounded border border-orange-200">
+                              <span className="text-sm text-orange-800 truncate flex-1">
+                                {filters.selectedCompany}
+                              </span>
+                              <button
+                                onClick={() => updateFilters({ selectedCompany: undefined })}
+                                className="ml-2 text-orange-600 hover:text-orange-800 text-sm"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              {/* Chiffres clés */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleEntrepriseFilter('chiffres')}
-                >
-                  <span className="font-semibold">Chiffres clés</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.chiffres ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openEntrepriseFilters.chiffres && (
-                  <div className="pt-2 pb-4 space-y-4 max-h-96 overflow-y-auto">
-                    <RangeSlider
-                      min={ageRange[0]}
-                      max={ageRange[1]}
-                      value={filters.ageRange}
-                      onChange={(value) => updateFilters({ ageRange: value })}
-                      label="Âge de l'entreprise"
-                      unit=" ans"
-                    />
-                    <RangeSlider
-                      min={employeeRange[0]}
-                      max={employeeRange[1]}
-                      value={filters.employeeRange}
-                      onChange={(value) => updateFilters({ employeeRange: value })}
-                      label="Nombre d'employés"
-                    />
-                    <RangeSlider
-                      min={revenueRange[0]}
-                      max={revenueRange[1]}
-                      value={filters.revenueRange}
-                      onChange={(value) => updateFilters({ revenueRange: value })}
-                      label="Chiffre d'affaires"
-                      formatValue={(v) => `${Math.round(v / 1000)}k`}
-                      unit="€"
-                    />
-                  </div>
-                )}
-              </div>
-              {/* Juridique */}
-              <div className="mb-2 border-b border-gray-100 last:border-b-0">
-                <button
-                  className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleEntrepriseFilter('forme')}
-                >
-                  <span className="font-semibold">Juridique</span>
-                  <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.forme ? 'rotate-180' : ''}`}
-                  />
-                </button>
-                {openEntrepriseFilters.forme && (
-                  <div className="pt-2 pb-4 space-y-6 max-h-96 overflow-y-auto">
-                    {/* Section Forme juridique */}
-                    <div>
-                      <div className="font-semibold text-xs text-gray-500 mb-1">Forme juridique</div>
-                      <input
-                        type="text"
-                        placeholder="Rechercher une forme juridique..."
-                        value={legalFormSearch}
-                        onChange={e => setLegalFormSearch(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                      />
-                      {naturesJuridiques
-                        .filter(nature => nature.titre.toLowerCase().includes(legalFormSearch.toLowerCase()))
-                        .map((nature) => (
-                          <label key={nature.id} className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                              checked={safeFilters.legalForms.includes(nature.id)}
-                              onChange={() => {
-                                const currentIds = safeFilters.legalForms || [];
-                                const newIds = currentIds.includes(nature.id)
-                                  ? currentIds.filter((id) => id !== nature.id)
-                                  : [...currentIds, nature.id];
-                                setFilters({ ...filters, legalForms: newIds });
-                              }}
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                            <span className="text-gray-700">{nature.titre}</span>
-                      </label>
-                    ))}
-                  </div>
-                    {/* Section Convention Collective */}
-                    <div>
-                      <div className="font-semibold text-xs text-gray-500 mb-1 mt-4">Convention Collective</div>
-                    <input
-                      type="text"
-                        placeholder="Rechercher une convention..."
-                        value={conventionSearch}
-                        onChange={e => setConventionSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
-                    />
-                      {conventionsCollectives
-                        .filter(c => c.titre.toLowerCase().includes(conventionSearch.toLowerCase()))
-                        .map(c => (
-                          <label key={c.idcc} className="flex items-center space-x-2 text-sm">
-                          <input
-                            type="checkbox"
-                              checked={selectedConventionId === c.idcc}
-                              onChange={() => {
-                                if (selectedConventionId === c.idcc) {
-                                  setSelectedConventionId(null);
-                                  setFilters({ ...filters, id_convention_collective: undefined });
-                                } else {
-                                  setSelectedConventionId(c.idcc);
-                                  setFilters({ ...filters, id_convention_collective: c.idcc });
-                                }
-                              }}
-                            className="w-4 h-4 text-orange-600 rounded"
-                          />
-                            <span className="text-gray-700">{c.titre}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             </MainSection>
           </>
         )}
       </div>
 
-      {(safeFilters.activities.length > 0 || safeFilters.cities.length > 0 || safeFilters.legalForms.length > 0 || safeFilters.roles.length > 0) && (
+      {(safeFilters.activities.length > 0 || safeFilters.cities.length > 0 || safeFilters.legalForms.length > 0 || safeFilters.roles.length > 0 || filters.selectedCompany || filters.selectedContact) && (
         <div className="p-4 bg-orange-50 border-t border-orange-200">
           <div className="text-sm font-medium text-orange-800 mb-2">Filtres actifs:</div>
           <div className="space-y-1 text-xs text-orange-700">
@@ -1376,6 +1415,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
             {safeFilters.cities.length > 0 && <div>• {safeFilters.cities.length} ville(s)</div>}
             {safeFilters.legalForms.length > 0 && <div>• {safeFilters.legalForms.length} forme(s) juridique(s)</div>}
             {safeFilters.roles.length > 0 && <div>• {safeFilters.roles.length} rôle(s)</div>}
+            {filters.selectedCompany && <div>• Entreprise: {filters.selectedCompany}</div>}
+            {filters.selectedContact && <div>• Entreprise (via contact): {filters.selectedContact}</div>}
           </div>
         </div>
       )}

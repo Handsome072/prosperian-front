@@ -36,6 +36,10 @@ export interface Business {
     // Filtres enseignes/franchises
     enseignes?: string[];
     activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne';
+    // Filtre de recherche d'entreprise pour la page contact
+    selectedCompany?: string;
+    // Filtre de recherche de contact pour la page entreprises
+    selectedContact?: string;
   }
 
   export interface FiltersPanelProps extends FilterState {
