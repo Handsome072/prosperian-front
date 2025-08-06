@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Building, Globe, Eye, User, Mail, Phone, MapPin } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
 import ContactOptions from "./_components/ContactOptions";
-import { RightPanel } from "../Entreprises/_components/RightPanel";
+// import { RightPanel } from "../Entreprises/_components/RightPanel";
 import { useNavigate } from 'react-router-dom';
 import { ExportService } from '@services/exportService';
 import francePostalCodes from '@data/france_postal_codes.json';
@@ -275,7 +275,7 @@ export const Contact: React.FC = () => {
           nom: dirigeant.nom,
           prenoms: dirigeant.prenoms,
           website: entreprise.siege?.site_web,
-          logo: null, // Sera enrichi progressivement
+          logo: undefined, // Sera enrichi progressivement
           address: extractAddress(entreprise.siege),
           ca: entreprise.finances?.chiffre_affaires,
           employeesCount: entreprise.tranche_effectif_salarie,
@@ -397,6 +397,16 @@ export const Contact: React.FC = () => {
           if (postalCodes.length > 0) {
             url += `&code_postal=${encodeURIComponent(postalCodes.join(','))}`;
           }
+        }
+
+        // Filtre département
+        if (filters.departmentCodes && filters.departmentCodes.length > 0) {
+          url += `&departement=${encodeURIComponent(filters.departmentCodes.join(','))}`;
+        }
+
+        // Filtre région
+        if (filters.regionCodes && filters.regionCodes.length > 0) {
+          url += `&region=${encodeURIComponent(filters.regionCodes.join(','))}`;
         }
 
         // Filtre de recherche d'entreprise
@@ -932,9 +942,7 @@ export const Contact: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="w-full md:w-80 flex-shrink-0">
-          <RightPanel businesses={[]} />
-        </div>
+        {/* RightPanel temporairement supprimé pour la page contacts */}
       </div>
     </>
   );

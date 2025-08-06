@@ -50,6 +50,8 @@ const defaultFilters: FilterState = {
   enseignes: [],
   sectors: [],
   sectorNafCodes: [],
+  departments: [],
+  departmentCodes: [],
   activitySearchType: 'naf'
 };
 
