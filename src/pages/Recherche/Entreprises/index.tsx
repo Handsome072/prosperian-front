@@ -4,6 +4,7 @@ import { MainContent } from "./_components/MainContent";
 import { RightPanel } from "./_components/RightPanel";
 import { useProntoData } from "@hooks/useProntoData";
 import { useFilterContext } from "@contexts/FilterContext";
+import { BarChart3 } from "lucide-react";
 import francePostalCodes from '@data/france_postal_codes.json';
 import { googlePlacesService } from "@services/googlePlacesService";
 import { semanticService } from "@services/semanticService";
@@ -355,8 +356,12 @@ export const Entreprises = () => {
     setCurrentPage(1);
   };
 
+  // Ajouter l'état pour contrôler la visibilité du RightPanel
+  const [isRightPanelVisible, setIsRightPanelVisible] = useState(false);
+
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 relative">
+      <div className={`transition-all duration-300 ease-in-out ${isRightPanelVisible ? 'flex-1' : 'w-full'}`}>
       <MainContent
         businesses={enrichedBusinesses}
         totalBusinesses={totalResults}
@@ -394,6 +399,19 @@ export const Entreprises = () => {
         onPageChange={handlePageChange}
         onItemsPerPageChange={handleItemsPerPageChange}
       />
+      </div>
+      
+      {/* Bouton flottant pour afficher/masquer le RightPanel */}
+      <button
+        onClick={() => setIsRightPanelVisible(!isRightPanelVisible)}
+        className="fixed bottom-6 right-6 z-50 bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+        title={isRightPanelVisible ? "Masquer les statistiques" : "Afficher les statistiques"}
+      >
+        <BarChart3 className="w-6 h-6" />
+      </button>
+      
+      {/* RightPanel avec animation de transition */}
+      <div className={`transition-all duration-300 ease-in-out ${isRightPanelVisible ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
       <RightPanel
         businesses={enrichedBusinesses.map(biz => ({
           city: biz.siege?.libelle_commune || "Ville inconnue",
@@ -409,6 +427,7 @@ export const Entreprises = () => {
         revenueRange={[0, 1000000]}
         ageRange={[0, 50]}
       />
+      </div>
     </div>
   );
 };

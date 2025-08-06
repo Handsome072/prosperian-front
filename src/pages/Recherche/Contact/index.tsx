@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Building, Globe, Eye, User, Mail, Phone, MapPin } from "lucide-react";
+import { Building, Globe, Eye, User, Mail, Phone, MapPin, BarChart3 } from "lucide-react";
 import { useFilterContext } from "@contexts/FilterContext";
 import ContactOptions from "./_components/ContactOptions";
-// import { RightPanel } from "../Entreprises/_components/RightPanel";
+import { ContactRightPanel } from "./_components/RightPanel";
 import { useNavigate } from 'react-router-dom';
 import { ExportService } from '@services/exportService';
 import francePostalCodes from '@data/france_postal_codes.json';
@@ -154,10 +154,15 @@ export const Contact: React.FC = () => {
   const [layout, setLayout] = useState<"list" | "grid">("list");
   const [selectedContact, setSelectedContact] = useState<ContactEnrichi | null>(null);
   const [showContactModal, setShowContactModal] = useState(false);
+  // État pour contrôler la visibilité du RightPanel
+  const [showRightPanel, setShowRightPanel] = useState(false);
 
   // Cache pour les enrichissements Pronto
   const [enrichmentCache, setEnrichmentCache] = useState<Record<string, any>>({});
   const [enrichmentLoading, setEnrichmentLoading] = useState<Record<string, boolean>>({});
+
+  // Utiliser le contexte global du RightPanel
+  // const { isRightPanelVisible } = useRightPanel(); // This line is removed as per the new_code
 
   // Fonction pour enrichir une entreprise avec Pronto (comme dans BusinessCard)
   const enrichWithPronto = async (companyName: string): Promise<any> => {
@@ -686,6 +691,14 @@ export const Contact: React.FC = () => {
     navigate('/recherche/export');
   };
 
+  // Fonction pour tronquer l'adresse à 3 mots maximum
+  const truncateAddress = (address: string, maxWords: number = 3): string => {
+    if (!address) return '';
+    const words = address.split(' ').filter(word => word.trim().length > 0);
+    if (words.length <= maxWords) return address;
+    return words.slice(0, maxWords).join(' ') + '...';
+  };
+
   const pageStart = (currentPage - 1) * perPage + 1;
   const pageEnd = Math.min(currentPage * perPage, totalResults);
   const paginatedContacts = contacts.slice((currentPage - 1) * perPage, currentPage * perPage);
@@ -770,8 +783,8 @@ export const Contact: React.FC = () => {
       )}
 
       <div className="flex h-screen bg-gray-50">
-        <div className="flex-1 p-6 min-h-screen">
-          <div className="max-w-full mx-auto">
+        <div className={`transition-all duration-300 ease-in-out ${showRightPanel ? 'flex-1' : 'w-full'} overflow-auto`}>
+          <div className="p-6">
             {/* Header */}
             <div className="hidden lg:grid grid-cols-3 gap-4 mb-6">
               <div className="bg-white shadow rounded-lg p-4">
@@ -810,18 +823,18 @@ export const Contact: React.FC = () => {
             />
 
             {/* Main content */}
-            <div className="flex-1 bg-white shadow rounded-lg overflow-hidden">
-              <div className="w-full overflow-x-auto max-h-[calc(100vh-12rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                <table className="min-w-[800px] w-full text-sm">
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm" style={{ minWidth: '800px' }}>
                   <thead>
                     <tr className="text-xs font-semibold text-gray-700 uppercase bg-gray-100 shadow-sm">
                       {currentSort !== 'Pertinence' && <th className="w-8 p-3"></th>}
-                      <th className="text-left p-3">Rôle</th>
-                      <th className="w-24 text-center p-3">Web</th>
-                      <th className="text-left p-3">Entreprise</th>
-                      <th className="w-24 text-center text-[#E95C41] p-3">Contacts</th>
-                      <th className="w-24 text-center p-3">CA</th>
-                      <th className="w-32 text-right p-3">Adresse</th>
+                      <th className="text-left p-3 w-1/6">Rôle</th>
+                      <th className="text-center p-3 w-16">Web</th>
+                      <th className="text-left p-3 w-1/3">Entreprise</th>
+                      <th className="text-center p-3 w-16 text-[#E95C41]">Contacts</th>
+                      <th className="text-center p-3 w-16">CA</th>
+                      <th className="text-right p-3 w-1/4">Adresse</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -856,10 +869,10 @@ export const Contact: React.FC = () => {
                                 />
                               </td>
                             )}
-                            <td className="font-semibold text-gray-900 text-sm truncate max-w-[180px] p-3 bg-white">
+                            <td className="font-semibold text-gray-900 text-sm truncate p-3 bg-white">
                               {enrichedContact.role}
                             </td>
-                            <td className="w-24 text-center p-3 bg-white">
+                            <td className="text-center p-3 bg-white">
                               <div className="flex items-center justify-center gap-2">
                                 <Eye 
                                   className="w-5 h-5 cursor-pointer text-gray-500 hover:text-blue-600" 
@@ -874,51 +887,51 @@ export const Contact: React.FC = () => {
                             </td>
                             <td className="flex items-center gap-2 min-w-0 p-3 bg-white">
                               {enrichedContact.logo ? (
-                                <img src={enrichedContact.logo} alt={enrichedContact.entreprise} className="w-8 h-8 rounded-lg object-cover border border-gray-200" />
+                                <img src={enrichedContact.logo} alt={enrichedContact.entreprise} className="w-8 h-8 rounded-lg object-cover border border-gray-200 flex-shrink-0" />
                               ) : (
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
                                   <Building className="w-4 h-4 text-white" />
                                 </div>
                               )}
-                              <div className="flex flex-col">
+                              <div className="flex flex-col min-w-0 flex-1">
                                 <span className="font-semibold text-blue-800 text-sm underline truncate cursor-pointer">
                                   {enrichedContact.entreprise}
                                 </span>
-                                <div className="flex items-center gap-1 mt-1">
+                                <div className="flex items-center gap-1 mt-1 flex-wrap">
                                   {enrichedContact.isEnriched && (
-                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex-shrink-0">
                                       Pronto
                                     </span>
                                   )}
                                   {enrichedContact.isLoading && (
-                                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                                    <div className="flex items-center gap-1 text-xs text-gray-500 flex-shrink-0">
                                       <div className="w-3 h-3 border border-gray-300 border-t-blue-500 rounded-full animate-spin"></div>
                                       <span>Enrichissement...</span>
                                     </div>
                                   )}
                                   {/* Indicateur du nom utilisé pour l'enrichissement */}
                                   {contact.nom_raison_sociale && contact.nom_raison_sociale !== contact.entreprise && (
-                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full" title={`Enrichissement avec: ${contact.nom_raison_sociale}`}>
+                                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex-shrink-0" title={`Enrichissement avec: ${contact.nom_raison_sociale}`}>
                                       RS
                                     </span>
                                   )}
                                 </div>
                               </div>
                             </td>
-                            <td className="w-24 text-center text-sm font-semibold text-[#E95C41] p-3 bg-white">
+                            <td className="text-center text-sm font-semibold text-[#E95C41] p-3 bg-white">
                               {enrichedContact.email ? (
                                 <Mail className="w-4 h-4 mx-auto text-[#E95C41]" />
                               ) : (
                                 '-'
                               )}
                             </td>
-                            <td className="w-24 text-center text-sm text-gray-800 font-medium p-3 bg-white">
+                            <td className="text-center text-sm text-gray-800 font-medium p-3 bg-white">
                               {enrichedContact.ca ? `${(enrichedContact.ca / 1000).toFixed(0)}k€` : '-'}
                             </td>
-                            <td className="w-32 text-right text-sm text-blue-800 underline truncate p-3 bg-white">
+                            <td className="text-right text-sm text-blue-800 underline truncate p-3 bg-white">
                               <div className="flex items-center justify-end gap-1">
-                                <MapPin className="w-3 h-3" />
-                                {enrichedContact.address}
+                                <MapPin className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{truncateAddress(enrichedContact.address)}</span>
                               </div>
                             </td>
                           </tr>
@@ -942,7 +955,40 @@ export const Contact: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* RightPanel temporairement supprimé pour la page contacts */}
+        
+        {/* Bouton flottant pour afficher/masquer le RightPanel */}
+        <button
+          onClick={() => setShowRightPanel(!showRightPanel)}
+          className="fixed bottom-6 right-6 z-50 bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+          title={showRightPanel ? "Masquer les statistiques" : "Afficher les statistiques"}
+        >
+          <BarChart3 className="w-6 h-6" />
+        </button>
+        
+        {/* RightPanel avec animation de transition */}
+        <div className={`transition-all duration-300 ease-in-out ${showRightPanel ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
+          <ContactRightPanel
+            contacts={paginatedContacts.map(contact => {
+              const enrichedContact = getEnrichedContactData(contact);
+              return {
+                city: enrichedContact.address.split(',').pop()?.trim() || "Ville inconnue",
+                role: enrichedContact.role,
+                entreprise: enrichedContact.entreprise,
+                ca: enrichedContact.ca,
+                employeesCount: enrichedContact.employeesCount
+              };
+            })}
+            totalContacts={totalResults}
+            filters={filters}
+            onFiltersChange={() => {}}
+            availableCities={[]}
+            availableLegalForms={[]}
+            availableRoles={[]}
+            employeeRange={[0, 5000]}
+            revenueRange={[0, 1000000]}
+            ageRange={[0, 50]}
+          />
+        </div>
       </div>
     </>
   );
