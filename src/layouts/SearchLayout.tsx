@@ -52,6 +52,11 @@ export const SearchLayout: React.FC = () => {
             legalForms={filters.legalForms}
             ratingRange={filters.ratingRange}
             roles={filters.roles}
+            selectedList={filters.selectedList}
+            onRemoveListFilter={() => {
+              // Cette fonction sera gérée par la page Contact
+              console.log('Retrait du filtre de liste demandé');
+            }}
           />
         )}
         {/* Main Content */}
