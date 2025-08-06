@@ -10,6 +10,8 @@ import nafCodes from '@data/naf_codes.json';
 import naturesJuridiques from '@data/natures_juridiques.json';
 import conventionsCollectives from '@data/conventions_collectives.json';
 import linkedinSectors from '@data/linkedin_sectors_with_naf.json';
+import departementsFrance from '@data/departements_france.json';
+import regionsFrance from '@data/regions_france.json';
 import ReactDOM from 'react-dom';
 import { googlePlacesService, GooglePlacesCategory } from '../../../services/googlePlacesService';
 import { semanticService, PopularConcept, SemanticSuggestion } from '../../../services/semanticService';
@@ -184,9 +186,18 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   const [selectedSemanticTerms, setSelectedSemanticTerms] = useState<string[]>([]);
   const [semanticSearchTerm, setSemanticSearchTerm] = useState('');
 
-  // States pour la recherche par secteur (remplace enseigne/franchise)
+  // States pour les secteurs (remplace enseigne/franchise)
   const [selectedSectors, setSelectedSectors] = useState<string[]>([]);
   const [sectorSearchTerm, setSectorSearchTerm] = useState('');
+
+  // States pour les départements
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
+  const [departmentSearchTerm, setDepartmentSearchTerm] = useState('');
+  const [citySearchTerm, setCitySearchTerm] = useState('');
+
+  // States pour les régions
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
+  const [regionSearchTerm, setRegionSearchTerm] = useState('');
 
   // States pour la liste des entreprises (page contact)
   const [companies, setCompanies] = useState<CompanyListItem[]>([]);
@@ -219,6 +230,7 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
       activites: isEntreprisePage,
       chiffres: false,
       forme: false,
+      localisation: false,
       contact: isEntreprisePage,
     };
   });
@@ -484,11 +496,147 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
     }
   };
 
+  // Gestion des départements
+  const handleDepartmentAdd = (department: string) => {
+    console.log('🔍 [DEPARTEMENT] handleDepartmentAdd appelé avec:', department);
+    console.log('🔍 [DEPARTEMENT] selectedDepartments actuels:', selectedDepartments);
+    
+    if (!selectedDepartments.includes(department)) {
+      const newSelected = [...selectedDepartments, department];
+      setSelectedDepartments(newSelected);
+      console.log('🔍 [DEPARTEMENT] Nouveaux départements sélectionnés:', newSelected);
+      
+      // Trouver le code département correspondant
+      const departmentData = departementsFrance.find(d => d.departement === department);
+      console.log('🔍 [DEPARTEMENT] Données du département trouvées:', departmentData);
+      
+      if (departmentData) {
+        const newDepartmentCodes = [...(filters.departmentCodes || []), departmentData.code];
+        console.log('🔍 [DEPARTEMENT] Nouveaux codes département:', newDepartmentCodes);
+        
+        const updates = { 
+          departments: newSelected,
+          departmentCodes: newDepartmentCodes
+        };
+        console.log('🔍 [DEPARTEMENT] Mise à jour des filtres:', updates);
+        
+        updateFilters(updates as any);
+      } else {
+        console.error('❌ [DEPARTEMENT] Département non trouvé dans departementsFrance:', department);
+        console.log('🔍 [DEPARTEMENT] departementsFrance disponibles:', departementsFrance.slice(0, 5));
+      }
+    } else {
+      console.log('🔍 [DEPARTEMENT] Département déjà sélectionné:', department);
+    }
+    setDepartmentSearchTerm(''); // Vider le champ de saisie
+  };
+
+  const handleDepartmentToggle = (department: string) => {
+    console.log('🔍 [DEPARTEMENT] handleDepartmentToggle appelé avec:', department);
+    console.log('🔍 [DEPARTEMENT] selectedDepartments actuels:', selectedDepartments);
+    
+    const newSelected = selectedDepartments.filter(d => d !== department);
+    setSelectedDepartments(newSelected);
+    console.log('🔍 [DEPARTEMENT] Nouveaux départements après suppression:', newSelected);
+    
+    // Retirer le code département correspondant
+    const departmentData = departementsFrance.find(d => d.departement === department);
+    console.log('🔍 [DEPARTEMENT] Données du département à supprimer:', departmentData);
+    
+    if (departmentData) {
+      const newDepartmentCodes = (filters.departmentCodes || []).filter(code => code !== departmentData.code);
+      console.log('🔍 [DEPARTEMENT] Nouveaux codes département après suppression:', newDepartmentCodes);
+      
+      const updates = { 
+        departments: newSelected,
+        departmentCodes: newDepartmentCodes
+      };
+      console.log('🔍 [DEPARTEMENT] Mise à jour des filtres après suppression:', updates);
+      
+      updateFilters(updates as any);
+    }
+  };
+
+  // Fonctions pour la gestion des régions
+  const handleRegionAdd = (region: string) => {
+    console.log('🔍 [REGION] handleRegionAdd appelé avec:', region);
+    console.log('🔍 [REGION] selectedRegions actuels:', selectedRegions);
+    
+    if (selectedRegions.includes(region)) {
+      console.log('🔍 [REGION] Région déjà sélectionnée:', region);
+      return;
+    }
+    
+    const newSelected = [...selectedRegions, region];
+    setSelectedRegions(newSelected);
+    console.log('🔍 [REGION] Nouveaux régions sélectionnés:', newSelected);
+    
+    // Trouver le code région correspondant
+    const regionData = regionsFrance.find(r => r.region === region);
+    console.log('🔍 [REGION] Données de la région trouvées:', regionData);
+    
+    if (regionData) {
+      const newRegionCodes = [...(filters.regionCodes || []), regionData.code];
+      console.log('🔍 [REGION] Nouveaux codes région:', newRegionCodes);
+      
+      const updates = { 
+        regions: newSelected,
+        regionCodes: newRegionCodes
+      };
+      console.log('🔍 [REGION] Mise à jour des filtres:', updates);
+      
+      updateFilters(updates as any);
+    } else {
+      console.error('❌ [REGION] Région non trouvée dans regionsFrance:', region);
+    }
+    setRegionSearchTerm(''); // Vider le champ de saisie
+  };
+
+  const handleRegionToggle = (region: string) => {
+    console.log('🔍 [REGION] handleRegionToggle appelé avec:', region);
+    console.log('🔍 [REGION] selectedRegions actuels:', selectedRegions);
+    
+    const newSelected = selectedRegions.filter(r => r !== region);
+    setSelectedRegions(newSelected);
+    console.log('🔍 [REGION] Nouveaux régions après suppression:', newSelected);
+    
+    // Retirer le code région correspondant
+    const regionData = regionsFrance.find(r => r.region === region);
+    console.log('🔍 [REGION] Données de la région à supprimer:', regionData);
+    
+    if (regionData) {
+      const newRegionCodes = (filters.regionCodes || []).filter(code => code !== regionData.code);
+      console.log('🔍 [REGION] Nouveaux codes région après suppression:', newRegionCodes);
+      
+      const updates = { 
+        regions: newSelected,
+        regionCodes: newRegionCodes
+      };
+      console.log('🔍 [REGION] Mise à jour des filtres après suppression:', updates);
+      
+      updateFilters(updates as any);
+    }
+  };
+
   // Charger les secteurs populaires au démarrage
   useEffect(() => {
     // Les secteurs populaires sont déjà dans le fichier JSON
     // On peut les charger directement
   }, []);
+
+  // Synchroniser les départements sélectionnés avec les filtres
+  useEffect(() => {
+    if (filters.departments) {
+      setSelectedDepartments(filters.departments);
+    }
+  }, [filters.departments]);
+
+  // Synchroniser les régions sélectionnées avec les filtres
+  useEffect(() => {
+    if (filters.regions) {
+      setSelectedRegions(filters.regions);
+    }
+  }, [filters.regions]);
 
   // Fonctions pour la gestion des entreprises (page contact)
   const loadCompanies = async (page: number = 1, searchTerm: string = '') => {
@@ -1175,34 +1323,195 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   </div>
                 )}
               </div>
-
               {/* Localisation */}
-              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openEntrepriseFilters.localisation ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
                   className="w-full flex items-center justify-between py-2 text-left"
-                  onClick={() => toggleContactFilter('localisation')}
+                  onClick={() => toggleEntrepriseFilter('localisation')}
                 >
                   <span className="font-semibold">Localisation</span>
                   <ChevronDown
-                    className={`w-5 h-5 text-gray-500 transition-transform ${openContactFilters.localisation ? 'rotate-180' : ''}`}
+                    className={`w-5 h-5 text-gray-500 transition-transform ${openEntrepriseFilters.localisation ? 'rotate-180' : ''}`}
                   />
                 </button>
-                {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
-                    {availableCities.map((city) => (
-                      <label key={city} className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={safeFilters.cities.includes(city)}
-                          onChange={() => toggleCity(city)}
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span className="text-gray-700 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {city}
-                        </span>
-                      </label>
-                    ))}
+                {openEntrepriseFilters.localisation && (
+                  <div className="pt-2 pb-4 space-y-6">
+                    {/* Section Ville */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Ville</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher une ville..."
+                        value={citySearchTerm}
+                        onChange={(e) => setCitySearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                        {availableCities
+                          .filter(city => 
+                            !citySearchTerm || 
+                            city.toLowerCase().includes(citySearchTerm.toLowerCase())
+                          )
+                          .map((city) => (
+                            <label key={city} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                              <input
+                                type="checkbox"
+                                checked={safeFilters.cities.includes(city)}
+                                onChange={() => toggleCity(city)}
+                                className="w-4 h-4 text-orange-600 rounded"
+                              />
+                              <span className="text-gray-700 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {city}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Séparateur */}
+                    <div className="border-t border-gray-200 my-2"></div>
+
+                    {/* Section Département */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Département</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher un département..."
+                        value={departmentSearchTerm}
+                        onChange={(e) => setDepartmentSearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                        {departementsFrance
+                          .filter(dept => 
+                            !departmentSearchTerm || 
+                            dept.departement.toLowerCase().includes(departmentSearchTerm.toLowerCase()) ||
+                            dept.code.toLowerCase().includes(departmentSearchTerm.toLowerCase())
+                          )
+                          .map((dept) => (
+                            <label key={dept.code} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                              <input
+                                type="checkbox"
+                                checked={selectedDepartments.includes(dept.departement)}
+                                onChange={() => {
+                                  if (selectedDepartments.includes(dept.departement)) {
+                                    handleDepartmentToggle(dept.departement);
+                                  } else {
+                                    handleDepartmentAdd(dept.departement);
+                                  }
+                                }}
+                                className="w-4 h-4 text-orange-600 rounded"
+                              />
+                              <span className="text-gray-700 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="font-mono text-xs bg-gray-100 px-1 rounded">{dept.code}</span>
+                                {dept.departement}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Départements sélectionnés */}
+                    {selectedDepartments.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <span className="text-xs font-medium text-gray-700">Départements sélectionnés:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedDepartments.map(department => {
+                            const deptData = departementsFrance.find(d => d.departement === department);
+                            return (
+                              <span 
+                                key={department}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                                title={deptData ? `Code: ${deptData.code}` : ''}
+                              >
+                                {deptData && <span className="font-mono mr-1">{deptData.code}</span>}
+                                {department}
+                                <button
+                                  onClick={() => handleDepartmentToggle(department)}
+                                  className="ml-1 text-orange-600 hover:text-orange-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Séparateur */}
+                    <div className="border-t border-gray-200 my-2"></div>
+
+                    {/* Section Région */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Région</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher une région..."
+                        value={regionSearchTerm}
+                        onChange={(e) => setRegionSearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                        {regionsFrance
+                          .filter(region => 
+                            !regionSearchTerm || 
+                            region.region.toLowerCase().includes(regionSearchTerm.toLowerCase()) ||
+                            region.code.toLowerCase().includes(regionSearchTerm.toLowerCase())
+                          )
+                          .map((region) => (
+                            <label key={region.code} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                              <input
+                                type="checkbox"
+                                checked={selectedRegions.includes(region.region)}
+                                onChange={() => {
+                                  if (selectedRegions.includes(region.region)) {
+                                    handleRegionToggle(region.region);
+                                  } else {
+                                    handleRegionAdd(region.region);
+                                  }
+                                }}
+                                className="w-4 h-4 text-orange-600 rounded"
+                              />
+                              <span className="text-gray-700 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="font-mono text-xs bg-gray-100 px-1 rounded">{region.code}</span>
+                                {region.region}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Régions sélectionnées */}
+                    {selectedRegions.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <span className="text-xs font-medium text-gray-700">Régions sélectionnées:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedRegions.map(region => {
+                            const regionData = regionsFrance.find(r => r.region === region);
+                            return (
+                              <span 
+                                key={region}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"
+                                title={regionData ? `Code: ${regionData.code}` : ''}
+                              >
+                                {regionData && <span className="font-mono mr-1">{regionData.code}</span>}
+                                {region}
+                                <button
+                                  onClick={() => handleRegionToggle(region)}
+                                  className="ml-1 text-blue-600 hover:text-blue-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1355,21 +1664,171 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                   />
                 </button>
                 {openContactFilters.localisation && (
-                  <div className="pt-2 pb-4 space-y-2 max-h-96 overflow-y-auto">
-                    {availableCities.map((city) => (
-                      <label key={city} className="flex items-center space-x-2 text-sm">
-                        <input
-                          type="checkbox"
-                          checked={safeFilters.cities.includes(city)}
-                          onChange={() => toggleCity(city)}
-                          className="w-4 h-4 text-orange-600 rounded"
-                        />
-                        <span className="text-gray-700 flex items-center gap-1">
-                          <MapPin className="w-3 h-3" />
-                          {city}
-                        </span>
-                      </label>
-                    ))}
+                  <div className="pt-2 pb-4 space-y-6">
+                    {/* Section Ville */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Ville</div>
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                        {availableCities.map((city) => (
+                          <label key={city} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                            <input
+                              type="checkbox"
+                              checked={safeFilters.cities.includes(city)}
+                              onChange={() => toggleCity(city)}
+                              className="w-4 h-4 text-orange-600 rounded"
+                            />
+                            <span className="text-gray-700 flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {city}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Séparateur */}
+                    <div className="border-t border-gray-200 my-2"></div>
+
+                    {/* Section Département */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Département</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher un département..."
+                        value={departmentSearchTerm}
+                        onChange={(e) => setDepartmentSearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                        {departementsFrance
+                          .filter(dept => 
+                            !departmentSearchTerm || 
+                            dept.departement.toLowerCase().includes(departmentSearchTerm.toLowerCase()) ||
+                            dept.code.toLowerCase().includes(departmentSearchTerm.toLowerCase())
+                          )
+                          .map((dept) => (
+                            <label key={dept.code} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                              <input
+                                type="checkbox"
+                                checked={selectedDepartments.includes(dept.departement)}
+                                onChange={() => {
+                                  if (selectedDepartments.includes(dept.departement)) {
+                                    handleDepartmentToggle(dept.departement);
+                                  } else {
+                                    handleDepartmentAdd(dept.departement);
+                                  }
+                                }}
+                                className="w-4 h-4 text-orange-600 rounded"
+                              />
+                              <span className="text-gray-700 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="font-mono text-xs bg-gray-100 px-1 rounded">{dept.code}</span>
+                                {dept.departement}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Départements sélectionnés */}
+                    {selectedDepartments.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <span className="text-xs font-medium text-gray-700">Départements sélectionnés:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedDepartments.map(department => {
+                            const deptData = departementsFrance.find(d => d.departement === department);
+                            return (
+                              <span 
+                                key={department}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs bg-orange-100 text-orange-800"
+                                title={deptData ? `Code: ${deptData.code}` : ''}
+                              >
+                                {deptData && <span className="font-mono mr-1">{deptData.code}</span>}
+                                {department}
+                                <button
+                                  onClick={() => handleDepartmentToggle(department)}
+                                  className="ml-1 text-orange-600 hover:text-orange-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Séparateur */}
+                    <div className="border-t border-gray-200 my-2"></div>
+
+                    {/* Section Région */}
+                    <div className="space-y-2">
+                      <div className="font-semibold text-base text-gray-700 mb-1">Région</div>
+                      <input
+                        type="text"
+                        placeholder="Rechercher une région..."
+                        value={regionSearchTerm}
+                        onChange={(e) => setRegionSearchTerm(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded text-sm mb-2"
+                      />
+                      <div className="max-h-64 overflow-y-auto border border-gray-200 rounded p-2 bg-white">
+                        {regionsFrance
+                          .filter(region => 
+                            !regionSearchTerm || 
+                            region.region.toLowerCase().includes(regionSearchTerm.toLowerCase()) ||
+                            region.code.toLowerCase().includes(regionSearchTerm.toLowerCase())
+                          )
+                          .map((region) => (
+                            <label key={region.code} className="flex items-center space-x-2 text-sm cursor-pointer hover:bg-gray-50 rounded p-1">
+                              <input
+                                type="checkbox"
+                                checked={selectedRegions.includes(region.region)}
+                                onChange={() => {
+                                  if (selectedRegions.includes(region.region)) {
+                                    handleRegionToggle(region.region);
+                                  } else {
+                                    handleRegionAdd(region.region);
+                                  }
+                                }}
+                                className="w-4 h-4 text-orange-600 rounded"
+                              />
+                              <span className="text-gray-700 flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                <span className="font-mono text-xs bg-gray-100 px-1 rounded">{region.code}</span>
+                                {region.region}
+                              </span>
+                            </label>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Régions sélectionnées */}
+                    {selectedRegions.length > 0 && (
+                      <div className="mt-3 space-y-1">
+                        <span className="text-xs font-medium text-gray-700">Régions sélectionnées:</span>
+                        <div className="flex flex-wrap gap-1">
+                          {selectedRegions.map(region => {
+                            const regionData = regionsFrance.find(r => r.region === region);
+                            return (
+                              <span 
+                                key={region}
+                                className="inline-flex items-center px-2 py-1 rounded text-xs bg-blue-100 text-blue-800"
+                                title={regionData ? `Code: ${regionData.code}` : ''}
+                              >
+                                {regionData && <span className="font-mono mr-1">{regionData.code}</span>}
+                                {region}
+                                <button
+                                  onClick={() => handleRegionToggle(region)}
+                                  className="ml-1 text-blue-600 hover:text-blue-800"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

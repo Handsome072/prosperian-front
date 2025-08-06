@@ -249,6 +249,16 @@ export const Entreprises = () => {
           }
         }
 
+        // Filtre département
+        if (filters.departmentCodes && filters.departmentCodes.length > 0) {
+          url += `&departement=${encodeURIComponent(filters.departmentCodes.join(','))}`;
+        }
+
+        // Filtre région
+        if (filters.regionCodes && filters.regionCodes.length > 0) {
+          url += `&region=${encodeURIComponent(filters.regionCodes.join(','))}`;
+        }
+
         console.log('🔍 URL de recherche avec filtres complets:', url);
         console.log('📊 Filtres appliqués:', {
           type: activitySearchType,
@@ -257,7 +267,10 @@ export const Entreprises = () => {
           ageEntreprise: ageRange,
           nombreEmployes: employeeRange,
           naturesJuridiques: legalForms,
-          conventionCollective: idConventionCollective
+          conventionCollective: idConventionCollective,
+          villes: selectedCities,
+          departements: filters.departmentCodes,
+          regions: filters.regionCodes
         });
 
         const res = await fetch(url, { headers: { accept: "application/json" } });
@@ -299,6 +312,10 @@ export const Entreprises = () => {
     console.log('🔍 [ENTREPRISES] filters.sectorNafCodes:', filters.sectorNafCodes);
     console.log('🔍 [ENTREPRISES] filters.activitySearchType:', filters.activitySearchType);
     console.log('🔍 [ENTREPRISES] filters.sectors:', filters.sectors);
+    console.log('🔍 [ENTREPRISES] filters.departmentCodes:', filters.departmentCodes);
+    console.log('🔍 [ENTREPRISES] filters.departments:', filters.departments);
+    console.log('🔍 [ENTREPRISES] filters.regionCodes:', filters.regionCodes);
+    console.log('🔍 [ENTREPRISES] filters.regions:', filters.regions);
     
     // Déterminer quels codes NAF utiliser selon le type de recherche
     let nafCodesToUse: string[] = [];
@@ -327,7 +344,7 @@ export const Entreprises = () => {
       filters.selectedContact // Contact sélectionné
     );
     // eslint-disable-next-line
-  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.sectorNafCodes, filters.activitySearchType, filters.selectedContact]);
+  }, [currentPage, perPage, filters.activities, filters.revenueRange, filters.ageRange, filters.employeeRange, filters.legalForms, filters.id_convention_collective, filters.cities, filters.googleActivities, filters.semanticTerms, filters.sectorNafCodes, filters.departmentCodes, filters.activitySearchType, filters.selectedContact]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);

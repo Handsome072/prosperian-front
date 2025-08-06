@@ -38,6 +38,11 @@ export interface Business {
     // Filtres secteurs (remplace enseignes)
     sectors?: string[];
     sectorNafCodes?: string[];
+    // Filtres localisation
+    departments?: string[];
+    departmentCodes?: string[];
+    regions?: string[];
+    regionCodes?: string[];
     activitySearchType?: 'naf' | 'google' | 'semantic' | 'enseigne' | 'secteur';
     // Filtre de recherche d'entreprise pour la page contact
     selectedCompany?: string;
