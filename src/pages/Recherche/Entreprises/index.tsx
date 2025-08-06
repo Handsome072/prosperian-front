@@ -362,43 +362,43 @@ export const Entreprises = () => {
   return (
     <div className="flex h-screen bg-gray-50 relative">
       <div className={`transition-all duration-300 ease-in-out ${isRightPanelVisible ? 'flex-1' : 'w-full'}`}>
-        <MainContent
-          businesses={enrichedBusinesses}
-          totalBusinesses={totalResults}
-          loading={loading}
-          error={error}
-          onRetry={() => {
-            // Déterminer quels codes NAF utiliser selon le type de recherche
-            let nafCodesToUse: string[] = [];
-            if (filters.activitySearchType === 'secteur' && filters.sectorNafCodes && filters.sectorNafCodes.length > 0) {
-              nafCodesToUse = filters.sectorNafCodes;
-            } else {
-              nafCodesToUse = filters.activities || [];
-            }
-            
-            fetchBusinesses(
-              currentPage, 
-              perPage, 
-              nafCodesToUse,
-              filters.revenueRange || [0, 1000000], 
-              filters.ageRange || [0, 50],
-              filters.employeeRange || [0, 5000],
-              filters.legalForms || [],
-              filters.id_convention_collective || undefined,
-              filters.cities || [],
-              filters.googleActivities || [],
-              filters.semanticTerms || [],
-              filters.enseignes || [],
-              filters.activitySearchType || 'naf',
-              filters.selectedContact
-            );
-          }}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          itemsPerPage={perPage}
-          onPageChange={handlePageChange}
-          onItemsPerPageChange={handleItemsPerPageChange}
-        />
+      <MainContent
+        businesses={enrichedBusinesses}
+        totalBusinesses={totalResults}
+        loading={loading}
+        error={error}
+                onRetry={() => {
+          // Déterminer quels codes NAF utiliser selon le type de recherche
+          let nafCodesToUse: string[] = [];
+          if (filters.activitySearchType === 'secteur' && filters.sectorNafCodes && filters.sectorNafCodes.length > 0) {
+            nafCodesToUse = filters.sectorNafCodes;
+          } else {
+            nafCodesToUse = filters.activities || [];
+          }
+          
+          fetchBusinesses(
+            currentPage, 
+            perPage, 
+            nafCodesToUse,
+            filters.revenueRange || [0, 1000000], 
+            filters.ageRange || [0, 50],
+            filters.employeeRange || [0, 5000],
+            filters.legalForms || [],
+            filters.id_convention_collective || undefined,
+            filters.cities || [],
+            filters.googleActivities || [],
+            filters.semanticTerms || [],
+            filters.enseignes || [],
+            filters.activitySearchType || 'naf',
+            filters.selectedContact
+          );
+        }}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        itemsPerPage={perPage}
+        onPageChange={handlePageChange}
+        onItemsPerPageChange={handleItemsPerPageChange}
+      />
       </div>
       
       {/* Bouton flottant pour afficher/masquer le RightPanel */}
@@ -412,21 +412,21 @@ export const Entreprises = () => {
       
       {/* RightPanel avec animation de transition */}
       <div className={`transition-all duration-300 ease-in-out ${isRightPanelVisible ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
-        <RightPanel
-          businesses={enrichedBusinesses.map(biz => ({
-            city: biz.siege?.libelle_commune || "Ville inconnue",
-            activity: biz.activite_principale || "Activité inconnue"
-          }))}
-          totalBusinesses={totalResults}
-          filters={filters}
-          onFiltersChange={() => {}}
-          availableCities={[]}
-          availableLegalForms={[]}
-          availableRoles={[]}
-          employeeRange={[0, 5000]}
-          revenueRange={[0, 1000000]}
-          ageRange={[0, 50]}
-        />
+      <RightPanel
+        businesses={enrichedBusinesses.map(biz => ({
+          city: biz.siege?.libelle_commune || "Ville inconnue",
+          activity: biz.activite_principale || "Activité inconnue"
+        }))}
+        totalBusinesses={totalResults}
+        filters={filters}
+        onFiltersChange={() => {}}
+        availableCities={[]}
+        availableLegalForms={[]}
+        availableRoles={[]}
+        employeeRange={[0, 5000]}
+        revenueRange={[0, 1000000]}
+        ageRange={[0, 50]}
+      />
       </div>
     </div>
   );
