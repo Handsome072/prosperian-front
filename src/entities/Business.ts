@@ -48,6 +48,13 @@ export interface Business {
     selectedCompany?: string;
     // Filtre de recherche de contact pour la page entreprises
     selectedContact?: string;
+    // Filtre de liste d'entreprises sélectionnée
+    selectedList?: {
+      listId: string;
+      listName: string;
+      companyCount: number;
+    } | null;
+    onRemoveListFilter?: () => void;
   }
 
   export interface FiltersPanelProps extends FilterState {

@@ -131,6 +131,12 @@ export interface FiltersPanelProps extends FilterState {
   revenueRange: [number, number];
   ageRange: [number, number];
   // onNafCodesChange?: (codes: string[]) => void; // SUPPRIMÉ
+  selectedList?: {
+    listId: string;
+    listName: string;
+    companyCount: number;
+  } | null;
+  onRemoveListFilter?: () => void;
 }
 
 export const FiltersPanel: React.FC<FiltersPanelProps> = ({
@@ -143,6 +149,8 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
   revenueRange,
   ageRange,
   // onNafCodesChange, // SUPPRIMÉ
+  selectedList,
+  onRemoveListFilter,
 }) => {
   console.log('FiltersPanel mounted');
   const { setFilters } = useFilterContext();
@@ -1924,6 +1932,99 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
                       </div>
                     )}
                   </div>
+              </div>
+
+              {/* Liste */}
+              <div className={`mb-2 border-b border-gray-100 last:border-b-0 border-2 border-orange-500 rounded p-3` }>
+                <div className="pt-2 pb-4 space-y-4">
+                  {/* Affichage de la liste sélectionnée */}
+                  {selectedList && (
+                    <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-orange-800">Liste active:</span>
+                          <span className="text-xs text-orange-700 truncate">{selectedList.listName}</span>
+                          <span className="text-xs text-orange-600">({selectedList.companyCount})</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            // Émettre un événement pour retirer le filtre de liste
+                            window.dispatchEvent(new CustomEvent('removeListFilter'));
+                          }}
+                          className="text-orange-600 hover:text-orange-800 text-xs font-medium px-1 py-0.5 rounded hover:bg-orange-100 transition-colors"
+                          title="Retirer ce filtre de liste"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="text-xs text-gray-600 mb-2">
+                    {loadingLists ? (
+                      <span>Chargement des listes...</span>
+                    ) : (
+                      <span>{importedLists.length} liste(s) disponible(s)</span>
+                    )}
+                  </div>
+                  
+                  {loadingLists ? (
+                    <div className="text-center py-4">
+                      <span className="text-sm text-gray-500">Chargement des listes...</span>
+                    </div>
+                  ) : importedLists.length === 0 ? (
+                    <div className="text-center py-4">
+                      <span className="text-sm text-gray-500">Aucune liste disponible</span>
+                    </div>
+                  ) : (
+                    <div className="max-h-64 overflow-y-auto space-y-1">
+                      {importedLists.map((list) => (
+                        <button
+                          key={list.id}
+                          onClick={async () => {
+                            try {
+                              // Récupérer les noms d'entreprises de la liste
+                              const res = await axios.get(`/api/list/${list.id}/first-column`);
+                              const companyNames = res.data;
+                              console.log('Liste des noms d\'entreprises récupérée:', companyNames);
+                              
+                              // Émettre un événement avec les noms d'entreprises pour la recherche
+                              window.dispatchEvent(new CustomEvent('searchByCompanyList', { 
+                                detail: {
+                                  listId: list.id,
+                                  listName: list.nom,
+                                  companyNames: companyNames
+                                }
+                              }));
+                              
+                              console.log('Événement searchByCompanyList émis avec:', {
+                                listId: list.id,
+                                listName: list.nom,
+                                companyCount: companyNames.length
+                              });
+                            } catch (err) {
+                              alert("Erreur lors de la récupération des noms d'entreprise !");
+                              console.error(err);
+                            }
+                          }}
+                          className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                            selectedList && selectedList.listId === list.id
+                              ? 'bg-orange-100 text-orange-800 border border-orange-300'
+                              : 'hover:bg-gray-50 text-gray-700 hover:text-orange-600'
+                          }`}
+                          title={`Cliquer pour utiliser la liste "${list.nom}" (${list.elements} entreprises)`}
+                        >
+                          <div className="font-medium truncate">
+                            {list.nom}
+                          </div>
+                          <div className="text-xs text-gray-500 truncate">
+                            {list.elements} entreprise(s) • {new Date(list.created_at).toLocaleDateString("fr-FR")}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </MainSection>
           </>

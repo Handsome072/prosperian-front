@@ -156,6 +156,9 @@ export const Contact: React.FC = () => {
   const [showContactModal, setShowContactModal] = useState(false);
   // État pour contrôler la visibilité du RightPanel
   const [showRightPanel, setShowRightPanel] = useState(false);
+  // Utiliser le contexte pour la liste sélectionnée
+  const { filters: filterContext, setFilters } = useFilterContext();
+  const selectedList = filterContext.selectedList;
 
   // Cache pour les enrichissements Pronto
   const [enrichmentCache, setEnrichmentCache] = useState<Record<string, any>>({});
@@ -582,7 +585,171 @@ export const Contact: React.FC = () => {
     }
   }, [filters, loading]);
 
-      // Recherche normale avec filtres
+  // Écouter l'événement de recherche par liste d'entreprises
+  useEffect(() => {
+    const handleSearchByCompanyList = async (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { listId, listName, companyNames } = customEvent.detail;
+      console.log('🎯 Recherche par liste d\'entreprises déclenchée:', {
+        listId,
+        listName,
+        companyCount: companyNames.length
+      });
+
+      // Sauvegarder la liste sélectionnée dans le contexte
+      const newFilters = {
+        ...filterContext,
+        selectedList: {
+          listId,
+          listName,
+          companyCount: companyNames.length
+        }
+      };
+      setFilters(newFilters);
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        let allContacts: ContactEnrichi[] = [];
+        let totalEntreprisesFound = 0;
+
+                            // Rechercher pour chaque nom d'entreprise individuellement
+                    for (let i = 0; i < companyNames.length; i++) {
+                      let companyName = companyNames[i];
+                      
+                      // Nettoyer le nom d'entreprise : enlever les guillemets et les virgules
+                      companyName = companyName.replace(/^["']|["']$/g, ''); // Enlever les guillemets au début et à la fin
+                      companyName = companyName.split(',')[0]; // Prendre seulement la première partie avant la virgule
+                      companyName = companyName.trim(); // Enlever les espaces
+                      
+                      console.log(`🔍 Recherche ${i + 1}/${companyNames.length}: "${companyName}" (nettoyé)`);
+
+                      // Vérifier que le nom d'entreprise n'est pas vide après nettoyage
+                      if (!companyName || companyName.length < 2) {
+                        console.log(`⚠️ Nom d'entreprise trop court ou vide après nettoyage: "${companyName}"`);
+                        continue;
+                      }
+
+                      try {
+                        // Construire l'URL de recherche pour cette entreprise
+                        const searchUrl = `${API_URL}&q=${encodeURIComponent(companyName)}&limite_matching_etablissements=10&page=1&per_page=10`;
+            
+            const response = await fetch(searchUrl, { 
+              headers: { accept: "application/json" } 
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const entreprises = data.results || [];
+              
+              if (entreprises.length > 0) {
+                console.log(`✅ ${entreprises.length} entreprise(s) trouvée(s) pour "${companyName}"`);
+                totalEntreprisesFound += entreprises.length;
+                
+                // Convertir les entreprises en contacts
+                const contactsFromEntreprises = convertEntreprisesToContacts(entreprises);
+                allContacts.push(...contactsFromEntreprises);
+                
+                console.log(`📊 ${contactsFromEntreprises.length} contact(s) extrait(s) pour "${companyName}"`);
+              } else {
+                console.log(`⚠️ Aucune entreprise trouvée pour "${companyName}"`);
+              }
+            } else {
+              console.error(`❌ Erreur API pour "${companyName}":`, response.status);
+            }
+
+            // Petit délai pour éviter de surcharger l'API
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+          } catch (error) {
+            console.error(`❌ Erreur lors de la recherche pour "${companyName}":`, error);
+          }
+        }
+
+        console.log(`🎉 Recherche terminée: ${allContacts.length} contacts trouvés pour ${totalEntreprisesFound} entreprises`);
+        
+        // Mettre à jour l'état avec les résultats
+        setContacts(allContacts);
+        setTotalResults(allContacts.length);
+        setTotalEntreprises(totalEntreprisesFound);
+        setCurrentPage(1);
+        setPerPage(10);
+        setTotalPages(Math.ceil(allContacts.length / 10));
+
+        // Lancer l'enrichissement progressif en arrière-plan
+        if (allContacts.length > 0) {
+          console.log('🔄 Lancement de l\'enrichissement progressif...');
+          enrichContactsProgressively(allContacts).then(() => {
+            console.log('✅ Enrichissement progressif terminé');
+            setContacts(prevContacts => [...prevContacts]);
+          });
+        }
+
+      } catch (error) {
+        console.error('❌ Erreur lors de la recherche par liste:', error);
+        setError('Erreur lors de la recherche par liste d\'entreprises');
+        setContacts([]);
+        setTotalResults(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Ajouter l'écouteur d'événement
+    window.addEventListener('searchByCompanyList', handleSearchByCompanyList as EventListener);
+
+    // Nettoyer l'écouteur d'événement
+    return () => {
+      window.removeEventListener('searchByCompanyList', handleSearchByCompanyList as EventListener);
+    };
+  }, []);
+
+  // Écouter l'événement de retrait du filtre de liste
+  useEffect(() => {
+    const handleRemoveListFilter = () => {
+      console.log('🗑️ Retrait du filtre de liste via événement:', selectedList);
+      const newFilters = {
+        ...filterContext,
+        selectedList: null
+      };
+      setFilters(newFilters);
+      setContacts([]);
+      setTotalResults(0);
+      setTotalEntreprises(0);
+      setCurrentPage(1);
+      setTotalPages(1);
+      setError(null);
+      
+      // Relancer une recherche normale avec les filtres actuels
+      fetchContacts(
+        currentPage,
+        perPage,
+        filterContext.activities || [],
+        filterContext.revenueRange || [0, 1000000],
+        filterContext.ageRange || [0, 50],
+        filterContext.employeeRange || [0, 5000],
+        filterContext.legalForms || [],
+        filterContext.id_convention_collective,
+        filterContext.cities || [],
+        filterContext.googleActivities || [],
+        filterContext.semanticTerms || [],
+        filterContext.enseignes || [],
+        filterContext.activitySearchType || 'naf',
+        filterContext.selectedCompany
+      );
+    };
+
+    // Ajouter l'écouteur d'événement
+    window.addEventListener('removeListFilter', handleRemoveListFilter);
+
+    // Nettoyer l'écouteur d'événement
+    return () => {
+      window.removeEventListener('removeListFilter', handleRemoveListFilter);
+    };
+  }, [filterContext, currentPage, perPage]);
+
+  // Recherche normale avec filtres
   useEffect(() => {
     // Recherche globale : utiliser tous les secteurs d'activité si aucun filtre spécifique
     const hasSpecificFilters = (
@@ -690,6 +857,8 @@ export const Contact: React.FC = () => {
     setSelectedContacts(new Set());
     navigate('/recherche/export');
   };
+
+
 
   // Fonction pour tronquer l'adresse à 3 mots maximum
   const truncateAddress = (address: string, maxWords: number = 3): string => {
