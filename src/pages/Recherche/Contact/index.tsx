@@ -3,6 +3,7 @@ import { Building, Globe, Eye, User, Mail, Phone, MapPin, BarChart3 } from "luci
 import { useFilterContext } from "@contexts/FilterContext";
 import ContactOptions from "./_components/ContactOptions";
 import { ContactRightPanel } from "./_components/RightPanel";
+import { ProntoResultsPanel } from "./_components/ProntoResultsPanel";
 import { useNavigate } from 'react-router-dom';
 import { ExportService } from '@services/exportService';
 import francePostalCodes from '@data/france_postal_codes.json';
@@ -163,6 +164,11 @@ export const Contact: React.FC = () => {
   // Cache pour les enrichissements Pronto
   const [enrichmentCache, setEnrichmentCache] = useState<Record<string, any>>({});
   const [enrichmentLoading, setEnrichmentLoading] = useState<Record<string, boolean>>({});
+
+  // États pour les résultats de recherche Pronto
+  const [prontoResults, setProntoResults] = useState<any>(null);
+  const [prontoLoading, setProntoLoading] = useState(false);
+  const [showProntoResults, setShowProntoResults] = useState(false);
 
   // Utiliser le contexte global du RightPanel
   // const { isRightPanelVisible } = useRightPanel(); // This line is removed as per the new_code
@@ -749,6 +755,35 @@ export const Contact: React.FC = () => {
     };
   }, [filterContext, currentPage, perPage]);
 
+  // Écouter les événements Pronto
+  useEffect(() => {
+    const handleProntoResults = (event: CustomEvent) => {
+      console.log('📊 Résultats Pronto reçus via événement:', event.detail);
+      setProntoResults(event.detail);
+      setShowProntoResults(true);
+    };
+
+    const handleProntoLoadingEvent = (event: CustomEvent) => {
+      console.log('⏳ État de chargement Pronto:', event.detail);
+      setProntoLoading(event.detail);
+
+      // Afficher le panel dès que le chargement commence
+      if (event.detail === true) {
+        setShowProntoResults(true);
+      }
+    };
+
+    // Ajouter les écouteurs d'événements
+    window.addEventListener('prontoSearchResults', handleProntoResults as EventListener);
+    window.addEventListener('prontoLoading', handleProntoLoadingEvent as EventListener);
+
+    // Nettoyer les écouteurs d'événements
+    return () => {
+      window.removeEventListener('prontoSearchResults', handleProntoResults as EventListener);
+      window.removeEventListener('prontoLoading', handleProntoLoadingEvent as EventListener);
+    };
+  }, []);
+
   // Recherche normale avec filtres
   useEffect(() => {
     // Recherche globale : utiliser tous les secteurs d'activité si aucun filtre spécifique
@@ -891,6 +926,10 @@ export const Contact: React.FC = () => {
     optimizationRatio: contacts.length > 0 ? Math.round((new Set(contacts.map(c => c.nom_raison_sociale || c.entreprise)).size / contacts.length) * 100) : 0
   };
 
+  const handleCloseProntoResults = () => {
+    setShowProntoResults(false);
+  };
+
   return (
     <>
       {/* Popup contact */}
@@ -952,7 +991,18 @@ export const Contact: React.FC = () => {
       )}
 
       <div className="flex h-screen bg-gray-50">
-        <div className={`transition-all duration-300 ease-in-out ${showRightPanel ? 'flex-1' : 'w-full'} overflow-auto`}>
+        <div className={`overflow-auto relative`}
+             style={showRightPanel
+               ? { width: 'calc(100vw - 384px - 320px)' } // Sidebar (384px) + RightPanel (320px)
+               : { width: 'calc(100vw - 384px)' } // Seulement Sidebar (384px)
+             }>
+          {/* Panneau de résultats Pronto en overlay dans le container principal */}
+          <ProntoResultsPanel
+            results={prontoResults}
+            isVisible={showProntoResults}
+            onClose={handleCloseProntoResults}
+            loading={prontoLoading}
+          />
           <div className="p-6">
             {/* Header */}
             <div className="hidden lg:grid grid-cols-3 gap-4 mb-6">
@@ -1134,8 +1184,8 @@ export const Contact: React.FC = () => {
           <BarChart3 className="w-6 h-6" />
         </button>
         
-        {/* RightPanel avec animation de transition */}
-        <div className={`transition-all duration-300 ease-in-out ${showRightPanel ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
+        {/* RightPanel sans animation */}
+        <div className={`${showRightPanel ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
           <ContactRightPanel
             contacts={paginatedContacts.map(contact => {
               const enrichedContact = getEnrichedContactData(contact);

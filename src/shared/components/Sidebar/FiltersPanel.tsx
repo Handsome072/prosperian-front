@@ -18,6 +18,7 @@ import { semanticService, PopularConcept, SemanticSuggestion } from '../../../se
 import { apifyService } from '../../../services/apifyService';
 import { companyListService, CompanyListItem } from '../../../services/companyListService';
 import { contactListService, ContactListItem } from '../../../services/contactListService';
+import { ProntoSearchForm } from '../../../pages/Recherche/Contact/_components/ProntoSearchForm';
 
 interface RangeSliderProps {
   min: number;
@@ -1531,6 +1532,26 @@ export const FiltersPanel: React.FC<FiltersPanelProps> = ({
         ) : (
           <>
             <MainSection title="Contact" id="contact">
+              {/* Formulaire de recherche Pronto */}
+              {isContactPage && (
+                <div className="mb-6 border-b border-gray-200 pb-6">
+                  <ProntoSearchForm
+                    onSearchResults={(results) => {
+                      // Émettre un événement personnalisé pour communiquer avec la page Contact
+                      window.dispatchEvent(new CustomEvent('prontoSearchResults', {
+                        detail: results
+                      }));
+                    }}
+                    onLoading={(loading) => {
+                      // Émettre un événement personnalisé pour l'état de chargement
+                      window.dispatchEvent(new CustomEvent('prontoLoading', {
+                        detail: loading
+                      }));
+                    }}
+                  />
+                </div>
+              )}
+
               {/* Rôles */}
               <div className={`mb-2 border-b border-gray-100 last:border-b-0 ${openContactFilters.roles ? 'border-2 border-orange-500 rounded p-3' : ''}` }>
                 <button
