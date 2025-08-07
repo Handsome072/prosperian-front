@@ -36,6 +36,53 @@ export const sendEnrichmentToPronto = async (data: ProntoEnrichmentRequest) => {
   }
 };
 
+export interface ProntoCompany {
+  name: string;
+  country_code?: string | null;
+  domain?: string | null;
+  linkedin_url?: string | null;
+}
+
+export interface ProntoListRequest {
+  name: string;
+  webhook_url?: string;
+  companies: ProntoCompany[];
+}
+
+export interface ProntoListResponse {
+  success: boolean;
+  list: {
+    id: string;
+    name: string;
+    webhook_url?: string;
+    companies_count: number;
+    companies: ProntoCompany[];
+    created_at: string;
+    pronto_response: any;
+  };
+  message: string;
+}
+
+export interface ProntoListItem {
+  id: string;
+  name: string;
+  type: string;
+  companies_count: number;
+  linkedin_id?: string;
+  created_at: string;
+  updated_at: string;
+  webhook_url?: string;
+  status?: string;
+}
+
+export interface ProntoListsResponse {
+  success: boolean;
+  lists: ProntoListItem[];
+  total: number;
+  message: string;
+  pronto_response?: any;
+}
+
 export class ProntoService {
   // Récupérer toutes les recherches
   static async getAllSearches(): Promise<ProntoSearch[]> {
@@ -48,6 +95,87 @@ export class ProntoService {
       return data.searches || [];
     } catch (error) {
       console.error('Error fetching searches:', error);
+      throw error;
+    }
+  }
+
+  // Créer une liste d'entreprises dans Pronto
+  static async createCompanyList(data: ProntoListRequest): Promise<ProntoListResponse> {
+    try {
+      // Nettoyer les données avant l'envoi - supprimer les valeurs null/undefined
+      const cleanedData = {
+        ...data,
+        companies: data.companies.map(company => {
+          const cleaned: any = { name: company.name };
+
+          if (company.country_code) cleaned.country_code = company.country_code;
+          if (company.domain) cleaned.domain = company.domain;
+          if (company.linkedin_url) cleaned.linkedin_url = company.linkedin_url;
+
+          return cleaned;
+        })
+      };
+
+      console.log('🚀 Envoi des données nettoyées vers l\'API Pronto:', cleanedData);
+
+      const response = await fetch(buildApiUrl(API_CONFIG.PRONTO.LISTS), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cleanedData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('Error creating company list:', error);
+      throw error;
+    }
+  }
+
+  // Récupérer toutes les listes Pronto
+  static async getAllLists(): Promise<ProntoListsResponse> {
+    try {
+      console.log('📋 Récupération des listes Pronto...');
+
+      const response = await fetch(buildApiUrl(API_CONFIG.PRONTO.LISTS), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Listes récupérées:', result.total, 'liste(s)');
+
+      return result;
+    } catch (error) {
+      console.error('Error fetching Pronto lists:', error);
+      throw error;
+    }
+  }
+
+  // Récupérer le statut des services Pronto
+  static async getServiceStatus(): Promise<any> {
+    try {
+      const response = await fetch(buildApiUrl(API_CONFIG.PRONTO.STATUS));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching service status:', error);
       throw error;
     }
   }

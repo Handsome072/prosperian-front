@@ -32,14 +32,23 @@ server: {
 ## Structure des endpoints
 
 ### Pronto API
-- `GET /api/pronto/searches` - Liste des recherches
-- `GET /api/pronto/searches/{id}` - Détails d'une recherche
-- `GET /api/pronto/searches/{id}/leads` - Leads d'une recherche
-- `GET /api/pronto-workflows/all-searches-complete` - Workflow complet
+
+#### ✅ Endpoints Disponibles
+- `GET /api/pronto/searches` - Liste des recherches disponibles
+- `POST /api/pronto/lists` - Création de listes d'entreprises
+- `GET /api/pronto/status` - Statut des services Pronto
+- `GET /api/pronto-workflows/diagnostic` - Diagnostic complet
+
+#### ⚠️ Endpoints Indisponibles (Changements API Pronto)
+- `GET /api/pronto/searches/{id}` - Détails d'une recherche (404)
+- `GET /api/pronto/searches/{id}/leads` - Leads d'une recherche (404)
+- `POST /api/pronto/search-leads` - Recherche de leads (503)
+- `POST /api/pronto/leads/extract` - Extraction de leads (503)
+- `GET /api/pronto-workflows/all-searches-complete` - Workflow complet (404)
 
 ### Autres endpoints
-- `GET /graphql` - GraphQL endpoint
-- `GET /api-docs` - Documentation Swagger
+- `GET /graphql` - GraphQL endpoint ✅
+- `GET /api-docs` - Documentation Swagger ✅
 
 ## Utilisation
 
