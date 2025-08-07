@@ -3,17 +3,20 @@ import {
   Filter,
   Download,
   Plus,
-  Trash2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
   List as LayoutList,
   X,
+  Building,
 } from "lucide-react";
 import { Business } from "@entities/Business";
 import ExportModalGlobal from "../../../../components/ExportModalGlobal";
 import { ListService } from "@services/listService";
+import ProntoListModal from "../../../../components/ProntoListModal";
+import ProntoListsViewer from "../../../../components/ProntoListsViewer";
+import { ProntoService, ProntoListRequest } from "@services/prontoService";
 
 export interface BusinessOptionsProps {
   businesses: Business[];
@@ -68,8 +71,6 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   const [inputValue, setInputValue] = useState(itemsPerPage.toString());
   const [showAddDropdown, setShowAddDropdown] = useState(false);
   const addDropdownRef = useRef<HTMLDivElement>(null);
-  const [showDeleteDropdown, setShowDeleteDropdown] = useState(false);
-  const deleteDropdownRef = useRef<HTMLDivElement>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   
   // États pour le modal de nommage de liste
@@ -77,6 +78,26 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   const [listName, setListName] = useState("");
   const [listNameError, setListNameError] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
+
+  // États pour le modal Pronto
+  const [showProntoListModal, setShowProntoListModal] = useState(false);
+  const [showProntoListsViewer, setShowProntoListsViewer] = useState(false);
+
+  // Fonction pour créer une liste Pronto
+  const handleCreateProntoList = async (data: ProntoListRequest) => {
+    try {
+      const result = await ProntoService.createCompanyList(data);
+      console.log('✅ Liste Pronto créée avec succès:', result);
+
+      // Afficher un message de succès (vous pouvez utiliser un toast ou une notification)
+      alert(`Liste "${result.list.name}" créée avec succès avec ${result.list.companies_count} entreprise(s)!`);
+
+      return result;
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de la liste Pronto:', error);
+      throw error;
+    }
+  };
 
   // Fermer le dropdown si on clique en dehors
   useEffect(() => {
@@ -90,23 +111,7 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showAddDropdown]);
 
-  // Fermer le dropdown de suppression si on clique en dehors
-  useEffect(() => {
-    if (!showDeleteDropdown) return;
-    function handleClickOutside(event: MouseEvent) {
-      if (deleteDropdownRef.current && !deleteDropdownRef.current.contains(event.target as Node)) {
-        setShowDeleteDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [showDeleteDropdown]);
 
-  // Gestion dynamique des listes pour suppression
-  const [deleteBusinessCardLists, setDeleteBusinessCardLists] = useState(exportBusinessCardLists);
-  useEffect(() => {
-    setDeleteBusinessCardLists(exportBusinessCardLists);
-  }, [exportBusinessCardLists.length]);
 
   const handleSort = () => {
     const next = sortKey === "Pertinence" ? "Date" : "Pertinence";
@@ -124,12 +129,13 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
   // Fonction pour récupérer les entreprises sélectionnées
   const getSelectedBusinesses = () => {
     if (selectedCount === 0) {
-      // Si aucune entreprise n'est sélectionnée, utiliser toutes les entreprises de la page courante
-      return businesses;
+      // Si aucune entreprise n'est sélectionnée, retourner un tableau vide
+      return [];
     } else {
       // Filtrer les entreprises selon les IDs sélectionnés
-      return businesses.filter(business => 
-        selectedIds.includes(Number(business.siren || business.id))
+      // Les selectedIds correspondent aux SIREN des entreprises
+      return businesses.filter(business =>
+        selectedIds.includes(Number(business.siren))
       );
     }
   };
@@ -350,53 +356,24 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
                 </div>
               )}
             </div>
-            <div className="relative">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setShowDeleteDropdown((v) => !v)}
-                className="flex items-center border border-gray-300 rounded-md px-3 py-2 hover:bg-gray-100 transition"
+                onClick={() => setShowProntoListModal(true)}
+                className="flex items-center border border-blue-300 bg-blue-50 rounded-md px-3 py-2 hover:bg-blue-100 transition text-blue-700"
+                title="Créer une liste Pronto avec les entreprises sélectionnées"
               >
-                <Trash2 className="w-4 h-4 spec-xl:mr-2 text-gray-600" />
-                <span className="hidden spec-xl:inline">Supprimer</span>
+                <Building className="w-4 h-4 spec-xl:mr-2" />
+                <span className="hidden spec-xl:inline">Créer</span>
               </button>
-              {showDeleteDropdown && (
-                <div
-                  ref={deleteDropdownRef}
-                  className="absolute left-0 top-full mt-2 w-64 bg-white border border-gray-200 rounded shadow-lg z-30 p-3"
-                >
-                  {deleteBusinessCardLists.length === 0 ? (
-                    <div className="text-center text-gray-500 text-sm mb-3">Aucune liste à supprimer.</div>
-                  ) : (
-                    <div className="mb-3">
-                      {deleteBusinessCardLists.map((listName) => (
-                        <div
-                          key={listName}
-                          className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 cursor-pointer text-gray-700 text-sm"
-                        >
-                          <span>{listName}</span>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              localStorage.removeItem(`export_${listName}`);
-                              setDeleteBusinessCardLists((prev) => prev.filter((n) => n !== listName));
-                            }}
-                            className="ml-2 text-gray-400 hover:text-red-500 focus:outline-none"
-                            aria-label={`Supprimer la liste ${listName}`}
-                          >
-                            <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-                              <path
-                                d="M6 6L14 14M14 6L6 14"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+
+              <button
+                onClick={() => setShowProntoListsViewer(true)}
+                className="flex items-center border border-gray-300 rounded-md px-3 py-2 hover:bg-gray-100 transition text-gray-700"
+                title="Voir les listes Pronto existantes"
+              >
+                <Building className="w-4 h-4 spec-xl:mr-2" />
+                <span className="hidden spec-xl:inline">Listes</span>
+              </button>
             </div>
           </div>
 
@@ -526,6 +503,20 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal Pronto pour créer une liste */}
+      <ProntoListModal
+        isOpen={showProntoListModal}
+        onClose={() => setShowProntoListModal(false)}
+        onSubmit={handleCreateProntoList}
+        selectedBusinesses={getSelectedBusinesses()}
+      />
+
+      {/* Viewer des listes Pronto existantes */}
+      <ProntoListsViewer
+        isOpen={showProntoListsViewer}
+        onClose={() => setShowProntoListsViewer(false)}
+      />
     </>
   );
 };

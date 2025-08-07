@@ -6,8 +6,10 @@ export const API_CONFIG = {
   // Endpoints Pronto
   PRONTO: {
     SEARCHES: '/api/pronto/searches',
+    LISTS: '/api/pronto/lists',
+    STATUS: '/api/pronto/status',
     SEARCH_DETAILS: (id: string) => `/api/pronto/searches/${id}`,
-    SEARCH_LEADS: (id: string, page: number = 1, limit: number = 100) => 
+    SEARCH_LEADS: (id: string, page: number = 1, limit: number = 100) =>
       `/api/pronto/searches/${id}`,
     ALL_SEARCHES_COMPLETE: (includeLeads: boolean = true, leadsPerSearch: number = 50) =>
       `/api/pronto-workflows/all-searches-complete?include_leads=${includeLeads}&leads_per_search=${leadsPerSearch}`,
