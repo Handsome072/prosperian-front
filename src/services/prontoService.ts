@@ -83,6 +83,78 @@ export interface ProntoListsResponse {
   pronto_response?: any;
 }
 
+// Interfaces pour la recherche globale
+export interface ProntoFilters {
+  company_filter?: string;
+  title_filter?: string;
+  lead_location_filter?: string;
+  employee_range_filter?: string;
+  company_location_filter?: string;
+  industry_filter?: string;
+  limit?: number;
+}
+
+export interface ProntoLead {
+  search_id: string;
+  search_name: string;
+  lead: {
+    status: string;
+    rejection_reasons?: string[];
+    first_name: string;
+    last_name: string;
+    gender?: string;
+    email?: string | null;
+    email_status?: string | null;
+    phone?: string[];
+    linkedin_url?: string;
+    profile_image_url?: string;
+    location?: string;
+    title: string;
+    years_in_position?: number;
+    months_in_position?: number;
+    years_in_company?: number;
+    months_in_company?: number;
+  };
+  company?: {
+    name: string;
+    cleaned_name?: string;
+    website?: string;
+    location?: string;
+    industry?: string;
+    headquarters?: {
+      city: string;
+      line1: string;
+      country: string;
+      postalCode: string;
+      geographicArea: string;
+    };
+    description?: string;
+    linkedin_url?: string;
+    linkedin_id?: string;
+    employee_range?: string;
+    company_profile_picture?: string;
+  };
+}
+
+export interface ProntoGlobalResponse {
+  success: boolean;
+  total_searches: number;
+  total_leads: number;
+  filtered_leads: number;
+  unique_companies: number;
+  applied_filters: {
+    company_names: string[];
+    titles: string[];
+    lead_locations: string[];
+    employee_ranges: string[];
+    company_locations: string[];
+    industries: string[];
+  };
+  leads: ProntoLead[];
+  processing_time: number;
+  message: string;
+}
+
 export class ProntoService {
   // Récupérer toutes les recherches
   static async getAllSearches(): Promise<ProntoSearch[]> {
@@ -244,4 +316,97 @@ export class ProntoService {
       throw error;
     }
   }
-} 
+
+  // Recherche globale avec filtres
+  static async searchLeads(filters: ProntoFilters): Promise<ProntoGlobalResponse> {
+    try {
+      console.log('🔍 Recherche Pronto avec filtres:', filters);
+
+      const params = new URLSearchParams();
+
+      if (filters.company_filter) {
+        params.append('company_filter', filters.company_filter);
+      }
+      if (filters.title_filter) {
+        params.append('title_filter', filters.title_filter);
+      }
+      if (filters.lead_location_filter) {
+        params.append('lead_location_filter', filters.lead_location_filter);
+      }
+      if (filters.employee_range_filter) {
+        params.append('employee_range_filter', filters.employee_range_filter);
+      }
+      if (filters.company_location_filter) {
+        params.append('company_location_filter', filters.company_location_filter);
+      }
+      if (filters.industry_filter) {
+        params.append('industry_filter', filters.industry_filter);
+      }
+      if (filters.limit) {
+        params.append('limit', filters.limit.toString());
+      }
+
+      const response = await axios.get(
+        `${API_BASE_URL}/api/pronto/workflow/global-results?${params.toString()}`
+      );
+
+      console.log('✅ Réponse Pronto reçue:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('❌ Erreur lors de la recherche Pronto:', error);
+      throw error;
+    }
+  }
+
+  // Méthode utilitaire pour formater les filtres depuis le formulaire
+  static formatFiltersFromForm(formData: {
+    jobTitles: string;
+    companySize: string[];
+    leadLocation: string;
+    companyLocation: string;
+    industries: string;
+    limit?: number;
+  }): ProntoFilters {
+    const filters: ProntoFilters = {};
+
+    if (formData.jobTitles.trim()) {
+      filters.title_filter = formData.jobTitles.trim();
+    }
+
+    if (formData.companySize.length > 0) {
+      filters.employee_range_filter = formData.companySize.join(',');
+    }
+
+    if (formData.leadLocation.trim()) {
+      filters.lead_location_filter = formData.leadLocation.trim();
+    }
+
+    if (formData.companyLocation.trim()) {
+      filters.company_location_filter = formData.companyLocation.trim();
+    }
+
+    if (formData.industries.trim()) {
+      filters.industry_filter = formData.industries.trim();
+    }
+
+    if (formData.limit) {
+      filters.limit = formData.limit;
+    }
+
+    return filters;
+  }
+
+  // Méthode pour obtenir les options de taille d'entreprise
+  static getCompanySizeOptions(): { value: string; label: string }[] {
+    return [
+      { value: '1-10', label: '1-10 employés' },
+      { value: '11-50', label: '11-50 employés' },
+      { value: '51-200', label: '51-200 employés' },
+      { value: '201-500', label: '201-500 employés' },
+      { value: '501-1000', label: '501-1000 employés' },
+      { value: '1001-5000', label: '1001-5000 employés' },
+      { value: '5001-10000', label: '5001-10000 employés' },
+      { value: '10000+', label: '10000+ employés' }
+    ];
+  }
+}

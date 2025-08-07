@@ -366,14 +366,14 @@ const BusinessOptions: React.FC<BusinessOptionsProps> = ({
                 <span className="hidden spec-xl:inline">Créer</span>
               </button>
 
-              <button
+              {/* <button
                 onClick={() => setShowProntoListsViewer(true)}
                 className="flex items-center border border-gray-300 rounded-md px-3 py-2 hover:bg-gray-100 transition text-gray-700"
                 title="Voir les listes Pronto existantes"
               >
                 <Building className="w-4 h-4 spec-xl:mr-2" />
                 <span className="hidden spec-xl:inline">Listes</span>
-              </button>
+              </button> */}
             </div>
           </div>
 

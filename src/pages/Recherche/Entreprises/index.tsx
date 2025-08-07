@@ -361,7 +361,11 @@ export const Entreprises = () => {
 
   return (
     <div className="flex h-screen bg-gray-50 relative">
-      <div className={`transition-all duration-300 ease-in-out ${isRightPanelVisible ? 'flex-1' : 'w-full'}`}>
+      <div className={`overflow-auto relative`}
+           style={isRightPanelVisible
+             ? { width: 'calc(100vw - 384px - 320px)' } // Sidebar (384px) + RightPanel (320px)
+             : { width: 'calc(100vw - 384px)' } // Seulement Sidebar (384px)
+           }>
       <MainContent
         businesses={enrichedBusinesses}
         totalBusinesses={totalResults}
@@ -410,8 +414,8 @@ export const Entreprises = () => {
         <BarChart3 className="w-6 h-6" />
       </button>
       
-      {/* RightPanel avec animation de transition */}
-      <div className={`transition-all duration-300 ease-in-out ${isRightPanelVisible ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
+      {/* RightPanel sans animation */}
+      <div className={`${isRightPanelVisible ? 'w-80' : 'w-0'} flex-shrink-0 overflow-hidden`}>
       <RightPanel
         businesses={enrichedBusinesses.map(biz => ({
           city: biz.siege?.libelle_commune || "Ville inconnue",
