@@ -36,7 +36,7 @@
 ```bash
 cd prosperian-back
 npm start
-# Le serveur doit être accessible sur http://localhost:4000
+# Le serveur doit être accessible sur http://69.62.105.91:4000
 ```
 
 ### 2. Démarrer le Frontend

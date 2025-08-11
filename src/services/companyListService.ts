@@ -14,7 +14,7 @@ export interface CompanyListResponse {
 }
 
 class CompanyListService {
-  private baseUrl = 'http://localhost:4000';
+  private baseUrl = 'http://69.62.105.91:4000';
 
   async getCompanies(
     page: number = 1,

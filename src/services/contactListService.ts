@@ -17,7 +17,7 @@ export interface ContactListResponse {
 }
 
 class ContactListService {
-  private baseUrl = 'http://localhost:4000';
+  private baseUrl = 'http://69.62.105.91:4000';
 
   async getContacts(
     page: number = 1,

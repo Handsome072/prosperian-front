@@ -135,7 +135,7 @@ const setCachedEnrichment = (companyName: string, data: ProntoEnrichmentResponse
   console.log(`💾 Données Pronto mises en cache pour: ${companyName}`);
 };
 
-const API_URL = "http://localhost:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
+const API_URL = "http://69.62.105.91:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
 
 export const Contact: React.FC = () => {
   const navigate = useNavigate();

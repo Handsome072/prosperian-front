@@ -6,7 +6,7 @@ Créez un fichier `.env` dans le dossier `prosperian-front` avec les variables s
 
 ```env
 # Configuration API
-VITE_API_BASE_URL=http://localhost:4000
+VITE_API_BASE_URL=http://69.62.105.91:4000
 
 # En production, changez cette URL vers votre serveur
 # VITE_API_BASE_URL=https://api.votre-domaine.com
@@ -21,7 +21,7 @@ En développement, Vite utilise un proxy pour rediriger les requêtes `/api` ver
 server: {
   proxy: {
     '/api': {
-      target: 'http://localhost:4000',
+      target: 'http://69.62.105.91:4000',
       changeOrigin: true,
       secure: false,
     },

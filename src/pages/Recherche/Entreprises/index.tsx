@@ -11,7 +11,7 @@ import { semanticService } from "@services/semanticService";
 import { apifyService } from "@services/apifyService";
 
 const API_URL =
-  "http://localhost:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
+  "http://69.62.105.91:4000/api/search?section_activite_principale=A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U";
 
 export const Entreprises = () => {
   const [businesses, setBusinesses] = useState<EntrepriseApiResult[]>([]);
